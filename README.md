@@ -15,9 +15,9 @@
 
 <br>
 
-> **Co się stanie z Twoimi hasłami po śmierci?**  
-> Secret Key to system, który dzieli hasło główne między zaufane osoby.  
-> Nikt nie zna go samodzielnie — dopiero razem mogą je odtworzyć.
+**Co się stanie z Twoimi hasłami po śmierci?**  
+Secret Key to system, który dzieli hasło główne między zaufane osoby.  
+Nikt nie zna go samodzielnie — dopiero razem mogą je odtworzyć.
 
 <br>
 
