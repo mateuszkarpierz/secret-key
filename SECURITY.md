@@ -8,8 +8,6 @@ Jeśli odkryłeś lukę bezpieczeństwa w projekcie Secret Key, prosimy o **odpo
 
 Wyślij szczegółowy opis na: **karpierz.me**
 
-lub skorzystaj z [GitHub Security Advisories](https://github.com/karpatka122/secret-key/security/advisories/new).
-
 ### Co zawrzeć w zgłoszeniu
 
 - Opis luki i potencjalnego wpływu
