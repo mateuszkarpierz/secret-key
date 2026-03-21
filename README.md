@@ -8,10 +8,10 @@
 
 [![PHP](https://img.shields.io/badge/PHP-8%2B-7c3aed?style=flat-square&logo=php&logoColor=white)](https://php.net)
 [![License](https://img.shields.io/badge/Licencja-MIT-818cf8?style=flat-square)](LICENSE)
-[![Self-hosted](https://img.shields.io/badge/Hosting-Self--hosted-c084fc?style=flat-square)]()
-[![Zero SQL](https://img.shields.io/badge/Baza_danych-Zero_SQL-4ade80?style=flat-square)]()
-[![2FA](https://img.shields.io/badge/2FA-SMS_·_SMSPlanet-38bdf8?style=flat-square)]()
-[![Shamir](https://img.shields.io/badge/Kryptografia-Shamir_SSS-f472b6?style=flat-square)]()
+[![Self-hosted](https://img.shields.io/badge/Hosting-Self--hosted-c084fc?style=flat-square)](#instalacja)
+[![Zero SQL](https://img.shields.io/badge/Baza_danych-Zero_SQL-4ade80?style=flat-square)](#struktura-plików)
+[![2FA](https://img.shields.io/badge/2FA-SMS_·_SMSPlanet-38bdf8?style=flat-square)](#bezpieczeństwo)
+[![Shamir](https://img.shields.io/badge/Kryptografia-Shamir_SSS-f472b6?style=flat-square)](#algorytm-shamira)
 
 <br>
 
