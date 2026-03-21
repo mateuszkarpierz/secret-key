@@ -316,10 +316,6 @@ Tak. Secret Key przechowuje i odtwarza **dowolne hasło główne** — niezależ
 
 <div align="center">
 
-**[🌐 Prezentacja systemu](https://karpierz.me)** &nbsp;·&nbsp; **[⭐ GitHub](https://github.com/karpatka122/secret-key)**
-
-<br>
-
 Prawo autorskie © 2026 · [karpierz.me](https://karpierz.me)
 
 </div>
