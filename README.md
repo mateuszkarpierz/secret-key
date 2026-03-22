@@ -21,7 +21,7 @@ Nikt nie zna go samodzielnie — dopiero razem mogą je odtworzyć.
 
 <br>
 
-![Secret Key Demo](img/idea-screen.webp)
+![Secret Key Demo](img/SecretKeyGif.gif)
 
 </div>
 
