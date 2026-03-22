@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="img/key.svg" width="80" alt="Secret Key Logo">
-
-# SECRET KEY
+<img src="img/secret-key-logo.svg" width="400" alt="Secret Key Logo">
 
 ### Kryptograficzny system awaryjnego dostępu do bazy haseł
 
