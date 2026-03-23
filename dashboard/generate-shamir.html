@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Szyfrowanie sekretu — Secret Key</title>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@700;900&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- secrets.js — oryginalny plik z iancoleman.io/shamir (MIT) -->
+    <script>
+// @preserve author Alexander Stetsyuk
+// @preserve author Glenn Rempe <glenn@rempe.us>
+// @license MIT
+
+/*jslint passfail: false, bitwise: true, nomen: true, plusplus: true, todo: false, maxerr: 1000 */
+/*global define, require, module, exports, window, Uint32Array, sjcl */
+
+// eslint : http://eslint.org/docs/configuring/
+/*eslint-env node, browser, jasmine, sjcl */
+/*eslint no-underscore-dangle:0 */
+
+// UMD (Universal Module Definition)
+// Uses Node, AMD or browser globals to create a module. This module creates
+// a global even when AMD is used. This is useful if you have some scripts
+// that are loaded by an AMD loader, but they still want access to globals.
+// See : https://github.com/umdjs/umd
+// See : https://github.com/umdjs/umd/blob/master/returnExportsGlobal.js
+//
+(function (root, factory) {
+    "use strict";
+
+    if (typeof define === "function" && define.amd) {
+        // AMD. Register as an anonymous module.
+        define([], function () {
+            /*eslint-disable no-return-assign */
+            return (root.secrets = factory());
+            /*eslint-enable no-return-assign */
+        });
+    } else if (typeof exports === "object") {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        module.exports = factory(require("crypto"));
+    } else {
+        // Browser globals (root is window)
+        root.secrets = factory(root.crypto);
+    }
+}(this, function (crypto) {
+    "use strict";
+
+    var defaults,
+        config,
+        preGenPadding,
+        runCSPRNGTest,
+        sjclParanoia,
+        CSPRNGTypes;
+
+    function reset() {
+        defaults = {
+            bits: 8, // default number of bits
+            radix: 16, // work with HEX by default
+            minBits: 3,
+            maxBits: 20, // this permits 1,048,575 shares, though going this high is NOT recommended in JS!
+            bytesPerChar: 2,
+            maxBytesPerChar: 6, // Math.pow(256,7) > Math.pow(2,53)
+
+            // Primitive polynomials (in decimal form) for Galois Fields GF(2^n), for 2 <= n <= 30
+            // The index of each term in the array corresponds to the n for that polynomial
+            // i.e. to get the polynomial for n=16, use primitivePolynomials[16]
+            primitivePolynomials: [null, null, 1, 3, 3, 5, 3, 3, 29, 17, 9, 5, 83, 27, 43, 3, 45, 9, 39, 39, 9, 5, 3, 33, 27, 9, 71, 39, 9, 5, 83]
+        };
+        config = {};
+        preGenPadding = new Array(1024).join("0"); // Pre-generate a string of 1024 0's for use by padLeft().
+        runCSPRNGTest = true;
+        sjclParanoia = 10;
+
+        // WARNING : Never use 'testRandom' except for testing.
+        CSPRNGTypes = ["nodeCryptoRandomBytes", "browserCryptoGetRandomValues", "browserSJCLRandom", "testRandom"];
+    }
+
+    function isSetRNG() {
+        if (config && config.rng && typeof config.rng === "function") {
+            return true;
+        }
+
+        return false;
+    }
+
+    // Pads a string `str` with zeros on the left so that its length is a multiple of `bits`
+    function padLeft(str, multipleOfBits) {
+        var missing;
+
+        if (multipleOfBits === 0 || multipleOfBits === 1) {
+            return str;
+        }
+
+        if (multipleOfBits && multipleOfBits > 1024) {
+            throw new Error("Padding must be multiples of no larger than 1024 bits.");
+        }
+
+        multipleOfBits = multipleOfBits || config.bits;
+
+        if (str) {
+            missing = str.length % multipleOfBits;
+        }
+
+        if (missing) {
+            return (preGenPadding + str).slice(-(multipleOfBits - missing + str.length));
+        }
+
+        return str;
+    }
+
+    function hex2bin(str) {
+        var bin = "",
+            num,
+            i;
+
+        for (i = str.length - 1; i >= 0; i--) {
+            num = parseInt(str[i], 16);
+
+            if (isNaN(num)) {
+                throw new Error("Invalid hex character.");
+            }
+
+            bin = padLeft(num.toString(2), 4) + bin;
+        }
+        return bin;
+    }
+
+    function bin2hex(str) {
+        var hex = "",
+            num,
+            i;
+
+        str = padLeft(str, 4);
+
+        for (i = str.length; i >= 4; i -= 4) {
+            num = parseInt(str.slice(i - 4, i), 2);
+            if (isNaN(num)) {
+                throw new Error("Invalid binary character.");
+            }
+            hex = num.toString(16) + hex;
+        }
+
+        return hex;
+    }
+
+    // Browser supports crypto.getRandomValues()
+    function hasCryptoGetRandomValues() {
+        if (crypto &&
+            typeof crypto === "object" &&
+            (typeof crypto.getRandomValues === "function" || typeof crypto.getRandomValues === "object") &&
+            (typeof Uint32Array === "function" || typeof Uint32Array === "object")) {
+                return true;
+            }
+
+        return false;
+    }
+
+    // Node.js support for crypto.randomBytes()
+    function hasCryptoRandomBytes() {
+        if (typeof crypto === "object" &&
+            typeof crypto.randomBytes === "function") {
+            return true;
+        }
+
+        return false;
+    }
+
+    // Stanford Javascript Crypto Library Support
+    function hasSJCL() {
+        if (typeof sjcl === "object" &&
+            typeof sjcl.random === "object") {
+            return true;
+        }
+
+        return false;
+    }
+
+    // Returns a pseudo-random number generator of the form function(bits){}
+    // which should output a random string of 1's and 0's of length `bits`.
+    // `type` (Optional) : A string representing the CSPRNG that you want to
+    // force to be loaded, overriding feature detection. Can be one of:
+    //    "nodeCryptoRandomBytes"
+    //    "browserCryptoGetRandomValues"
+    //    "browserSJCLRandom"
+    //
+    function getRNG(type) {
+
+        function construct(bits, arr, radix, size) {
+            var i = 0,
+                len,
+                str = "",
+                parsedInt;
+
+            if (arr) {
+                len = arr.length - 1;
+            }
+
+            while (i < len || (str.length < bits)) {
+                // convert any negative nums to positive with Math.abs()
+                parsedInt = Math.abs(parseInt(arr[i], radix));
+                str = str + padLeft(parsedInt.toString(2), size);
+                i++;
+            }
+
+            str = str.substr(-bits);
+
+            // return null so this result can be re-processed if the result is all 0's.
+            if ((str.match(/0/g) || []).length === str.length) {
+                return null;
+            }
+
+            return str;
+        }
+
+        // Node.js : crypto.randomBytes()
+        // Note : Node.js and crypto.randomBytes() uses the OpenSSL RAND_bytes() function for its CSPRNG.
+        //        Node.js will need to have been compiled with OpenSSL for this to work.
+        // See : https://github.com/joyent/node/blob/d8baf8a2a4481940bfed0196308ae6189ca18eee/src/node_crypto.cc#L4696
+        // See : https://www.openssl.org/docs/crypto/rand.html
+        function nodeCryptoRandomBytes(bits) {
+            var buf,
+                bytes,
+                radix,
+                size,
+                str = null;
+
+            radix = 16;
+            size = 4;
+            bytes = Math.ceil(bits / 8);
+
+            while (str === null) {
+                buf = crypto.randomBytes(bytes);
+                str = construct(bits, buf.toString("hex"), radix, size);
+            }
+
+            return str;
+        }
+
+        // Browser : crypto.getRandomValues()
+        // See : https://dvcs.w3.org/hg/webcrypto-api/raw-file/tip/spec/Overview.html#dfn-Crypto
+        // See : https://developer.mozilla.org/en-US/docs/Web/API/RandomSource/getRandomValues
+        // Supported Browsers : http://caniuse.com/#search=crypto.getRandomValues
+        function browserCryptoGetRandomValues(bits) {
+            var elems,
+                radix,
+                size,
+                str = null;
+
+            radix = 10;
+            size = 32;
+            elems = Math.ceil(bits / 32);
+            while (str === null) {
+                str = construct(bits, crypto.getRandomValues(new Uint32Array(elems)), radix, size);
+            }
+
+            return str;
+        }
+
+        // Browser SJCL : If the Stanford Javascript Crypto Library (SJCL) is loaded in the browser
+        // then use it as a fallback CSPRNG when crypto.getRandomValues() is not available.
+        // It may require some time and mouse movements to be fully seeded. Uses a modified version
+        // of the Fortuna RNG.
+        // See : https://bitwiseshiftleft.github.io/sjcl/
+        function browserSJCLRandom(bits) {
+            var elems,
+                radix,
+                size,
+                str = null;
+
+            radix = 10;
+            size = 32;
+            elems = Math.ceil(bits / 32);
+
+            if(sjcl.random.isReady(sjclParanoia)) {
+                str = construct(bits, sjcl.random.randomWords(elems, sjclParanoia), radix, size);
+            } else {
+                throw new Error("SJCL isn't finished seeding the RNG yet.");
+            }
+
+            return str;
+        }
+
+        // /////////////////////////////////////////////////////////////
+        // WARNING : DO NOT USE. For testing purposes only.
+        // /////////////////////////////////////////////////////////////
+        // This function will return repeatable non-random test bits. Can be used
+        // for testing only. Node.js does not return proper random bytes
+        // when run within a PhantomJS container.
+        function testRandom(bits) {
+            var arr,
+                elems,
+                int,
+                radix,
+                size,
+                str = null;
+
+            radix = 10;
+            size = 32;
+            elems = Math.ceil(bits / 32);
+            int = 123456789;
+            arr = new Uint32Array(elems);
+
+            // Fill every element of the Uint32Array with the same int.
+            for (var i = 0; i < arr.length; i++) {
+                arr[i] = int;
+            }
+
+            while (str === null) {
+                str = construct(bits, arr, radix, size);
+            }
+
+            return str;
+        }
+
+        // Return a random generator function for browsers that support HTML5
+        // crypto.getRandomValues(), Node.js compiled with OpenSSL support.
+        // or the Stanford Javascript Crypto Library Fortuna RNG.
+        // WARNING : NEVER use testRandom outside of a testing context. Totally non-random!
+        if (type && type === "testRandom") {
+            config.typeCSPRNG = type;
+            return testRandom;
+        } else if (type && type === "nodeCryptoRandomBytes") {
+            config.typeCSPRNG = type;
+            return nodeCryptoRandomBytes;
+        } else if (type && type === "browserCryptoGetRandomValues") {
+            config.typeCSPRNG = type;
+            return browserCryptoGetRandomValues;
+        } else if (type && type === "browserSJCLRandom") {
+            runCSPRNGTest = false;
+            config.typeCSPRNG = type;
+            return browserSJCLRandom;
+        } else if (hasCryptoRandomBytes()) {
+            config.typeCSPRNG = "nodeCryptoRandomBytes";
+            return nodeCryptoRandomBytes;
+        } else if (hasCryptoGetRandomValues()) {
+            config.typeCSPRNG = "browserCryptoGetRandomValues";
+            return browserCryptoGetRandomValues;
+        } else if (hasSJCL()) {
+            runCSPRNGTest = false;
+            config.typeCSPRNG = "browserSJCLRandom";
+            return browserSJCLRandom;
+        }
+
+    }
+
+    // Splits a number string `bits`-length segments, after first
+    // optionally zero-padding it to a length that is a multiple of `padLength.
+    // Returns array of integers (each less than 2^bits-1), with each element
+    // representing a `bits`-length segment of the input string from right to left,
+    // i.e. parts[0] represents the right-most `bits`-length segment of the input string.
+    function splitNumStringToIntArray(str, padLength) {
+        var parts = [],
+            i;
+
+        if (padLength) {
+            str = padLeft(str, padLength);
+        }
+
+        for (i = str.length; i > config.bits; i -= config.bits) {
+            parts.push(parseInt(str.slice(i - config.bits, i), 2));
+        }
+
+        parts.push(parseInt(str.slice(0, i), 2));
+
+        return parts;
+    }
+
+    // Polynomial evaluation at `x` using Horner's Method
+    // NOTE: fx=fx * x + coeff[i] ->  exp(log(fx) + log(x)) + coeff[i],
+    //       so if fx===0, just set fx to coeff[i] because
+    //       using the exp/log form will result in incorrect value
+    function horner(x, coeffs) {
+        var logx = config.logs[x],
+            fx = 0,
+            i;
+
+        for (i = coeffs.length - 1; i >= 0; i--) {
+            if (fx !== 0) {
+                fx = config.exps[(logx + config.logs[fx]) % config.maxShares] ^ coeffs[i];
+            } else {
+                fx = coeffs[i];
+            }
+        }
+
+        return fx;
+    }
+
+    // Evaluate the Lagrange interpolation polynomial at x = `at`
+    // using x and y Arrays that are of the same length, with
+    // corresponding elements constituting points on the polynomial.
+    function lagrange(at, x, y) {
+        var sum = 0,
+            len,
+            product,
+            i,
+            j;
+
+        for (i = 0, len = x.length; i < len; i++) {
+            if (y[i]) {
+
+                product = config.logs[y[i]];
+
+                for (j = 0; j < len; j++) {
+                    if (i !== j) {
+                        if (at === x[j]) { // happens when computing a share that is in the list of shares used to compute it
+                            product = -1; // fix for a zero product term, after which the sum should be sum^0 = sum, not sum^1
+                            break;
+                        }
+                        product = (product + config.logs[at ^ x[j]] - config.logs[x[i] ^ x[j]] + config.maxShares) % config.maxShares; // to make sure it's not negative
+                    }
+                }
+
+                // though exps[-1] === undefined and undefined ^ anything = anything in
+                // chrome, this behavior may not hold everywhere, so do the check
+                sum = product === -1 ? sum : sum ^ config.exps[product];
+            }
+
+        }
+
+        return sum;
+    }
+
+    // This is the basic polynomial generation and evaluation function
+    // for a `config.bits`-length secret (NOT an arbitrary length)
+    // Note: no error-checking at this stage! If `secret` is NOT
+    // a NUMBER less than 2^bits-1, the output will be incorrect!
+    function getShares(secret, numShares, threshold) {
+        var shares = [],
+            coeffs = [secret],
+            i,
+            len;
+
+        for (i = 1; i < threshold; i++) {
+            coeffs[i] = parseInt(config.rng(config.bits), 2);
+        }
+
+        for (i = 1, len = numShares + 1; i < len; i++) {
+            shares[i - 1] = {
+                x: i,
+                y: horner(i, coeffs)
+            };
+        }
+
+        return shares;
+    }
+
+    function constructPublicShareString(bits, id, data) {
+        var bitsBase36,
+            idHex,
+            idMax,
+            idPaddingLen,
+            newShareString;
+
+        id = parseInt(id, config.radix);
+        bits = parseInt(bits, 10) || config.bits;
+        bitsBase36 = bits.toString(36).toUpperCase();
+        idMax = Math.pow(2, bits) - 1;
+        idPaddingLen = idMax.toString(config.radix).length;
+        idHex = padLeft(id.toString(config.radix), idPaddingLen);
+
+        if (typeof id !== "number" || id % 1 !== 0 || id < 1 || id > idMax) {
+            throw new Error("Share id must be an integer between 1 and " + idMax + ", inclusive.");
+        }
+
+        newShareString = bitsBase36 + idHex + data;
+
+        return newShareString;
+    }
+
+    // EXPORTED FUNCTIONS
+    // //////////////////
+
+    var secrets = {
+
+        init: function (bits, rngType) {
+            var logs = [],
+                exps = [],
+                x = 1,
+                primitive,
+                i;
+
+            // reset all config back to initial state
+            reset();
+
+            if (bits && (typeof bits !== "number" || bits % 1 !== 0 || bits < defaults.minBits || bits > defaults.maxBits)) {
+                throw new Error("Number of bits must be an integer between " + defaults.minBits + " and " + defaults.maxBits + ", inclusive.");
+            }
+
+            if (rngType && CSPRNGTypes.indexOf(rngType) === -1) {
+                throw new Error("Invalid RNG type argument : '" + rngType + "'");
+            }
+
+            config.radix = defaults.radix;
+            config.bits = bits || defaults.bits;
+            config.size = Math.pow(2, config.bits);
+            config.maxShares = config.size - 1;
+
+            // Construct the exp and log tables for multiplication.
+            primitive = defaults.primitivePolynomials[config.bits];
+
+            for (i = 0; i < config.size; i++) {
+                exps[i] = x;
+                logs[x] = i;
+                x = x << 1;              // Left shift assignment
+                if (x >= config.size) {
+                    x = x ^ primitive;   // Bitwise XOR assignment
+                    x = x & config.maxShares;  // Bitwise AND assignment
+                }
+            }
+
+            config.logs = logs;
+            config.exps = exps;
+
+            if (rngType) {
+                this.setRNG(rngType);
+            }
+
+            if (!isSetRNG()) {
+                this.setRNG();
+            }
+
+            // Setup SJCL and start collecting entropy from mouse movements
+            if (hasSJCL() && config.typeCSPRNG === "browserSJCLRandom") {
+                /*eslint-disable new-cap */
+                sjcl.random = new sjcl.prng(sjclParanoia);
+                /*eslint-enable new-cap */
+
+                // In a Browser
+                if (hasCryptoGetRandomValues()) {
+                    // Collects entropy from browser mouse movement
+                    // which obviously won't work in Node.js.
+                    sjcl.random.startCollectors();
+                }
+
+                // see SJCL with browser or Node.js RNG if available.
+                this.seedRNG();
+            }
+
+            if (!isSetRNG() || !config.bits || !config.size || !config.maxShares || !config.logs || !config.exps || config.logs.length !== config.size || config.exps.length !== config.size) {
+                throw new Error("Initialization failed.");
+            }
+
+        },
+
+        // Pass in additional secure entropy, and an estimate of the bits of entropy
+        // provided, and a source name, and it will be used to seed the SJCL PRNG. This is
+        // useful since SJCL may take a while to be seeded since it depends on mouse
+        // movement and this can kickstart the generator almost immediately. SJCL will
+        // also continue to collect entropy from mouse movements after seeding.
+        //
+        // e.g. from random data sources like:
+        // https://api.random.org/json-rpc/1/
+        // https://entropy.ubuntu.com/?challenge=123
+        // https://qrng.anu.edu.au/API/api-demo.php
+        //
+        // See `examples/example_js_global.html` for sample usage with an
+        // external source of entropy.
+        seedRNG: function (data, estimatedEntropy, source) {
+
+            var bytes, rand;
+
+            estimatedEntropy = parseInt(estimatedEntropy, 10);
+            source = source || "seedRNG";
+
+            // Seed with browser RNG
+            if (hasSJCL() && hasCryptoGetRandomValues()) {
+                bytes = new Uint32Array(256);
+                rand = crypto.getRandomValues(bytes);
+                //console.log(rand);
+                sjcl.random.addEntropy(rand, 2048, "cryptoGetRandomValues");
+            }
+
+            // See with Node.js RNG (Async)
+            if (hasSJCL() && hasCryptoRandomBytes()) {
+                crypto.randomBytes(256, function(ex, buf) {
+                  if (ex) { throw ex; }
+                  //console.log("Have %d bytes of random data containing %s", buf.length, buf.toString('hex'));
+                  sjcl.random.addEntropy(buf.toString("hex"), 2048, "cryptoRandomBytes");
+                });
+            }
+
+            if (hasSJCL() && data && estimatedEntropy && source && config.typeCSPRNG === "browserSJCLRandom") {
+                sjcl.random.addEntropy(data, estimatedEntropy, source);
+            }
+        },
+
+        // Evaluates the Lagrange interpolation polynomial at x=`at` for
+        // individual config.bits-length segments of each share in the `shares`
+        // Array. Each share is expressed in base `inputRadix`. The output
+        // is expressed in base `outputRadix'.
+        combine: function (shares, at) {
+            var i,
+                j,
+                len,
+                len2,
+                result = "",
+                setBits,
+                share,
+                splitShare,
+                x = [],
+                y = [];
+
+            at = at || 0;
+
+            for (i = 0, len = shares.length; i < len; i++) {
+                share = this.extractShareComponents(shares[i]);
+
+                // All shares must have the same bits settings.
+                if (setBits === undefined) {
+                    setBits = share.bits;
+                } else if (share.bits !== setBits) {
+                    throw new Error("Mismatched shares: Different bit settings.");
+                }
+
+                // Reset everything to the bit settings of the shares.
+                if (config.bits !== setBits) {
+                    this.init(setBits);
+                }
+
+                // Proceed if this share.id is not already in the Array 'x' and
+                // then split each share's hex data into an Array of Integers,
+                // then 'rotate' those arrays where the first element of each row is converted to
+                // its own array, the second element of each to its own Array, and so on for all of the rest.
+                // Essentially zipping all of the shares together.
+                //
+                // e.g.
+                //   [ 193, 186, 29, 150, 5, 120, 44, 46, 49, 59, 6, 1, 102, 98, 177, 196 ]
+                //   [ 53, 105, 139, 49, 187, 240, 91, 92, 98, 118, 12, 2, 204, 196, 127, 149 ]
+                //   [ 146, 211, 249, 167, 209, 136, 118, 114, 83, 77, 10, 3, 170, 166, 206, 81 ]
+                //
+                // becomes:
+                //
+                // [ [ 193, 53, 146 ],
+                //   [ 186, 105, 211 ],
+                //   [ 29, 139, 249 ],
+                //   [ 150, 49, 167 ],
+                //   [ 5, 187, 209 ],
+                //   [ 120, 240, 136 ],
+                //   [ 44, 91, 118 ],
+                //   [ 46, 92, 114 ],
+                //   [ 49, 98, 83 ],
+                //   [ 59, 118, 77 ],
+                //   [ 6, 12, 10 ],
+                //   [ 1, 2, 3 ],
+                //   [ 102, 204, 170 ],
+                //   [ 98, 196, 166 ],
+                //   [ 177, 127, 206 ],
+                //   [ 196, 149, 81 ] ]
+                //
+                if (x.indexOf(share.id) === -1) {
+                    x.push(share.id);
+                    splitShare = splitNumStringToIntArray(hex2bin(share.data));
+                    for (j = 0, len2 = splitShare.length; j < len2; j++) {
+                        y[j] = y[j] || [];
+                        y[j][x.length - 1] = splitShare[j];
+                    }
+                }
+
+            }
+
+            // Extract the secret from the 'rotated' share data and return a
+            // string of Binary digits which represent the secret directly. or in the
+            // case of a newShare() return the binary string representing just that
+            // new share.
+            for (i = 0, len = y.length; i < len; i++) {
+                result = padLeft(lagrange(at, x, y[i]).toString(2)) + result;
+            }
+
+            // If 'at' is non-zero combine() was called from newShare(). In this
+            // case return the result (the new share data) directly.
+            //
+            // Otherwise find the first '1' which was added in the share() function as a padding marker
+            // and return only the data after the padding and the marker. Convert this Binary string
+            // to hex, which represents the final secret result (which can be converted from hex back
+            // to the original string in user space using `hex2str()`).
+            return bin2hex(at >= 1 ? result : result.slice(result.indexOf("1") + 1));
+        },
+
+        getConfig: function () {
+            var obj = {};
+            obj.radix = config.radix;
+            obj.bits = config.bits;
+            obj.maxShares = config.maxShares;
+            obj.hasCSPRNG = isSetRNG();
+            obj.typeCSPRNG = config.typeCSPRNG;
+            return obj;
+        },
+
+        // Given a public share, extract the bits (Integer), share ID (Integer), and share data (Hex)
+        // and return an Object containing those components.
+        extractShareComponents: function (share) {
+            var bits,
+                id,
+                idLen,
+                max,
+                obj = {},
+                regexStr,
+                shareComponents;
+
+            // Extract the first char which represents the bits in Base 36
+            bits = parseInt(share.substr(0, 1), 36);
+
+            if (bits && (typeof bits !== "number" || bits % 1 !== 0 || bits < defaults.minBits || bits > defaults.maxBits)) {
+                throw new Error("Invalid share : Number of bits must be an integer between " + defaults.minBits + " and " + defaults.maxBits + ", inclusive.");
+            }
+
+            // calc the max shares allowed for given bits
+            max = Math.pow(2, bits) - 1;
+
+            // Determine the ID length which is variable and based on the bit count.
+            idLen = (Math.pow(2, bits) - 1).toString(config.radix).length;
+
+            // Extract all the parts now that the segment sizes are known.
+            regexStr = "^([a-kA-K3-9]{1})([a-fA-F0-9]{" + idLen + "})([a-fA-F0-9]+)$";
+            shareComponents = new RegExp(regexStr).exec(share);
+
+            // The ID is a Hex number and needs to be converted to an Integer
+            if (shareComponents) {
+                id = parseInt(shareComponents[2], config.radix);
+            }
+
+            if (typeof id !== "number" || id % 1 !== 0 || id < 1 || id > max) {
+                throw new Error("Invalid share : Share id must be an integer between 1 and " + config.maxShares + ", inclusive.");
+            }
+
+            if (shareComponents && shareComponents[3]) {
+                obj.bits = bits;
+                obj.id = id;
+                obj.data = shareComponents[3];
+                return obj;
+            }
+
+            throw new Error("The share data provided is invalid : " + share);
+
+        },
+
+        // Set the PRNG to use. If no RNG function is supplied, pick a default using getRNG()
+        setRNG: function (rng) {
+
+            var errPrefix = "Random number generator is invalid ",
+                errSuffix = " Supply an CSPRNG of the form function(bits){} that returns a string containing 'bits' number of random 1's and 0's.";
+
+            if (rng && typeof rng === "string" && CSPRNGTypes.indexOf(rng) === -1) {
+                throw new Error("Invalid RNG type argument : '" + rng + "'");
+            }
+
+            // If RNG was not specified at all,
+            // try to pick one appropriate for this env.
+            if (!rng) {
+                rng = getRNG();
+            }
+
+            // If `rng` is a string, try to forcibly
+            // set the RNG to the type specified.
+            if (rng && typeof rng === "string") {
+                rng = getRNG(rng);
+            }
+
+            if (runCSPRNGTest) {
+
+                if (rng && typeof rng !== "function") {
+                    throw new Error(errPrefix + "(Not a function)." + errSuffix);
+                }
+
+                if (rng && typeof rng(config.bits) !== "string") {
+                    throw new Error(errPrefix + "(Output is not a string)." + errSuffix);
+                }
+
+                if (rng && !parseInt(rng(config.bits), 2)) {
+                    throw new Error(errPrefix + "(Binary string output not parseable to an Integer)." + errSuffix);
+                }
+
+                if (rng && rng(config.bits).length > config.bits) {
+                    throw new Error(errPrefix + "(Output length is greater than config.bits)." + errSuffix);
+                }
+
+                if (rng && rng(config.bits).length < config.bits) {
+                    throw new Error(errPrefix + "(Output length is less than config.bits)." + errSuffix);
+                }
+
+            }
+
+            config.rng = rng;
+
+            return true;
+        },
+
+        // Converts a given UTF16 character string to the HEX representation.
+        // Each character of the input string is represented by
+        // `bytesPerChar` bytes in the output string which defaults to 2.
+        str2hex: function (str, bytesPerChar) {
+            var hexChars,
+                max,
+                out = "",
+                neededBytes,
+                num,
+                i,
+                len;
+
+            if (typeof str !== "string") {
+                throw new Error("Input must be a character string.");
+            }
+
+            if (!bytesPerChar) {
+                bytesPerChar = defaults.bytesPerChar;
+            }
+
+            if (typeof bytesPerChar !== "number" || bytesPerChar < 1 || bytesPerChar > defaults.maxBytesPerChar || bytesPerChar % 1 !== 0) {
+                throw new Error("Bytes per character must be an integer between 1 and " + defaults.maxBytesPerChar + ", inclusive.");
+            }
+
+            hexChars = 2 * bytesPerChar;
+            max = Math.pow(16, hexChars) - 1;
+
+            for (i = 0, len = str.length; i < len; i++) {
+                num = str[i].charCodeAt();
+
+                if (isNaN(num)) {
+                    throw new Error("Invalid character: " + str[i]);
+                }
+
+                if (num > max) {
+                    neededBytes = Math.ceil(Math.log(num + 1) / Math.log(256));
+                    throw new Error("Invalid character code (" + num + "). Maximum allowable is 256^bytes-1 (" + max + "). To convert this character, use at least " + neededBytes + " bytes.");
+                }
+
+                out = padLeft(num.toString(16), hexChars) + out;
+            }
+            return out;
+        },
+
+        // Converts a given HEX number string to a UTF16 character string.
+        hex2str: function (str, bytesPerChar) {
+            var hexChars,
+                out = "",
+                i,
+                len;
+
+            if (typeof str !== "string") {
+                throw new Error("Input must be a hexadecimal string.");
+            }
+            bytesPerChar = bytesPerChar || defaults.bytesPerChar;
+
+            if (typeof bytesPerChar !== "number" || bytesPerChar % 1 !== 0 || bytesPerChar < 1 || bytesPerChar > defaults.maxBytesPerChar) {
+                throw new Error("Bytes per character must be an integer between 1 and " + defaults.maxBytesPerChar + ", inclusive.");
+            }
+
+            hexChars = 2 * bytesPerChar;
+
+            str = padLeft(str, hexChars);
+
+            for (i = 0, len = str.length; i < len; i += hexChars) {
+                out = String.fromCharCode(parseInt(str.slice(i, i + hexChars), 16)) + out;
+            }
+
+            return out;
+        },
+
+        // Generates a random bits-length number string using the PRNG
+        random: function (bits) {
+
+            if (typeof bits !== "number" || bits % 1 !== 0 || bits < 2 || bits > 65536) {
+                throw new Error("Number of bits must be an Integer between 1 and 65536.");
+            }
+
+            if (config.typeCSPRNG === "browserSJCLRandom" && sjcl.random.isReady(sjclParanoia) < 1) {
+                throw new Error("SJCL isn't finished seeding the RNG yet. Needs new entropy added or more mouse movement.");
+            }
+
+            return bin2hex(config.rng(bits));
+        },
+
+        // Divides a `secret` number String str expressed in radix `inputRadix` (optional, default 16)
+        // into `numShares` shares, each expressed in radix `outputRadix` (optional, default to `inputRadix`),
+        // requiring `threshold` number of shares to reconstruct the secret.
+        // Optionally, zero-pads the secret to a length that is a multiple of padLength before sharing.
+        share: function (secret, numShares, threshold, padLength) {
+            var neededBits,
+                subShares,
+                x = new Array(numShares),
+                y = new Array(numShares),
+                i,
+                j,
+                len;
+
+            // Security:
+            // For additional security, pad in multiples of 128 bits by default.
+            // A small trade-off in larger share size to help prevent leakage of information
+            // about small-ish secrets and increase the difficulty of attacking them.
+            padLength = padLength || 128;
+
+            if (typeof secret !== "string") {
+                throw new Error("Secret must be a string.");
+            }
+
+            if (typeof numShares !== "number" || numShares % 1 !== 0 || numShares < 2) {
+                throw new Error("Number of shares must be an integer between 2 and 2^bits-1 (" + config.maxShares + "), inclusive.");
+            }
+
+            if (numShares > config.maxShares) {
+                neededBits = Math.ceil(Math.log(numShares + 1) / Math.LN2);
+                throw new Error("Number of shares must be an integer between 2 and 2^bits-1 (" + config.maxShares + "), inclusive. To create " + numShares + " shares, use at least " + neededBits + " bits.");
+            }
+
+            if (typeof threshold !== "number" || threshold % 1 !== 0 || threshold < 2) {
+                throw new Error("Threshold number of shares must be an integer between 2 and 2^bits-1 (" + config.maxShares + "), inclusive.");
+            }
+
+            if (threshold > config.maxShares) {
+                neededBits = Math.ceil(Math.log(threshold + 1) / Math.LN2);
+                throw new Error("Threshold number of shares must be an integer between 2 and 2^bits-1 (" + config.maxShares + "), inclusive.  To use a threshold of " + threshold + ", use at least " + neededBits + " bits.");
+            }
+
+            if (threshold > numShares) {
+                throw new Error("Threshold number of shares was " + threshold + " but must be less than or equal to the " + numShares + " shares specified as the total to generate.");
+            }
+
+            if (typeof padLength !== "number" || padLength % 1 !== 0 || padLength < 0 || padLength > 1024) {
+                throw new Error("Zero-pad length must be an integer between 0 and 1024 inclusive.");
+            }
+
+            secret = "1" + hex2bin(secret); // append a 1 as a marker so that we can preserve the correct number of leading zeros in our secret
+            secret = splitNumStringToIntArray(secret, padLength);
+
+            for (i = 0, len = secret.length; i < len; i++) {
+                subShares = getShares(secret[i], numShares, threshold);
+                for (j = 0; j < numShares; j++) {
+                    x[j] = x[j] || subShares[j].x.toString(config.radix);
+                    y[j] = padLeft(subShares[j].y.toString(2)) + (y[j] || "");
+                }
+            }
+
+            for (i = 0; i < numShares; i++) {
+                x[i] = constructPublicShareString(config.bits, x[i], bin2hex(y[i]));
+            }
+
+            return x;
+        },
+
+        // Generate a new share with id `id` (a number between 1 and 2^bits-1)
+        // `id` can be a Number or a String in the default radix (16)
+        newShare: function (id, shares) {
+            var share;
+
+            if (id && typeof id === "string") {
+                id = parseInt(id, config.radix);
+            }
+
+            if (id && shares && shares[0]) {
+                share = this.extractShareComponents(shares[0]);
+                return constructPublicShareString(share.bits, id, this.combine(shares, id));
+            }
+
+            throw new Error("Invalid 'id' or 'shares' Array argument to newShare().");
+        },
+
+        /* test-code */
+        // export private functions so they can be unit tested directly.
+        _reset: reset,
+        _padLeft: padLeft,
+        _hex2bin: hex2bin,
+        _bin2hex: bin2hex,
+        _hasCryptoGetRandomValues: hasCryptoGetRandomValues,
+        _hasCryptoRandomBytes: hasCryptoRandomBytes,
+        _hasSJCL: hasSJCL,
+        _getRNG: getRNG,
+        _isSetRNG: isSetRNG,
+        _splitNumStringToIntArray: splitNumStringToIntArray,
+        _horner: horner,
+        _lagrange: lagrange,
+        _getShares: getShares,
+        _constructPublicShareString: constructPublicShareString
+        /* end-test-code */
+
+    };
+
+    // Always initialize secrets with default settings.
+    secrets.init();
+
+    return secrets;
+
+}));
+
+    </script>
+
+    <style>
+        :root {
+            --bg:             #0a0c10;
+            --surface:        #111318;
+            --surface2:       #181c24;
+            --surface3:       #1e2230;
+            --border:         #222630;
+            --border-glow:    #2a3044;
+            --accent:         #c084fc;
+            --accent2:        #818cf8;
+            --accent-dim:     rgba(192,132,252,0.10);
+            --text:           #e2e8f0;
+            --text-muted:     #64748b;
+            --text-dim:       #94a3b8;
+            --success:        #4ade80;
+            --success-dim:    rgba(74,222,128,0.10);
+            --success-border: rgba(74,222,128,0.28);
+            --danger:         #f87171;
+            --danger-dim:     rgba(248,113,113,0.10);
+            --danger-border:  rgba(248,113,113,0.28);
+            --info:           #38bdf8;
+            --info-dim:       rgba(56,189,248,0.10);
+            --info-border:    rgba(56,189,248,0.28);
+            --warning:        #fbbf24;
+            --warning-dim:    rgba(251,191,36,0.08);
+            --warning-border: rgba(251,191,36,0.28);
+            --mono:    'Space Mono', monospace;
+            --sans:    'Syne', sans-serif;
+            --heading: 'Bungee', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        * { scrollbar-width: thin; scrollbar-color: var(--border-glow) var(--bg); }
+
+        html, body { background: var(--bg); color: var(--text); font-family: var(--sans); }
+        body {
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 48px 16px 80px;
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(192,132,252,0.08) 0%, transparent 60%),
+                linear-gradient(180deg, #0a0c10 0%, #0d0f14 100%);
+            animation: fadeIn 0.6s ease both;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ── LOADING SCREEN ── */
+        .loading-screen {
+            position: fixed; inset: 0;
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 20px;
+            z-index: 9999;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+            pointer-events: none;
+        }
+        .loading-screen.show { opacity: 1; visibility: visible; pointer-events: all; }
+        .loading-logo {
+            width: 110px; height: 110px;
+            filter: drop-shadow(0 0 18px rgba(192,132,252,0.55));
+            animation: logoPulse 1.6s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%,100% { transform: scale(1);    filter: drop-shadow(0 0 18px rgba(192,132,252,0.50)); }
+            50%     { transform: scale(1.07); filter: drop-shadow(0 0 32px rgba(192,132,252,0.85)); }
+        }
+        .loading-bar-track { width: 240px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+        .loading-bar-fill {
+            height: 100%; width: 40%;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            border-radius: 2px;
+            animation: barSweep 1.5s ease-in-out infinite;
+        }
+        @keyframes barSweep { 0% { transform: translateX(-200%); } 100% { transform: translateX(400%); } }
+        .loading-text { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase; }
+
+        /* ── HEADER ── */
+        .header { text-align: center; margin-bottom: 36px; position: relative; z-index: 1; }
+        .card-logo {
+            width: 70px; height: 70px; margin: 0 auto 1px; display: block;
+            filter: drop-shadow(0 0 14px rgba(192,132,252,0.45));
+            animation: logoFloat 4s ease-in-out infinite;
+        }
+        @keyframes logoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+        h1 {
+            font-family: var(--heading); font-size: 2.8rem; font-weight: 400;
+            letter-spacing: 0.08em; text-transform: uppercase; line-height: 1;
+            background: linear-gradient(140deg, #ffffff 35%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; margin-bottom: 5px;
+        }
+        .header-sub { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.22em; color: var(--text-muted); text-transform: uppercase; }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; padding: 36px 32px;
+            width: 100%; max-width: 720px;
+            position: relative; z-index: 1; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(192,132,252,0.5), transparent);
+        }
+        .card.shake { animation: shake 0.45s 0.05s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%     { transform: translateX(-7px); }
+            40%     { transform: translateX(7px); }
+            60%     { transform: translateX(-4px); }
+            80%     { transform: translateX(4px); }
+        }
+
+        /* ── ALERT ── */
+        .alert {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 14px; border-radius: 10px;
+            font-size: 0.82rem; line-height: 1.55;
+            margin-bottom: 18px; position: relative; z-index: 1;
+        }
+        .alert svg { flex-shrink: 0; margin-top: 1px; }
+        .alert-error   { background: var(--danger-dim);  border: 1px solid var(--danger-border);  color: var(--danger); }
+        .alert-success { background: var(--success-dim); border: 1px solid var(--success-border); color: var(--success); }
+        .alert.hidden  { display: none; }
+        @keyframes alertIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── WARNING ── */
+        .warning {
+            background: var(--warning-dim); border: 1px solid var(--warning-border);
+            border-radius: 12px; padding: 14px 16px;
+            font-size: 0.82rem; color: var(--warning); margin-bottom: 28px; line-height: 1.6;
+        }
+        .warning strong { display: block; margin-bottom: 4px; font-size: 0.85rem; }
+
+        /* ── SECTION LABEL ── */
+        .section-label {
+            font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
+            text-transform: uppercase; color: var(--text-muted);
+            margin-bottom: 12px; margin-top: 24px;
+        }
+
+        /* ── DIVIDER ── */
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border-glow), transparent); margin: 24px 0; }
+
+        /* ── SECRET INPUT ── */
+        .secret-wrapper {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 12px; overflow: hidden;
+            transition: border-color 0.2s;
+            position: relative;
+        }
+        .secret-wrapper:focus-within { border-color: rgba(192,132,252,0.5); box-shadow: 0 0 0 3px rgba(192,132,252,0.07); }
+        .secret-wrapper textarea {
+            width: 100%; min-height: 90px; resize: vertical;
+            background: transparent; border: none; outline: none;
+            color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+            padding: 14px 16px; line-height: 1.65;
+        }
+        .secret-wrapper textarea::placeholder { color: var(--text-muted); }
+        .secret-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 14px; border-top: 1px solid var(--border);
+            background: var(--surface3);
+        }
+        .secret-len { font-family: var(--mono); font-size: 0.58rem; color: var(--text-muted); letter-spacing: 0.08em; }
+        .toggle-secret {
+            background: none; border: none; padding: 3px; color: var(--text-muted);
+            transition: color 0.15s; outline: none;
+        }
+        .toggle-secret:hover { color: var(--accent); }
+
+        /* ── PARAMS GRID ── */
+        .params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .param-card {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px 18px;
+            transition: border-color 0.2s;
+        }
+        .param-card:focus-within { border-color: rgba(192,132,252,0.4); box-shadow: 0 0 0 3px rgba(192,132,252,0.06); }
+        .param-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+        .param-label span { color: var(--accent); margin-left: 4px; }
+        .param-row { display: flex; align-items: center; gap: 10px; }
+        .param-btn {
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--surface3); color: var(--text-dim);
+            font-size: 1.1rem; font-weight: 700; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; flex-shrink: 0; outline: none;
+        }
+        .param-btn:hover { border-color: rgba(192,132,252,0.5); color: var(--accent); background: var(--accent-dim); }
+        .param-btn:active { transform: scale(0.93); }
+        .param-val {
+            flex: 1; text-align: center; font-family: var(--mono); font-size: 1.6rem;
+            font-weight: 700; color: var(--text); line-height: 1;
+        }
+        .param-hint { font-family: var(--mono); font-size: 0.56rem; color: var(--text-muted); margin-top: 8px; letter-spacing: 0.06em; }
+        /* slider dopasowanie do N */
+        .threshold-warning { font-family: var(--mono); font-size: 0.6rem; color: var(--warning); margin-top: 8px; display: none; }
+        .threshold-warning.show { display: block; }
+
+        /* ── ACTION BUTTONS ── */
+        .action-row { display: flex; gap: 10px; margin-top: 24px; }
+        .btn {
+            flex: 1; padding: 14px 20px; border-radius: 12px; font-family: var(--sans);
+            font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            transition: all 0.22s; outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(192,132,252,0.18), rgba(129,140,248,0.12));
+            border: 1px solid rgba(192,132,252,0.3); color: var(--text);
+        }
+        .btn-primary:hover { border-color: rgba(192,132,252,0.6); box-shadow: 0 0 28px rgba(192,132,252,0.22), 0 6px 20px rgba(0,0,0,0.35); color: #fff; }
+        .btn-primary:active { box-shadow: none; }
+        .btn-ghost {
+            background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+        }
+        .btn-ghost:hover { border-color: var(--border-glow); color: var(--text); }
+
+        /* ── RESULTS ── */
+        .results-section { margin-top: 28px; }
+
+        .shares-grid { display: flex; flex-direction: column; gap: 12px; }
+
+        /* share-card — styl result-user z generate-hash.php */
+        .share-card {
+            background: var(--success-dim); border: 1px solid var(--success-border);
+            border-radius: 12px; padding: 14px 16px;
+            animation: cardSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .share-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .share-num { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--success); }
+        .share-actions { display: flex; align-items: center; gap: 8px; }
+
+        .copy-btn {
+            padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(74,222,128,0.25);
+            background: rgba(74,222,128,0.06); color: var(--success);
+            font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+            text-transform: uppercase; transition: all 0.15s; outline: none;
+        }
+        .copy-btn:hover { background: rgba(74,222,128,0.14); border-color: rgba(74,222,128,0.45); }
+
+        .dl-single-btn {
+            padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(56,189,248,0.2);
+            background: rgba(56,189,248,0.05); color: var(--info);
+            font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+            text-transform: uppercase; transition: all 0.15s; outline: none;
+        }
+        .dl-single-btn:hover { background: rgba(56,189,248,0.12); border-color: rgba(56,189,248,0.4); }
+
+
+        /* ─── HASH BOX — identyczny jak generate-hash.php ─── */
+        .hash-box {
+            font-family: var(--mono); font-size: 0.68rem;
+            word-break: break-all; line-height: 1.75;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 12px;
+            transition: background 0.15s; user-select: all;
+            position: relative; overflow: hidden;
+        }
+        .hash-box:hover { background: var(--surface2); }
+        .hash-text {
+            display: block; color: var(--text);
+            transition: filter 0.22s, opacity 0.22s;
+        }
+        .hash-box.copied .hash-text { filter: blur(5px); opacity: 0.18; }
+        .hash-copied-overlay {
+            position: absolute; inset: 0;
+            background: rgba(74,222,128,0.11);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em;
+            color: var(--success); text-transform: uppercase;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.22s;
+            border-radius: 8px;
+            user-select: none; -webkit-user-select: none;
+        }
+        .hash-box.copied .hash-copied-overlay { opacity: 1; }
+        .hash-hint {
+            font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+            color: var(--text-muted); text-transform: uppercase;
+            margin-top: 6px; text-align: right;
+        }
+
+        /* ─── FILE BLOCK — identyczny jak generate-hash.php ─── */
+        .file-block {
+            margin-top: 24px; background: var(--surface2);
+            border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+        }
+        .file-block-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .file-block-title { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+        .file-block-title span { color: var(--info); }
+        pre.file-preview {
+            padding: 16px; font-family: var(--mono); font-size: 0.68rem;
+            line-height: 1.9; white-space: pre; overflow-x: auto;
+            color: var(--text-dim); max-height: 380px; overflow-y: auto;
+        }
+        pre .cm { color: var(--text-muted); }
+        pre .cv { color: var(--accent2); }
+        pre .cn { color: #86efac; }
+        pre .ci { color: #7dd3fc; }
+        .download-row { padding: 14px 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .btn-download {
+            flex: 1; padding: 12px;
+            background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(56,189,248,0.06));
+            border: 1px solid rgba(56,189,248,0.3); border-radius: 10px;
+            color: var(--info); font-family: var(--sans); font-size: 0.85rem;
+            font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; transition: all 0.22s;
+        }
+        .btn-download:hover { border-color: rgba(56,189,248,0.6); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+
+        .btn-copy-file {
+            padding: 12px 18px; background: transparent; border: 1px solid var(--border);
+            border-radius: 10px; color: var(--text-muted); font-family: var(--mono);
+            font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.2s;
+        }
+        .btn-copy-file:hover { border-color: rgba(192,132,252,0.3); color: var(--text); }
+
+        /* ── STATS BAR ── */
+        .stats-bar {
+            display: flex; justify-content: space-between; flex-wrap: wrap;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
+        }
+        .stat { display: flex; flex-direction: column; gap: 3px; }
+        .stat-label { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+        .stat-val { font-family: var(--mono); font-size: 0.85rem; font-weight: 700; color: var(--text); }
+        .stat-val.accent { color: var(--accent); }
+        .stat-val.success { color: var(--success); }
+        .stat-val.info { color: var(--info); }
+
+        /* ── CUSTOM CURSOR ── */
+        @media (pointer: fine) { * { cursor: none !important; } }
+        input, textarea { cursor: text !important; caret-color: var(--accent); }
+        #cur-arrow {
+            position: fixed; width: 28px; height: 28px;
+            pointer-events: none; z-index: 9999999; top: 0; left: 0; opacity: 0;
+            filter: drop-shadow(0 0 5px rgba(192,132,252,0.8)) drop-shadow(0 0 12px rgba(192,132,252,0.35));
+            transition: filter 0.2s ease, opacity 0.2s ease; will-change: left, top;
+        }
+        #cur-arrow.is-morphed { filter: drop-shadow(0 0 7px rgba(192,132,252,1)) drop-shadow(0 0 18px rgba(192,132,252,0.5)); }
+        #cur-arrow.clicking   { filter: drop-shadow(0 0 12px rgba(255,255,255,0.9)) drop-shadow(0 0 28px rgba(192,132,252,1)); }
+        #cur-ring {
+            position: fixed; top: 0; left: 0; width: 36px; height: 36px;
+            border: 1.5px solid rgba(192,132,252,0.45); border-radius: 50%;
+            pointer-events: none; z-index: 9999998; opacity: 0;
+            transition:
+                left   0.32s cubic-bezier(0.23, 1, 0.32, 1),
+                top    0.32s cubic-bezier(0.23, 1, 0.32, 1),
+                width  0.32s cubic-bezier(0.23, 1, 0.32, 1),
+                height 0.32s cubic-bezier(0.23, 1, 0.32, 1),
+                border-radius 0.32s cubic-bezier(0.23, 1, 0.32, 1),
+                border-color  0.2s ease, opacity 0.2s ease;
+            will-change: left, top, width, height, border-radius;
+        }
+        #cur-ring.is-morphed { border-color: rgba(192,132,252,0.85); border-width: 1px; opacity: 1; box-shadow: 0 0 12px rgba(192,132,252,0.15), 0 0 0 1px rgba(192,132,252,0.06); }
+        .cur-ripple {
+            position: fixed; width: 10px; height: 10px;
+            border: 1px solid rgba(192,132,252,0.8); border-radius: 50%;
+            pointer-events: none; z-index: 99997;
+            animation: curRipple 0.55s ease-out forwards;
+        }
+        @keyframes curRipple {
+            0%   { width: 10px;  height: 10px;  opacity: 0.85; transform: translate(-50%,-50%); }
+            100% { width: 110px; height: 110px; opacity: 0;    transform: translate(-50%,-50%); }
+        }
+
+        @media (max-width: 540px) {
+            .params-grid { grid-template-columns: 1fr; }
+            .card { padding: 24px 18px; }
+            .download-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div class="loading-screen" id="loading-screen">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJXYXJzdHdhXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAyMDEuODcgOTMuMTEiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDIwMS44NyA5My4xMTsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOnVybCgjU1ZHSURfMV8pO30KCS5zdDF7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDQ0MTM5MjA2OTk1NTUwNjE2MTkwMDAwMDAxMDU1OTM3NjgzMzYzMzE5NDQxXyk7fQoJLnN0MntmaWxsOnVybCgjU1ZHSURfMDAwMDAwMDAyMDgwMTA1NjEyOTUzNDYyNzAwMDAwMTE2NDk0NjY1MjQxNzk4NDA0MjJfKTt9Cgkuc3Qze2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3OTQ2ODgxNDcyMjU5MTM4NTAzMDAwMDAwNjQ1MTAxOTYzMjkzNTc0MzY2Ml8pO30KCS5zdDR7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTA1NDIxNzgzNDcyMjI1MjE3MzAwMDAwMDAxMjM2NzExODg5MDI0NTE5MzEwXyk7fQoJLnN0NXtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNzQ0MzQwNjMyNjkxMzE3OTU2OTAwMDAwMTYyMDE5NDMzODUwNzU0NzMwMzZfKTt9Cgkuc3Q2e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDExNzY0OTM5MzA2NTQxMzI2NjU2MDAwMDAwNTgyNDM0MjU1MTcxNjI5MDQ5Ml8pO30KCS5zdDd7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTc4ODkwMDY0MTUwNTg0NDA0MzgwMDAwMDE1NTcxNDAxOTUzNTEyODk5NDYzXyk7fQoJLnN0OHtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjE0NjczOTQ1NzQ2NDM0NjUxMDAwMDAwMDYyNzIxNjQyODk3NDcxNDI1MzhfKTt9Cgkuc3Q5e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3MDExNjAyNDU1MjIxOTQ3ODcxMDAwMDAwNjY5NzE5MjIyNDcyNjkzODI2OV8pO30KCS5zdDEwe2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDAwMzA5ODk4NTUyNDA5OTE2NDA1MDAwMDAxMzEzOTcxNjU3OTgzMzI2MDQ0Nl8pO30KCS5zdDExe2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDAxNDYzNTU5NTM4ODE2MzYwODYyMDAwMDAxMjYzMTQ3Mzc3OTM5Mjk0MDIwM18pO30KCS5zdDEye2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE1MzcwMjAwNDA5OTI5OTUxMDU2MDAwMDAwMzEzOTg4OTYwMTEyMDA1MDgxNl8pO30KCS5zdDEze2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3NDQyMDg0MDQzMTk3NTA4OTMzMDAwMDAwMDkyMDI3NzIxNDk1NTg1Njc2OF8pO30KCS5zdDE0e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDExMjYxNDQyNjQ4MTQ1OTg3MzcyMDAwMDAwMzk0ODAyMjIzMjIzMDk3MjU5M18pO30KCS5zdDE1e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDEzMzUyOTYyNTM1NDUwMDc4NzI5MDAwMDAxNDYxNjM0NjI3NzEzMDU0NDU2MV8pO30KCS5zdDE2e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA2NDM0NjQzMjI3MzA1MzczODk5MDAwMDAwMTEzNjc2Mzk5MjA4NTg2MzA4M18pO30KCS5zdDE3e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE0MTQzMzA1MjMzODc5MjMxNjg0MDAwMDAxMzMxMTk5NDgxMzczODE2Mjg0MV8pO30KCS5zdDE4e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE2OTUyNTg3NzAwNjc3NTQ5MTMxMDAwMDAwMzc2NjUzNTM1ODI1Nzk4MDU4MV8pO30KCS5zdDE5e29wYWNpdHk6MC40Njt9Cgkuc3QyMHtmaWxsOnVybCgjU1ZHSURfMDAwMDAxODM5NTc0NzcxMjM0NDYxMTc0OTAwMDAwMDIwODA5MDc0Njk3NTM4OTAyMjVfKTt9Cgkuc3QyMXtmaWxsOnVybCgjU1ZHSURfMDAwMDAwMjk3MjYwODE3NTI0ODAwMDIyOTAwMDAwMTE2NjIwNjIzNDcyNDE2NDE2MjdfKTt9Cgkuc3QyMntmaWxsOnVybCgjU1ZHSURfMDAwMDAwNTU2OTgyMDc4MDAzOTUzMDgzNjAwMDAwMDc0NDA5MTE0NzIzMTI3MjYxNTRfKTt9Cgkuc3QyM3tmaWxsOnVybCgjU1ZHSURfMDAwMDAwMzkwOTYyMDYwNTY5NDkwNDQxMzAwMDAwMTA3NTYyODgyODg5MDcwMzYwNjBfKTt9Cgkuc3QyNHtmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjgwOTk0MzM3NDkwOTQ4MzAyOTAwMDAwMDEwNDU0NTgxODE5MjkwODYxMjJfKTt9Cgkuc3QyNXtmaWxsOnVybCgjU1ZHSURfMDAwMDAxNDY1MDAzMTcxNzgzNzA0NjU5MzAwMDAwMDY3MDkxNjczODIwMTk1OTkyNjVfKTt9Cgkuc3QyNntmaWxsOnVybCgjU1ZHSURfMDAwMDAxMDMyMzc3NzA3NTQ4NzE3ODgwMTAwMDAwMDcwNDExOTAxMTA4NTI3ODYwNzdfKTt9Cgkuc3QyN3tmaWxsOnVybCgjU1ZHSURfMDAwMDAwMzI2MTQ5MDA1NjYxNTkwNjc0NDAwMDAwMTUwODIzMjUxMzgwMzExNTIwNTRfKTt9Cgkuc3QyOHtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjIxNjg4MzY3NzkxMzUyMjg5NDAwMDAwMTY5NTI2ODk5NjExOTUxOTYyOThfKTt9Cjwvc3R5bGU+CjxnPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8xXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDcxLjE3NSIgeTE9Ii0xOTY3LjAxNiIgeDI9IjIwNzEuMTc1IiB5Mj0iLTE3OTUuMjQ3NiIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTc4LjA3LDc3LjQ2YzAtMC41MS0wLjE5LTEuMDMtMC41OC0xLjQyYy0wLjc4LTAuOC0yLjA3LTAuODEtMi44Ni0wLjAyYy00LjM5LDQuMzItOS43Nyw3LjY1LTE1LjU2LDkuNjRjLTEuMDYsMC4zNi0xLjYyLDEuNTEtMS4yNiwyLjU3YzAuMzYsMS4wNiwxLjUyLDEuNjIsMi41NywxLjI2YzYuMzYtMi4xOCwxMi4yNi01Ljg1LDE3LjA4LTEwLjU5Qzc3Ljg3LDc4LjUxLDc4LjA3LDc3Ljk5LDc4LjA3LDc3LjQ2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDE2ODA4NDk0MjA4NzY3Nzg0NzMxMDAwMDAwMjU4NjM0MTkwMTE1MDY2NzQyM18iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny4zNjMzIiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwNDcuMzYzMyIgeTI9Ii0xNzk1LjI0ODUiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjgwODQ5NDIwODc2Nzc4NDczMTAwMDAwMDI1ODYzNDE5MDExNTA2Njc0MjNfKTsiIGQ9Ik05MS4wMSw0Ni41NmMwLTEuMTItMC45MS0yLjAzLTIuMDMtMi4wM3MtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDguMzEtMi40NSwxNi4zMi03LjEsMjMuMTdjLTAuNjMsMC45My0wLjM5LDIuMTksMC41NCwyLjgxYzAuOTMsMC42MywyLjE5LDAuMzksMi44MS0wLjU0Qzg4LjMyLDY0LjQ4LDkxLjAxLDU1LjY4LDkxLjAxLDQ2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEzNTY4MzUxMzc5MDY1OTUwMDI3MDAwMDAxMDAxMTkyODUxMzI1NDc2MjQwM18iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxMi4xNDI1IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwMTIuMTQyNSIgeTI9Ii0xNzk1LjI0ODUiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMzU2ODM1MTM3OTA2NTk1MDAyNzAwMDAwMTAwMTE5Mjg1MTMyNTQ3NjI0MDNfKTsiIGQ9Ik01Ni4wNCwzLjk5YzAtMC45NS0wLjY3LTEuOC0xLjY0LTEuOTljLTIuODctMC41Ni01LjgzLTAuODUtOC43OC0wLjg1Yy0xOS4yNiwwLTM2LjQ4LDEyLjItNDIuODUsMzAuMzZjLTEuMSwzLjE0LTAuNjksNi41NiwxLjEzLDkuMzdjMS44NCwyLjg0LDQuODIsNC42Myw4LjE5LDQuOTJjMS4xMSwwLjA5LDIuMS0wLjczLDIuMTktMS44NWMwLjEtMS4xMS0wLjczLTIuMS0xLjg1LTIuMTljLTIuMTEtMC4xOC0zLjk4LTEuMy01LjEzLTMuMDljLTEuMTMtMS43NS0xLjM5LTMuODctMC43LTUuODNjNS44LTE2LjU0LDIxLjQ5LTI3LjY1LDM5LjAzLTI3LjY1YzIuNjksMCw1LjM4LDAuMjYsOCwwLjc3YzEuMSwwLjIyLDIuMTYtMC41LDIuMzgtMS42QzU2LjAyLDQuMjUsNTYuMDQsNC4xMiw1Ni4wNCwzLjk5eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDE0MTQyMTQzOTQ2NjAyOTY2NzEzMDAwMDAxNTkyNjY5Mjg0NjA5Mjg4MjMxNV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA1Ni40NTM5IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwNTYuNDUzOSIgeTI9Ii0xNzk1LjI0NzgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNDE0MjE0Mzk0NjYwMjk2NjcxMzAwMDAwMTU5MjY2OTI4NDYwOTI4ODIzMTVfKTsiIGQ9Ik0yNy45OCw4NS4yMmMwLTAuNzQtMC40LTEuNDUtMS4xMS0xLjgxYy0xMi44LTYuNTItMjEuMTktMTguOTMtMjIuNDQtMzMuMmMtMC4xLTEuMTEtMS4wOC0xLjk0LTIuMTktMS44NGMtMS4xMSwwLjEtMS45MywxLjA4LTEuODQsMi4xOWMxLjM3LDE1LjY3LDEwLjU5LDI5LjMsMjQuNjQsMzYuNDZjMSwwLjUxLDIuMjIsMC4xMSwyLjcyLTAuODlDMjcuOTEsODUuODQsMjcuOTgsODUuNTMsMjcuOTgsODUuMjJ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMTAzOTQzMzI4NTk5OTI1NTMxMTMwMDAwMDA2NTgxODc4MDI1MTI4NTkyNTU0XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDE1LjE0OTciIHkxPSItMTk2Ny4wMTYiIHgyPSIyMDE1LjE0OTciIHkyPSItMTc5NS4yNDY3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTAzOTQzMzI4NTk5OTI1NTMxMTMwMDAwMDA2NTgxODc4MDI1MTI4NTkyNTU0Xyk7IiBkPSJNNDEuMDksMjMuODhjMC0wLjE5LTAuMDMtMC4zNy0wLjA4LTAuNTZjLTAuMzEtMS4wNy0xLjQzLTEuNjktMi41MS0xLjM5Yy0zLjc1LDEuMDgtNy4yNiwzLjA0LTEwLjEzLDUuNjhjLTAuODIsMC43NS0wLjg4LDIuMDQtMC4xMywyLjg2YzAuNzYsMC44MiwyLjA0LDAuODgsMi44NiwwLjEzYzIuNDItMi4yMSw1LjM2LTMuODYsOC41Mi00Ljc3QzQwLjUyLDI1LjU3LDQxLjA5LDI0Ljc2LDQxLjA5LDIzLjg4eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA2MDAxNjkzNzg5NjcyNTc4MDM1MDAwMDAwMzI1MzU3OTI0OTQ2MDI0Njk2MV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxNC4xNjgyIiB5MT0iLTE5NjcuMDE2MSIgeDI9IjIwMTQuMTY4MiIgeTI9Ii0xNzk1LjI0NzciIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjAwMTY5Mzc4OTY3MjU3ODAzNTAwMDAwMDMyNTM1NzkyNDk0NjAyNDY5NjFfKTsiIGQ9Ik02Mi4yOSwyOC4wNmMwLTAuNi0wLjI2LTEuMTktMC43Ny0xLjU5Yy00LjQtMy40OS05LjctNS40LTE1LjMyLTUuNTNjLTEuMTItMC4wMy0yLjA1LDAuODYtMi4wNywxLjk4Yy0wLjA0LDEuMTUsMC44NiwyLjA1LDEuOTgsMi4wN2M0LjczLDAuMTEsOS4xOSwxLjcyLDEyLjksNC42NWMwLjg4LDAuNywyLjE1LDAuNTUsMi44NS0wLjMzQzYyLjE1LDI4Ljk1LDYyLjI5LDI4LjUsNjIuMjksMjguMDZ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDI2ODY1ODEyODA1OTM5NTkzMTAwMDAwMDA4OTUxMDc5NzYzNzc0OTQ3NDY4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQyLjA0MzkiIHkxPSItMTk2Ny4wMTYiIHgyPSIyMDQyLjA0MzkiIHkyPSItMTc5NS4yNDgzIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDI2ODY1ODEyODA1OTM5NTkzMTAwMDAwMDA4OTUxMDc5NzYzNzc0OTQ3NDY4Xyk7IiBkPSJNODEuMDEsNDYuNTZjMC01LjYtMS4zNC0xMS4xOC0zLjg4LTE2LjEyYy0wLjk2LTEuODYtMi43LTMuMTYtNC43OC0zLjU1Yy0yLjEzLTAuNC00LjI4LDAuMTktNS45LDEuNjJjLTIuMzcsMi4wOS0zLjA0LDUuNDgtMS42Myw4LjIzYzEuNTcsMy4wNiwyLjM3LDYuMzYsMi4zNyw5LjgyYzAsMy43Ni0wLjk5LDcuNDctMi44NiwxMC43NGMtMC41NiwwLjk3LTAuMjIsMi4yMSwwLjc1LDIuNzZjMC45NywwLjU2LDIuMjEsMC4yMiwyLjc2LTAuNzVjMi4yMi0zLjg4LDMuNC04LjI5LDMuNC0xMi43NWMwLTQuMDYtMC45Ny04LjA5LTIuODEtMTEuNjhjLTAuNTYtMS4wOC0wLjI2LTIuNDksMC43MS0zLjM0YzAuNjgtMC42LDEuNTgtMC44NSwyLjQ3LTAuNjhjMC40OSwwLjA5LDEuNCwwLjQsMS45MiwxLjQyYzIuMjUsNC4zOCwzLjQzLDkuMzEsMy40MywxNC4yOGMwLDEzLjIzLTguMzUsMjUuMDgtMjAuNzksMjkuNTJjLTAuODEsMC4yNi0xLjQsMS4wMy0xLjQsMS45M2MwLDEuMTIsMC45LDIuMDMsMi4wMiwyLjAzYzAuMjMsMCwwLjQ3LTAuMDQsMC42OS0wLjEyQzcxLjU1LDc0LjkxLDgxLjAxLDYxLjUxLDgxLjAxLDQ2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDExNjIxNjM5ODE0ODI4Njk5MzIxMDAwMDAwNDYyMjg0MTU5Nzc2MjM1OTE4Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxMC4yNjIiIHkxPSItMTk2Ny4wMTcyIiB4Mj0iMjAxMC4yNjIiIHkyPSItMTc5NS4yNDgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMTYyMTYzOTgxNDgyODY5OTMyMTAwMDAwMDQ2MjI4NDE1OTc3NjIzNTkxODZfKTsiIGQ9Ik04Ny45OCwzOS4wNWgzNi4yN2MxLjEyLDAsMi4wMy0wLjkxLDIuMDMtMi4wM2MwLTEuMTItMC45LTIuMDMtMi4wMy0yLjAzSDg5LjUzQzg1Ljg2LDIxLjA1LDc1Ljc1LDkuNjIsNjIuMjUsNC4zMWMtMS4wMy0wLjQyLTIuMjIsMC4xLTIuNjIsMS4xM2MtMC40MiwxLjA0LDAuMSwyLjIyLDEuMTQsMi42M2MxMi42NSw0Ljk4LDIyLjAzLDE1Ljg1LDI1LjExLDI5LjA2YzAuMDIsMC4wNiwwLjAzLDAuMTIsMC4wNSwwLjE5bDAuMTIsMC4zNEM4Ni4zMywzOC40OSw4Ny4xMSwzOS4wNSw4Ny45OCwzOS4wNXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTgxOTA2ODgwMTE3NjYyNzQxNDAwMDAwMTA4MzAwNTIyODEwNjczNDE1MDFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzUuMjA5NiIgeTE9Ii0xOTY3LjAxNTUiIHgyPSIyMDM1LjIwOTYiIHkyPSItMTc5NS4yNDc3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDk4MTkwNjg4MDExNzY2Mjc0MTQwMDAwMDEwODMwMDUyMjgxMDY3MzQxNTAxXyk7IiBkPSJNMjAxLjQ4LDQ2LjU1YzAtNi4zNy01LjE4LTExLjU2LTExLjU2LTExLjU2aC01Ny4yNmMtMS4xMiwwLTIuMDMsMC45MS0yLjAzLDIuMDNjMCwxLjEyLDAuOTEsMi4wMywyLjAzLDIuMDNoNTcuMjZjNC4xNCwwLDcuNSwzLjM3LDcuNSw3LjVjMCw0LjE0LTMuMzcsNy41LTcuNSw3LjVoLTczLjc2Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45MSwyLjAzLDIuMDMsMi4wM2g3My43NkMxOTYuMyw1OC4xMSwyMDEuNDgsNTIuOTMsMjAxLjQ4LDQ2LjU1eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA2MzYxMjYzNDUyOTg1MTQ5Mjk1MDAwMDAwMjgyMDczODM5NjUyOTg0MjM2Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0NC43Mzc5IiB5MT0iLTE5NjYuOTk3OCIgeDI9IjIwNDQuNzM3OSIgeTI9Ii0xNzk1LjI2NTkiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjM2MTI2MzQ1Mjk4NTE0OTI5NTAwMDAwMDI4MjA3MzgzOTY1Mjk4NDIzNjZfKTsiIGQ9Ik04OC45OSw1OC4xMWgxOS4zMmMxLjExLDAsMi4wMy0wLjksMi4wMy0yLjAzYzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzSDg4Ljk5Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM0M4Ni45Nyw1Ny4yMSw4Ny44Nyw1OC4xMSw4OC45OSw1OC4xMXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTM4Njc2MDQ1MjA0NjY4NTA4OTAwMDAwMTczMjU1MDg5MzA0OTQxNTA3OTZfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzkuMTk4OSIgeTE9Ii0xOTY3LjAwODMiIHgyPSIyMDM5LjE5ODkiIHkyPSItMTc5NS4yNDgzIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDkzODY3NjA0NTIwNDY2ODUwODkwMDAwMDE3MzI1NTA4OTMwNDk0MTUwNzk2Xyk7IiBkPSJNMTYzLjc3LDU2LjU2YzEuMTEsMCwyLjAzLTAuOTEsMi4wMy0yLjAzYzAtNS41Mi00LjQ5LTEwLTEwLTEwSDg4Ljk5Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45LDIuMDMsMi4wMywyLjAzaDY2Ljc5YzMuMjgsMCw1Ljk1LDIuNjcsNS45NSw1Ljk1QzE2MS43NCw1NS42NSwxNjIuNjQsNTYuNTYsMTYzLjc3LDU2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEwNTM5ODcyNjQzMzk3MDEzNTI2MDAwMDAwMDA3OTUxMjAzOTEwNjY2NzM5Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAzNS4yMDk2IiB5MT0iLTE5NjcuMDE0OSIgeDI9IjIwMzUuMjA5NiIgeTI9Ii0xNzk1LjI0ODIiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMDUzOTg3MjY0MzM5NzAxMzUyNjAwMDAwMDAwNzk1MTIwMzkxMDY2NjczOTZfKTsiIGQ9Ik0xOTAuNjMsNDYuNTVjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNoLTE3LjQzYy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45MSwyLjAzLDIuMDMsMi4wM2gxNy40M0MxODkuNzIsNDguNTgsMTkwLjYzLDQ3LjY3LDE5MC42Myw0Ni41NXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNjIxNjQxNjgxNzQxNDY0NDExMTAwMDAwMTYxMjU3NzQyMjA3MzYxMjc2NzBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTkuMTk4MiIgeTE9Ii0xOTY3LjAxODMiIHgyPSIyMDU5LjE5ODIiIHkyPSItMTc5NS4yNDEiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjIxNjQxNjgxNzQxNDY0NDExMTAwMDAwMTYxMjU3NzQyMjA3MzYxMjc2NzBfKTsiIGQ9Ik0xMzIuNiw4Ny4wM2M2LjIyLDAsMTEuMjgtNS4wNSwxMS4yOC0xMS4yOFY1Ni4wOGMwLTEuMTEtMC45MS0yLjAzLTIuMDMtMi4wM2gtMTguNTFjLTEuMTIsMC0yLjAzLDAuOTEtMi4wMywyLjAzdjE5LjY3QzEyMS4zMiw4MS45OCwxMjYuMzcsODcuMDMsMTMyLjYsODcuMDN6IE0xMzIuNiw4Mi45OGMtMy45OSwwLTcuMjMtMy4yNC03LjIzLTcuMjNWNTguMTFoMTQuNDZ2MTcuNjRDMTM5LjgzLDc5Ljc0LDEzNi41OCw4Mi45OCwxMzIuNiw4Mi45OHoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMzI3ODcyMjgyMDI2MzQwMDQ4NTAwMDAwMTMxMTE3MDIzMjU4MzI2NjMyMTRfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTguMjQ2MyIgeTE9Ii0xOTY3LjAxNTEiIHgyPSIyMDU4LjI0NjMiIHkyPSItMTc5NS4yNDI4IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTMyNzg3MjI4MjAyNjM0MDA0ODUwMDAwMDEzMTExNzAyMzI1ODMyNjYzMjE0Xyk7IiBkPSJNMTMyLjYsNzcuNzVjMS4xMSwwLDIuMDMtMC45MSwyLjAzLTIuMDNWNjMuNDZjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNjLTEuMTIsMC0yLjAzLDAuOS0yLjAzLDIuMDN2MTIuMjdDMTMwLjU3LDc2Ljg0LDEzMS40Nyw3Ny43NSwxMzIuNiw3Ny43NXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMDI1MTE1NTY2NDkyMDg3MDkxNjAwMDAwMTAxNDAyNTU0MjgwODE1MTMzODJfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTkuMTk4MiIgeTE9Ii0xOTY3LjAyNTYiIHgyPSIyMDU5LjE5ODIiIHkyPSItMTc5NS4yNDQ0IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTAyNTExNTU2NjQ5MjA4NzA5MTYwMDAwMDEwMTQwMjU1NDI4MDgxNTEzMzgyXyk7IiBkPSJNMTYzLjc3LDg3LjAzYzYuMjIsMCwxMS4yOC01LjA1LDExLjI4LTExLjI4VjU2LjA4YzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzaC0xOC41MWMtMS4xMSwwLTIuMDMsMC45MS0yLjAzLDIuMDN2MTEuNTdjMCwwLjkxLDAuNiwxLjY4LDEuNDMsMS45M2MwLjE4LDAuMDYsMC4zOCwwLjA5LDAuNiwwLjA5YzAuMjEsMCwwLjQyLTAuMDMsMC42LTAuMDljMC44My0wLjI1LDEuNDMtMS4wMiwxLjQzLTEuOTN2LTkuNTVIMTcxdjE3LjY0YzAsMy45OS0zLjI0LDcuMjMtNy4yMyw3LjIzcy03LjIzLTMuMjQtNy4yMy03LjIzYzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzYy0xLjExLDAtMi4wMywwLjkxLTIuMDMsMi4wM0MxNTIuNDksODEuOTgsMTU3LjU1LDg3LjAzLDE2My43Nyw4Ny4wM3oiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNjkzNjI0MDM4ODQyMjM3ODk5MjAwMDAwMTY1MjE2NTM3MTE2OTg0MDE5MzBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTQuNzgzMiIgeTE9Ii0xOTY3LjAxMjUiIHgyPSIyMDU0Ljc4MzIiIHkyPSItMTc5NS4yNDc3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDY5MzYyNDAzODg0MjIzNzg5OTIwMDAwMDE2NTIxNjUzNzExNjk4NDAxOTMwXyk7IiBkPSJNMTYzLjc3LDc4LjJjMS4xMSwwLDIuMDMtMC45LDIuMDMtMi4wM1Y1Ni4wOGMwLTEuMTEtMC45MS0yLjAzLTIuMDMtMi4wM2MtMS4xMiwwLTIuMDMsMC45MS0yLjAzLDIuMDN2MjAuMDlDMTYxLjc0LDc3LjMsMTYyLjY0LDc4LjIsMTYzLjc3LDc4LjJ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDg2Njg4MTY0MzMyOTEwODA3MDcwMDAwMDE1OTQ0MjYwMjAwOTk3Mzk3NjY4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDcwLjM3MDgiIHkxPSItMTk2Ny4wMTU5IiB4Mj0iMjA3MC4zNzA4IiB5Mj0iLTE3OTUuMjQ4NCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA4NjY4ODE2NDMzMjkxMDgwNzA3MDAwMDAxNTk0NDI2MDIwMDk5NzM5NzY2OF8pOyIgZD0iTTUxLjMzLDg0Ljg5YzAtMC43MS0wLjExLTEuNDMtMC4zMy0yLjEyYy0wLjg5LTIuODEtMy40Ny00Ljc5LTYuNDMtNC45MmMtMS43Mi0wLjA4LTMuNTItMC4yOC01LjM1LTAuNmMtNC4xMy0wLjcyLTguMi0yLjUzLTEyLjA4LTUuMzdjLTAuOS0wLjY2LTIuMTctMC40Ni0yLjgzLDAuNDRjLTAuNjYsMC45LTAuNDYsMi4xNywwLjQ0LDIuODNjNC40LDMuMjEsOS4wMyw1LjI2LDEzLjc4LDYuMDljMiwwLjM1LDMuOTcsMC41Nyw1Ljg3LDAuNjVjMS4yNiwwLjA2LDIuMzcsMC45LDIuNzQsMi4wOWMwLjMsMC45NCwwLjEzLDEuOTQtMC40NywyLjcyYy0wLjYsMC43OS0xLjUyLDEuMjItMi41MiwxLjE5Yy0wLjUyLTAuMDItMS4wNS0wLjA1LTEuNTctMC4xYy0zLjM0LTAuMzEtNi4yNS0wLjg0LTguODgtMS42NGMtMS4wNy0wLjMyLTIuMiwwLjI4LTIuNTIsMS4zNWMtMC4zMiwxLjA3LDAuMjgsMi4yLDEuMzUsMi41MmMyLjg5LDAuODcsNi4wNiwxLjQ2LDkuNjgsMS43OWMwLjYsMC4wNSwxLjIsMC4wOSwxLjc5LDAuMTJjMi4zLDAuMDksNC41MS0wLjk1LDUuOS0yLjc4QzUwLjg0LDg3LjkyLDUxLjMzLDg2LjQxLDUxLjMzLDg0Ljg5eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDAyOTc2NzczOTEzOTIzNTQxNzY3MDAwMDAwOTA0MTA5MDA1NjQxODI3OTg0MV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAwNi43MyIgeTE9Ii0xOTY3LjAxNiIgeDI9IjIwMDYuNzMiIHkyPSItMTc5NS4yNDc5IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDI5NzY3NzM5MTM5MjM1NDE3NjcwMDAwMDA5MDQxMDkwMDU2NDE4Mjc5ODQxXyk7IiBkPSJNNjkuOTEsMjEuNzFjMC0wLjU1LTAuMjMtMS4xMS0wLjY3LTEuNTFjLTYuNDktNS44My0xNC44OC05LjA0LTIzLjYyLTkuMDRjLTkuNDYsMC0xOC4zNSwzLjY4LTI1LjAyLDEwLjM3Yy0wLjc5LDAuNzktMC43OSwyLjA3LDAsMi44NmMwLjc5LDAuNzksMi4wNywwLjc5LDIuODYsMGM1LjkxLTUuOTIsMTMuNzgtOS4xOCwyMi4xNi05LjE4YzcuNzUsMCwxNS4xNywyLjg0LDIwLjkyLDhjMC44MywwLjc1LDIuMTEsMC42OCwyLjg2LTAuMTVDNjkuNzQsMjIuNjgsNjkuOTEsMjIuMiw2OS45MSwyMS43MXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTM4ODI5OTM5MzU0Njc2MDI4MzAwMDAwMDEwNzk3MzU1NTE4Nzk4MDkxNjhfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzguODk1IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwMzguODk1IiB5Mj0iLTE3OTUuMjQ4NCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA5Mzg4Mjk5MzkzNTQ2NzYwMjgzMDAwMDAwMTA3OTczNTU1MTg3OTgwOTE2OF8pOyIgZD0iTTQzLjIyLDcyLjA3Yy0zLjM3LTAuMzEtNi42NC0xLjMtOS43LTIuOTVjMCwwLDAsMCwwLDBjLTcuNDgtNC4wNC0xMi40OC0xMS40Mi0xMy4zNi0xOS43NWMtMC40OC00LjUxLDAuMjEtOS4wNCwyLjAxLTEzLjFjMC40OS0xLjEyLDAuMTMtMi40Ni0wLjg3LTMuMjdjLTAuNy0wLjU3LTEuNjEtMC43Ny0yLjQ4LTAuNTVjLTAuODcsMC4yMi0xLjU4LDAuODEtMS45NCwxLjYzYy0xLjcxLDMuOTQtMi41OCw4LjE0LTIuNTgsMTIuNDhjMCw3LjYyLDIuNzYsMTQuOTYsNy43OCwyMC42N2MwLjc0LDAuODQsMC42NiwyLjEyLTAuMTgsMi44NmMtMC44NCwwLjc0LTIuMTIsMC42Ni0yLjg2LTAuMThjLTUuNjctNi40NS04Ljc5LTE0Ljc0LTguNzktMjMuMzRjMC00LjksMC45OC05LjY0LDIuOTItMTQuMDljMC44Ny0xLjk5LDIuNTctMy40Myw0LjY4LTMuOTVjMi4xMS0wLjUyLDQuMy0wLjA0LDUuOTksMS4zM2MyLjQzLDEuOTYsMy4yNyw1LjI3LDIuMDQsOC4wNmMtMS41MSwzLjQyLTIuMDksNy4yNC0xLjY5LDExLjA0YzAuNzQsNyw0Ljk1LDEzLjIsMTEuMjYsMTYuNjFjMCwwLDAsMCwwLDBjMi41OCwxLjM5LDUuMzIsMi4yMyw4LjE1LDIuNDljNS42LDAuNTEsMTEuMDctMS4xMSwxNS40My00LjU3YzAuODgtMC43LDIuMTUtMC41NSwyLjg1LDAuMzNjMC4zLDAuMzcsMC40NCwwLjgyLDAuNDQsMS4yNmMwLDAuNi0wLjI2LDEuMTktMC43NywxLjU5QzU2LjM2LDcwLjc0LDQ5Ljg2LDcyLjY3LDQzLjIyLDcyLjA3eiIvPgoJPGcgY2xhc3M9InN0MTkiPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxNjU5MjYyODAwNTEzMTA0NDAzMjAwMDAwMTQ4MDg3NTY2ODYzMTI1MjIxNjBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMjUuNjgwMiIgeTE9Ii0xODk4LjQ4MzIiIHgyPSIyMDI1LjY4MDIiIHkyPSItMTg4OC41MTg5IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjU5MjYyODAwNTEzMTA0NDAzMjAwMDAwMTQ4MDg3NTY2ODYzMTI1MjIxNjBfKTsiIGQ9Ik05MC41MywzOS4wNWg4Ljk2Yy0wLjI5LTEuMzItMC42NS0yLjY3LTEuMS00LjA1aC04Ljg2Qzg5LjUzLDM1LDkwLjA3LDM2LjQ4LDkwLjUzLDM5LjA1eiIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNTQ5ODA4MTk0NDEyOTU1MjU4ODAwMDAwMDM0MjAxMDE1ODAwNTA5NDgyODdfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzUuMjA5MiIgeTE9Ii0xODk4LjQ4MyIgeDI9IjIwMzUuMjA5MiIgeTI9Ii0xODg4LjUxOTgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNjtzdG9wLW9wYWNpdHk6MCIvPgoJCTwvbGluZWFyR3JhZGllbnQ+CgkJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA1NDk4MDgxOTQ0MTI5NTUyNTg4MDAwMDAwMzQyMDEwMTU4MDA1MDk0ODI4N18pOyIgZD0iTTkxLjE0LDQ4LjU4aDkuMzVjMC4wMS0xLjI4LTAuMDQtMi42My0wLjE2LTQuMDVoLTkuMThDOTEuMiw0NS43OCw5MS4yMSw0Ny4xNCw5MS4xNCw0OC41OHoiLz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDE4OTU4NDM3NjQ5ODMxOTU3MzQwMDAwMDAwNTExMDg1NjE2NjYxNzg1NzM4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQ0LjczNzkiIHkxPSItMTg5OC40ODMzIiB4Mj0iMjA0NC43Mzc5IiB5Mj0iLTE4ODguNTE5OCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDE4OTU4NDM3NjQ5ODMxOTU3MzQwMDAwMDAwNTExMDg1NjE2NjYxNzg1NzM4Xyk7IiBkPSJNODkuNjgsNTguMTFoOS42NGMwLjI4LTEuMTQsMC41Ni0yLjUsMC43Ny00LjA1aC05LjUzQzkwLjM1LDU1LjM2LDkwLjA2LDU2LjcyLDg5LjY4LDU4LjExeiIvPgoJPC9nPgoJPGcgY2xhc3M9InN0MTkiPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxNzAyNDIzNDMxNjM5ODcyMTA1MTAwMDAwMDgyODI0ODg5MDMyNjI0ODgyMTNfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDcuNjQyNSIgeTE9Ii0xODY1LjQwMDkiIHgyPSIyMDU2LjkwMjgiIHkyPSItMTg2NS4yMzI1IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxyZWN0IHg9IjEyMS4zMiIgeT0iNTguMTEiIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNzAyNDIzNDMxNjM5ODcyMTA1MTAwMDAwMDgyODI0ODg5MDMyNjI0ODgyMTNfKTsiIHdpZHRoPSI0LjA1IiBoZWlnaHQ9IjExLjQ4Ii8+CgkJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA3MzY4NzQzODY4NjMzMDI3MzAxMDAwMDAwODA2MTQyNzE4NTM3MDQ2NDkzNV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny40NzUyIiB5MT0iLTE4NTYuMTk3IiB4Mj0iMjA1Ni43MzU0IiB5Mj0iLTE4NTYuMDI4NyIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDczNjg3NDM4Njg2MzMwMjczMDEwMDAwMDA4MDYxNDI3MTg1MzcwNDY0OTM1Xyk7IiBkPSJNMTMwLjU3LDY5LjU5aDQuMDV2LTYuMTRjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNjLTEuMTIsMC0yLjAzLDAuOS0yLjAzLDIuMDNWNjkuNTl6Ii8+CgkJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEyNzAzMzU4NDA4MDg0NTk2NzUyMDAwMDAxMDE3OTgyMTAxMjgyOTMxNjc1MF8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny4zMDYiIHkxPSItMTg0Ni44OTYyIiB4Mj0iMjA1Ni41NjY0IiB5Mj0iLTE4NDYuNzI3OSIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cmVjdCB4PSIxMzkuODMiIHk9IjU4LjExIiBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTI3MDMzNTg0MDgwODQ1OTY3NTIwMDAwMDEwMTc5ODIxMDEyODI5MzE2NzUwXyk7IiB3aWR0aD0iNC4wNSIgaGVpZ2h0PSIxMS40OCIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNTY0MTMwOTM4OTg1OTY3Mjk0NzAwMDAwMDI3MzEyNzg1MjA3NTMxNzE2MzFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDcuMDc1NyIgeTE9Ii0xODM0LjIyNTIiIHgyPSIyMDU2LjMzNTkiIHkyPSItMTgzNC4wNTY4IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNTY0MTMwOTM4OTg1OTY3Mjk0NzAwMDAwMDI3MzEyNzg1MjA3NTMxNzE2MzFfKTsiIGQ9Ik0xNTMuOTEsNjkuNTloMS4xOWMwLjgzLTAuMjUsMS40My0xLjAyLDEuNDMtMS45M3YtOS41NWgtNC4wNXY5LjU1QzE1Mi40OSw2OC41NywxNTMuMDgsNjkuMzQsMTUzLjkxLDY5LjU5eiIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMzYzOTcwODMxOTY1OTUxMjY0NjAwMDAwMDQ0MzgzNjg2NjA4MTU1MTY4MDNfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDYuOTA3NyIgeTE9Ii0xODI0Ljk5MDEiIHgyPSIyMDU2LjE2OCIgeTI9Ii0xODI0LjgyMTgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNjtzdG9wLW9wYWNpdHk6MCIvPgoJCTwvbGluZWFyR3JhZGllbnQ+CgkJPHJlY3QgeD0iMTYxLjc0IiB5PSI1OC4xMSIgc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDEzNjM5NzA4MzE5NjU5NTEyNjQ2MDAwMDAwNDQzODM2ODY2MDgxNTUxNjgwM18pOyIgd2lkdGg9IjQuMDUiIGhlaWdodD0iMTEuNDgiLz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMTM1NjUyMzI2NzcxMDQwMDc5ODYwMDAwMDE1MTQ5Njg3MzUxNTA2MjE5MTUzXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQ2LjcyODMiIHkxPSItMTgxNS43MzgiIHgyPSIyMDU1Ljk4ODUiIHkyPSItMTgxNS41Njk3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxyZWN0IHg9IjE3MSIgeT0iNTguMTEiIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMzU2NTIzMjY3NzEwNDAwNzk4NjAwMDAwMTUxNDk2ODczNTE1MDYyMTkxNTNfKTsiIHdpZHRoPSI0LjA1IiBoZWlnaHQ9IjExLjQ4Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" class="loading-logo" alt="Secret Key">
+    <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+    <div class="loading-text" id="loading-text">Generowanie…</div>
+</div>
+
+<div class="header">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJXYXJzdHdhXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAyMDEuODcgOTMuMTEiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDIwMS44NyA5My4xMTsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOnVybCgjU1ZHSURfMV8pO30KCS5zdDF7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDQ0MTM5MjA2OTk1NTUwNjE2MTkwMDAwMDAxMDU1OTM3NjgzMzYzMzE5NDQxXyk7fQoJLnN0MntmaWxsOnVybCgjU1ZHSURfMDAwMDAwMDAyMDgwMTA1NjEyOTUzNDYyNzAwMDAwMTE2NDk0NjY1MjQxNzk4NDA0MjJfKTt9Cgkuc3Qze2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3OTQ2ODgxNDcyMjU5MTM4NTAzMDAwMDAwNjQ1MTAxOTYzMjkzNTc0MzY2Ml8pO30KCS5zdDR7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTA1NDIxNzgzNDcyMjI1MjE3MzAwMDAwMDAxMjM2NzExODg5MDI0NTE5MzEwXyk7fQoJLnN0NXtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNzQ0MzQwNjMyNjkxMzE3OTU2OTAwMDAwMTYyMDE5NDMzODUwNzU0NzMwMzZfKTt9Cgkuc3Q2e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDExNzY0OTM5MzA2NTQxMzI2NjU2MDAwMDAwNTgyNDM0MjU1MTcxNjI5MDQ5Ml8pO30KCS5zdDd7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTc4ODkwMDY0MTUwNTg0NDA0MzgwMDAwMDE1NTcxNDAxOTUzNTEyODk5NDYzXyk7fQoJLnN0OHtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjE0NjczOTQ1NzQ2NDM0NjUxMDAwMDAwMDYyNzIxNjQyODk3NDcxNDI1MzhfKTt9Cgkuc3Q5e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3MDExNjAyNDU1MjIxOTQ3ODcxMDAwMDAwNjY5NzE5MjIyNDcyNjkzODI2OV8pO30KCS5zdDEwe2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDAwMzA5ODk4NTUyNDA5OTE2NDA1MDAwMDAxMzEzOTcxNjU3OTgzMzI2MDQ0Nl8pO30KCS5zdDExe2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDAxNDYzNTU5NTM4ODE2MzYwODYyMDAwMDAxMjYzMTQ3Mzc3OTM5Mjk0MDIwM18pO30KCS5zdDEye2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE1MzcwMjAwNDA5OTI5OTUxMDU2MDAwMDAwMzEzOTg4OTYwMTEyMDA1MDgxNl8pO30KCS5zdDEze2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3NDQyMDg0MDQzMTk3NTA4OTMzMDAwMDAwMDkyMDI3NzIxNDk1NTg1Njc2OF8pO30KCS5zdDE0e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDExMjYxNDQyNjQ4MTQ1OTg3MzcyMDAwMDAwMzk0ODAyMjIzMjIzMDk3MjU5M18pO30KCS5zdDE1e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDEzMzUyOTYyNTM1NDUwMDc4NzI5MDAwMDAxNDYxNjM0NjI3NzEzMDU0NDU2MV8pO30KCS5zdDE2e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA2NDM0NjQzMjI3MzA1MzczODk5MDAwMDAwMTEzNjc2Mzk5MjA4NTg2MzA4M18pO30KCS5zdDE3e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE0MTQzMzA1MjMzODc5MjMxNjg0MDAwMDAxMzMxMTk5NDgxMzczODE2Mjg0MV8pO30KCS5zdDE4e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE2OTUyNTg3NzAwNjc3NTQ5MTMxMDAwMDAwMzc2NjUzNTM1ODI1Nzk4MDU4MV8pO30KCS5zdDE5e29wYWNpdHk6MC40Njt9Cgkuc3QyMHtmaWxsOnVybCgjU1ZHSURfMDAwMDAxODM5NTc0NzcxMjM0NDYxMTc0OTAwMDAwMDIwODA5MDc0Njk3NTM4OTAyMjVfKTt9Cgkuc3QyMXtmaWxsOnVybCgjU1ZHSURfMDAwMDAwMjk3MjYwODE3NTI0ODAwMDIyOTAwMDAwMTE2NjIwNjIzNDcyNDE2NDE2MjdfKTt9Cgkuc3QyMntmaWxsOnVybCgjU1ZHSURfMDAwMDAwNTU2OTgyMDc4MDAzOTUzMDgzNjAwMDAwMDc0NDA5MTE0NzIzMTI3MjYxNTRfKTt9Cgkuc3QyM3tmaWxsOnVybCgjU1ZHSURfMDAwMDAwMzkwOTYyMDYwNTY5NDkwNDQxMzAwMDAwMTA3NTYyODgyODg5MDcwMzYwNjBfKTt9Cgkuc3QyNHtmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjgwOTk0MzM3NDkwOTQ4MzAyOTAwMDAwMDEwNDU0NTgxODE5MjkwODYxMjJfKTt9Cgkuc3QyNXtmaWxsOnVybCgjU1ZHSURfMDAwMDAxNDY1MDAzMTcxNzgzNzA0NjU5MzAwMDAwMDY3MDkxNjczODIwMTk1OTkyNjVfKTt9Cgkuc3QyNntmaWxsOnVybCgjU1ZHSURfMDAwMDAxMDMyMzc3NzA3NTQ4NzE3ODgwMTAwMDAwMDcwNDExOTAxMTA4NTI3ODYwNzdfKTt9Cgkuc3QyN3tmaWxsOnVybCgjU1ZHSURfMDAwMDAwMzI2MTQ5MDA1NjYxNTkwNjc0NDAwMDAwMTUwODIzMjUxMzgwMzExNTIwNTRfKTt9Cgkuc3QyOHtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjIxNjg4MzY3NzkxMzUyMjg5NDAwMDAwMTY5NTI2ODk5NjExOTUxOTYyOThfKTt9Cjwvc3R5bGU+CjxnPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8xXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDcxLjE3NSIgeTE9Ii0xOTY3LjAxNiIgeDI9IjIwNzEuMTc1IiB5Mj0iLTE3OTUuMjQ3NiIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTc4LjA3LDc3LjQ2YzAtMC41MS0wLjE5LTEuMDMtMC41OC0xLjQyYy0wLjc4LTAuOC0yLjA3LTAuODEtMi44Ni0wLjAyYy00LjM5LDQuMzItOS43Nyw3LjY1LTE1LjU2LDkuNjRjLTEuMDYsMC4zNi0xLjYyLDEuNTEtMS4yNiwyLjU3YzAuMzYsMS4wNiwxLjUyLDEuNjIsMi41NywxLjI2YzYuMzYtMi4xOCwxMi4yNi01Ljg1LDE3LjA4LTEwLjU5Qzc3Ljg3LDc4LjUxLDc4LjA3LDc3Ljk5LDc4LjA3LDc3LjQ2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDE2ODA4NDk0MjA4NzY3Nzg0NzMxMDAwMDAwMjU4NjM0MTkwMTE1MDY2NzQyM18iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny4zNjMzIiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwNDcuMzYzMyIgeTI9Ii0xNzk1LjI0ODUiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjgwODQ5NDIwODc2Nzc4NDczMTAwMDAwMDI1ODYzNDE5MDExNTA2Njc0MjNfKTsiIGQ9Ik05MS4wMSw0Ni41NmMwLTEuMTItMC45MS0yLjAzLTIuMDMtMi4wM3MtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDguMzEtMi40NSwxNi4zMi03LjEsMjMuMTdjLTAuNjMsMC45My0wLjM5LDIuMTksMC41NCwyLjgxYzAuOTMsMC42MywyLjE5LDAuMzksMi44MS0wLjU0Qzg4LjMyLDY0LjQ4LDkxLjAxLDU1LjY4LDkxLjAxLDQ2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEzNTY4MzUxMzc5MDY1OTUwMDI3MDAwMDAxMDAxMTkyODUxMzI1NDc2MjQwM18iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxMi4xNDI1IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwMTIuMTQyNSIgeTI9Ii0xNzk1LjI0ODUiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMzU2ODM1MTM3OTA2NTk1MDAyNzAwMDAwMTAwMTE5Mjg1MTMyNTQ3NjI0MDNfKTsiIGQ9Ik01Ni4wNCwzLjk5YzAtMC45NS0wLjY3LTEuOC0xLjY0LTEuOTljLTIuODctMC41Ni01LjgzLTAuODUtOC43OC0wLjg1Yy0xOS4yNiwwLTM2LjQ4LDEyLjItNDIuODUsMzAuMzZjLTEuMSwzLjE0LTAuNjksNi41NiwxLjEzLDkuMzdjMS44NCwyLjg0LDQuODIsNC42Myw4LjE5LDQuOTJjMS4xMSwwLjA5LDIuMS0wLjczLDIuMTktMS44NWMwLjEtMS4xMS0wLjczLTIuMS0xLjg1LTIuMTljLTIuMTEtMC4xOC0zLjk4LTEuMy01LjEzLTMuMDljLTEuMTMtMS43NS0xLjM5LTMuODctMC43LTUuODNjNS44LTE2LjU0LDIxLjQ5LTI3LjY1LDM5LjAzLTI3LjY1YzIuNjksMCw1LjM4LDAuMjYsOCwwLjc3YzEuMSwwLjIyLDIuMTYtMC41LDIuMzgtMS42QzU2LjAyLDQuMjUsNTYuMDQsNC4xMiw1Ni4wNCwzLjk5eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDE0MTQyMTQzOTQ2NjAyOTY2NzEzMDAwMDAxNTkyNjY5Mjg0NjA5Mjg4MjMxNV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA1Ni40NTM5IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwNTYuNDUzOSIgeTI9Ii0xNzk1LjI0NzgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNDE0MjE0Mzk0NjYwMjk2NjcxMzAwMDAwMTU5MjY2OTI4NDYwOTI4ODIzMTVfKTsiIGQ9Ik0yNy45OCw4NS4yMmMwLTAuNzQtMC40LTEuNDUtMS4xMS0xLjgxYy0xMi44LTYuNTItMjEuMTktMTguOTMtMjIuNDQtMzMuMmMtMC4xLTEuMTEtMS4wOC0xLjk0LTIuMTktMS44NGMtMS4xMSwwLjEtMS45MywxLjA4LTEuODQsMi4xOWMxLjM3LDE1LjY3LDEwLjU5LDI5LjMsMjQuNjQsMzYuNDZjMSwwLjUxLDIuMjIsMC4xMSwyLjcyLTAuODlDMjcuOTEsODUuODQsMjcuOTgsODUuNTMsMjcuOTgsODUuMjJ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMTAzOTQzMzI4NTk5OTI1NTMxMTMwMDAwMDA2NTgxODc4MDI1MTI4NTkyNTU0XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDE1LjE0OTciIHkxPSItMTk2Ny4wMTYiIHgyPSIyMDE1LjE0OTciIHkyPSItMTc5NS4yNDY3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTAzOTQzMzI4NTk5OTI1NTMxMTMwMDAwMDA2NTgxODc4MDI1MTI4NTkyNTU0Xyk7IiBkPSJNNDEuMDksMjMuODhjMC0wLjE5LTAuMDMtMC4zNy0wLjA4LTAuNTZjLTAuMzEtMS4wNy0xLjQzLTEuNjktMi41MS0xLjM5Yy0zLjc1LDEuMDgtNy4yNiwzLjA0LTEwLjEzLDUuNjhjLTAuODIsMC43NS0wLjg4LDIuMDQtMC4xMywyLjg2YzAuNzYsMC44MiwyLjA0LDAuODgsMi44NiwwLjEzYzIuNDItMi4yMSw1LjM2LTMuODYsOC41Mi00Ljc3QzQwLjUyLDI1LjU3LDQxLjA5LDI0Ljc2LDQxLjA5LDIzLjg4eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA2MDAxNjkzNzg5NjcyNTc4MDM1MDAwMDAwMzI1MzU3OTI0OTQ2MDI0Njk2MV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxNC4xNjgyIiB5MT0iLTE5NjcuMDE2MSIgeDI9IjIwMTQuMTY4MiIgeTI9Ii0xNzk1LjI0NzciIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjAwMTY5Mzc4OTY3MjU3ODAzNTAwMDAwMDMyNTM1NzkyNDk0NjAyNDY5NjFfKTsiIGQ9Ik02Mi4yOSwyOC4wNmMwLTAuNi0wLjI2LTEuMTktMC43Ny0xLjU5Yy00LjQtMy40OS05LjctNS40LTE1LjMyLTUuNTNjLTEuMTItMC4wMy0yLjA1LDAuODYtMi4wNywxLjk4Yy0wLjA0LDEuMTUsMC44NiwyLjA1LDEuOTgsMi4wN2M0LjczLDAuMTEsOS4xOSwxLjcyLDEyLjksNC42NWMwLjg4LDAuNywyLjE1LDAuNTUsMi44NS0wLjMzQzYyLjE1LDI4Ljk1LDYyLjI5LDI4LjUsNjIuMjksMjguMDZ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDI2ODY1ODEyODA1OTM5NTkzMTAwMDAwMDA4OTUxMDc5NzYzNzc0OTQ3NDY4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQyLjA0MzkiIHkxPSItMTk2Ny4wMTYiIHgyPSIyMDQyLjA0MzkiIHkyPSItMTc5NS4yNDgzIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDI2ODY1ODEyODA1OTM5NTkzMTAwMDAwMDA4OTUxMDc5NzYzNzc0OTQ3NDY4Xyk7IiBkPSJNODEuMDEsNDYuNTZjMC01LjYtMS4zNC0xMS4xOC0zLjg4LTE2LjEyYy0wLjk2LTEuODYtMi43LTMuMTYtNC43OC0zLjU1Yy0yLjEzLTAuNC00LjI4LDAuMTktNS45LDEuNjJjLTIuMzcsMi4wOS0zLjA0LDUuNDgtMS42Myw4LjIzYzEuNTcsMy4wNiwyLjM3LDYuMzYsMi4zNyw5LjgyYzAsMy43Ni0wLjk5LDcuNDctMi44NiwxMC43NGMtMC41NiwwLjk3LTAuMjIsMi4yMSwwLjc1LDIuNzZjMC45NywwLjU2LDIuMjEsMC4yMiwyLjc2LTAuNzVjMi4yMi0zLjg4LDMuNC04LjI5LDMuNC0xMi43NWMwLTQuMDYtMC45Ny04LjA5LTIuODEtMTEuNjhjLTAuNTYtMS4wOC0wLjI2LTIuNDksMC43MS0zLjM0YzAuNjgtMC42LDEuNTgtMC44NSwyLjQ3LTAuNjhjMC40OSwwLjA5LDEuNCwwLjQsMS45MiwxLjQyYzIuMjUsNC4zOCwzLjQzLDkuMzEsMy40MywxNC4yOGMwLDEzLjIzLTguMzUsMjUuMDgtMjAuNzksMjkuNTJjLTAuODEsMC4yNi0xLjQsMS4wMy0xLjQsMS45M2MwLDEuMTIsMC45LDIuMDMsMi4wMiwyLjAzYzAuMjMsMCwwLjQ3LTAuMDQsMC42OS0wLjEyQzcxLjU1LDc0LjkxLDgxLjAxLDYxLjUxLDgxLjAxLDQ2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDExNjIxNjM5ODE0ODI4Njk5MzIxMDAwMDAwNDYyMjg0MTU5Nzc2MjM1OTE4Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxMC4yNjIiIHkxPSItMTk2Ny4wMTcyIiB4Mj0iMjAxMC4yNjIiIHkyPSItMTc5NS4yNDgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMTYyMTYzOTgxNDgyODY5OTMyMTAwMDAwMDQ2MjI4NDE1OTc3NjIzNTkxODZfKTsiIGQ9Ik04Ny45OCwzOS4wNWgzNi4yN2MxLjEyLDAsMi4wMy0wLjkxLDIuMDMtMi4wM2MwLTEuMTItMC45LTIuMDMtMi4wMy0yLjAzSDg5LjUzQzg1Ljg2LDIxLjA1LDc1Ljc1LDkuNjIsNjIuMjUsNC4zMWMtMS4wMy0wLjQyLTIuMjIsMC4xLTIuNjIsMS4xM2MtMC40MiwxLjA0LDAuMSwyLjIyLDEuMTQsMi42M2MxMi42NSw0Ljk4LDIyLjAzLDE1Ljg1LDI1LjExLDI5LjA2YzAuMDIsMC4wNiwwLjAzLDAuMTIsMC4wNSwwLjE5bDAuMTIsMC4zNEM4Ni4zMywzOC40OSw4Ny4xMSwzOS4wNSw4Ny45OCwzOS4wNXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTgxOTA2ODgwMTE3NjYyNzQxNDAwMDAwMTA4MzAwNTIyODEwNjczNDE1MDFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzUuMjA5NiIgeTE9Ii0xOTY3LjAxNTUiIHgyPSIyMDM1LjIwOTYiIHkyPSItMTc5NS4yNDc3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDk4MTkwNjg4MDExNzY2Mjc0MTQwMDAwMDEwODMwMDUyMjgxMDY3MzQxNTAxXyk7IiBkPSJNMjAxLjQ4LDQ2LjU1YzAtNi4zNy01LjE4LTExLjU2LTExLjU2LTExLjU2aC01Ny4yNmMtMS4xMiwwLTIuMDMsMC45MS0yLjAzLDIuMDNjMCwxLjEyLDAuOTEsMi4wMywyLjAzLDIuMDNoNTcuMjZjNC4xNCwwLDcuNSwzLjM3LDcuNSw3LjVjMCw0LjE0LTMuMzcsNy41LTcuNSw3LjVoLTczLjc2Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45MSwyLjAzLDIuMDMsMi4wM2g3My43NkMxOTYuMyw1OC4xMSwyMDEuNDgsNTIuOTMsMjAxLjQ4LDQ2LjU1eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA2MzYxMjYzNDUyOTg1MTQ5Mjk1MDAwMDAwMjgyMDczODM5NjUyOTg0MjM2Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0NC43Mzc5IiB5MT0iLTE5NjYuOTk3OCIgeDI9IjIwNDQuNzM3OSIgeTI9Ii0xNzk1LjI2NTkiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjM2MTI2MzQ1Mjk4NTE0OTI5NTAwMDAwMDI4MjA3MzgzOTY1Mjk4NDIzNjZfKTsiIGQ9Ik04OC45OSw1OC4xMWgxOS4zMmMxLjExLDAsMi4wMy0wLjksMi4wMy0yLjAzYzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzSDg4Ljk5Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM0M4Ni45Nyw1Ny4yMSw4Ny44Nyw1OC4xMSw4OC45OSw1OC4xMXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTM4Njc2MDQ1MjA0NjY4NTA4OTAwMDAwMTczMjU1MDg5MzA0OTQxNTA3OTZfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzkuMTk4OSIgeTE9Ii0xOTY3LjAwODMiIHgyPSIyMDM5LjE5ODkiIHkyPSItMTc5NS4yNDgzIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDkzODY3NjA0NTIwNDY2ODUwODkwMDAwMDE3MzI1NTA4OTMwNDk0MTUwNzk2Xyk7IiBkPSJNMTYzLjc3LDU2LjU2YzEuMTEsMCwyLjAzLTAuOTEsMi4wMy0yLjAzYzAtNS41Mi00LjQ5LTEwLTEwLTEwSDg4Ljk5Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45LDIuMDMsMi4wMywyLjAzaDY2Ljc5YzMuMjgsMCw1Ljk1LDIuNjcsNS45NSw1Ljk1QzE2MS43NCw1NS42NSwxNjIuNjQsNTYuNTYsMTYzLjc3LDU2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEwNTM5ODcyNjQzMzk3MDEzNTI2MDAwMDAwMDA3OTUxMjAzOTEwNjY2NzM5Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAzNS4yMDk2IiB5MT0iLTE5NjcuMDE0OSIgeDI9IjIwMzUuMjA5NiIgeTI9Ii0xNzk1LjI0ODIiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMDUzOTg3MjY0MzM5NzAxMzUyNjAwMDAwMDAwNzk1MTIwMzkxMDY2NjczOTZfKTsiIGQ9Ik0xOTAuNjMsNDYuNTVjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNoLTE3LjQzYy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45MSwyLjAzLDIuMDMsMi4wM2gxNy40M0MxODkuNzIsNDguNTgsMTkwLjYzLDQ3LjY3LDE5MC42Myw0Ni41NXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNjIxNjQxNjgxNzQxNDY0NDExMTAwMDAwMTYxMjU3NzQyMjA3MzYxMjc2NzBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTkuMTk4MiIgeTE9Ii0xOTY3LjAxODMiIHgyPSIyMDU5LjE5ODIiIHkyPSItMTc5NS4yNDEiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjIxNjQxNjgxNzQxNDY0NDExMTAwMDAwMTYxMjU3NzQyMjA3MzYxMjc2NzBfKTsiIGQ9Ik0xMzIuNiw4Ny4wM2M2LjIyLDAsMTEuMjgtNS4wNSwxMS4yOC0xMS4yOFY1Ni4wOGMwLTEuMTEtMC45MS0yLjAzLTIuMDMtMi4wM2gtMTguNTFjLTEuMTIsMC0yLjAzLDAuOTEtMi4wMywyLjAzdjE5LjY3QzEyMS4zMiw4MS45OCwxMjYuMzcsODcuMDMsMTMyLjYsODcuMDN6IE0xMzIuNiw4Mi45OGMtMy45OSwwLTcuMjMtMy4yNC03LjIzLTcuMjNWNTguMTFoMTQuNDZ2MTcuNjRDMTM5LjgzLDc5Ljc0LDEzNi41OCw4Mi45OCwxMzIuNiw4Mi45OHoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMzI3ODcyMjgyMDI2MzQwMDQ4NTAwMDAwMTMxMTE3MDIzMjU4MzI2NjMyMTRfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTguMjQ2MyIgeTE9Ii0xOTY3LjAxNTEiIHgyPSIyMDU4LjI0NjMiIHkyPSItMTc5NS4yNDI4IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTMyNzg3MjI4MjAyNjM0MDA0ODUwMDAwMDEzMTExNzAyMzI1ODMyNjYzMjE0Xyk7IiBkPSJNMTMyLjYsNzcuNzVjMS4xMSwwLDIuMDMtMC45MSwyLjAzLTIuMDNWNjMuNDZjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNjLTEuMTIsMC0yLjAzLDAuOS0yLjAzLDIuMDN2MTIuMjdDMTMwLjU3LDc2Ljg0LDEzMS40Nyw3Ny43NSwxMzIuNiw3Ny43NXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMDI1MTE1NTY2NDkyMDg3MDkxNjAwMDAwMTAxNDAyNTU0MjgwODE1MTMzODJfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTkuMTk4MiIgeTE9Ii0xOTY3LjAyNTYiIHgyPSIyMDU5LjE5ODIiIHkyPSItMTc5NS4yNDQ0IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTAyNTExNTU2NjQ5MjA4NzA5MTYwMDAwMDEwMTQwMjU1NDI4MDgxNTEzMzgyXyk7IiBkPSJNMTYzLjc3LDg3LjAzYzYuMjIsMCwxMS4yOC01LjA1LDExLjI4LTExLjI4VjU2LjA4YzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzaC0xOC41MWMtMS4xMSwwLTIuMDMsMC45MS0yLjAzLDIuMDN2MTEuNTdjMCwwLjkxLDAuNiwxLjY4LDEuNDMsMS45M2MwLjE4LDAuMDYsMC4zOCwwLjA5LDAuNiwwLjA5YzAuMjEsMCwwLjQyLTAuMDMsMC42LTAuMDljMC44My0wLjI1LDEuNDMtMS4wMiwxLjQzLTEuOTN2LTkuNTVIMTcxdjE3LjY0YzAsMy45OS0zLjI0LDcuMjMtNy4yMyw3LjIzcy03LjIzLTMuMjQtNy4yMy03LjIzYzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzYy0xLjExLDAtMi4wMywwLjkxLTIuMDMsMi4wM0MxNTIuNDksODEuOTgsMTU3LjU1LDg3LjAzLDE2My43Nyw4Ny4wM3oiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNjkzNjI0MDM4ODQyMjM3ODk5MjAwMDAwMTY1MjE2NTM3MTE2OTg0MDE5MzBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTQuNzgzMiIgeTE9Ii0xOTY3LjAxMjUiIHgyPSIyMDU0Ljc4MzIiIHkyPSItMTc5NS4yNDc3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDY5MzYyNDAzODg0MjIzNzg5OTIwMDAwMDE2NTIxNjUzNzExNjk4NDAxOTMwXyk7IiBkPSJNMTYzLjc3LDc4LjJjMS4xMSwwLDIuMDMtMC45LDIuMDMtMi4wM1Y1Ni4wOGMwLTEuMTEtMC45MS0yLjAzLTIuMDMtMi4wM2MtMS4xMiwwLTIuMDMsMC45MS0yLjAzLDIuMDN2MjAuMDlDMTYxLjc0LDc3LjMsMTYyLjY0LDc4LjIsMTYzLjc3LDc4LjJ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDg2Njg4MTY0MzMyOTEwODA3MDcwMDAwMDE1OTQ0MjYwMjAwOTk3Mzk3NjY4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDcwLjM3MDgiIHkxPSItMTk2Ny4wMTU5IiB4Mj0iMjA3MC4zNzA4IiB5Mj0iLTE3OTUuMjQ4NCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA4NjY4ODE2NDMzMjkxMDgwNzA3MDAwMDAxNTk0NDI2MDIwMDk5NzM5NzY2OF8pOyIgZD0iTTUxLjMzLDg0Ljg5YzAtMC43MS0wLjExLTEuNDMtMC4zMy0yLjEyYy0wLjg5LTIuODEtMy40Ny00Ljc5LTYuNDMtNC45MmMtMS43Mi0wLjA4LTMuNTItMC4yOC01LjM1LTAuNmMtNC4xMy0wLjcyLTguMi0yLjUzLTEyLjA4LTUuMzdjLTAuOS0wLjY2LTIuMTctMC40Ni0yLjgzLDAuNDRjLTAuNjYsMC45LTAuNDYsMi4xNywwLjQ0LDIuODNjNC40LDMuMjEsOS4wMyw1LjI2LDEzLjc4LDYuMDljMiwwLjM1LDMuOTcsMC41Nyw1Ljg3LDAuNjVjMS4yNiwwLjA2LDIuMzcsMC45LDIuNzQsMi4wOWMwLjMsMC45NCwwLjEzLDEuOTQtMC40NywyLjcyYy0wLjYsMC43OS0xLjUyLDEuMjItMi41MiwxLjE5Yy0wLjUyLTAuMDItMS4wNS0wLjA1LTEuNTctMC4xYy0zLjM0LTAuMzEtNi4yNS0wLjg0LTguODgtMS42NGMtMS4wNy0wLjMyLTIuMiwwLjI4LTIuNTIsMS4zNWMtMC4zMiwxLjA3LDAuMjgsMi4yLDEuMzUsMi41MmMyLjg5LDAuODcsNi4wNiwxLjQ2LDkuNjgsMS43OWMwLjYsMC4wNSwxLjIsMC4wOSwxLjc5LDAuMTJjMi4zLDAuMDksNC41MS0wLjk1LDUuOS0yLjc4QzUwLjg0LDg3LjkyLDUxLjMzLDg2LjQxLDUxLjMzLDg0Ljg5eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDAyOTc2NzczOTEzOTIzNTQxNzY3MDAwMDAwOTA0MTA5MDA1NjQxODI3OTg0MV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAwNi43MyIgeTE9Ii0xOTY3LjAxNiIgeDI9IjIwMDYuNzMiIHkyPSItMTc5NS4yNDc5IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDI5NzY3NzM5MTM5MjM1NDE3NjcwMDAwMDA5MDQxMDkwMDU2NDE4Mjc5ODQxXyk7IiBkPSJNNjkuOTEsMjEuNzFjMC0wLjU1LTAuMjMtMS4xMS0wLjY3LTEuNTFjLTYuNDktNS44My0xNC44OC05LjA0LTIzLjYyLTkuMDRjLTkuNDYsMC0xOC4zNSwzLjY4LTI1LjAyLDEwLjM3Yy0wLjc5LDAuNzktMC43OSwyLjA3LDAsMi44NmMwLjc5LDAuNzksMi4wNywwLjc5LDIuODYsMGM1LjkxLTUuOTIsMTMuNzgtOS4xOCwyMi4xNi05LjE4YzcuNzUsMCwxNS4xNywyLjg0LDIwLjkyLDhjMC44MywwLjc1LDIuMTEsMC42OCwyLjg2LTAuMTVDNjkuNzQsMjIuNjgsNjkuOTEsMjIuMiw2OS45MSwyMS43MXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTM4ODI5OTM5MzU0Njc2MDI4MzAwMDAwMDEwNzk3MzU1NTE4Nzk4MDkxNjhfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzguODk1IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwMzguODk1IiB5Mj0iLTE3OTUuMjQ4NCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA5Mzg4Mjk5MzkzNTQ2NzYwMjgzMDAwMDAwMTA3OTczNTU1MTg3OTgwOTE2OF8pOyIgZD0iTTQzLjIyLDcyLjA3Yy0zLjM3LTAuMzEtNi42NC0xLjMtOS43LTIuOTVjMCwwLDAsMCwwLDBjLTcuNDgtNC4wNC0xMi40OC0xMS40Mi0xMy4zNi0xOS43NWMtMC40OC00LjUxLDAuMjEtOS4wNCwyLjAxLTEzLjFjMC40OS0xLjEyLDAuMTMtMi40Ni0wLjg3LTMuMjdjLTAuNy0wLjU3LTEuNjEtMC43Ny0yLjQ4LTAuNTVjLTAuODcsMC4yMi0xLjU4LDAuODEtMS45NCwxLjYzYy0xLjcxLDMuOTQtMi41OCw4LjE0LTIuNTgsMTIuNDhjMCw3LjYyLDIuNzYsMTQuOTYsNy43OCwyMC42N2MwLjc0LDAuODQsMC42NiwyLjEyLTAuMTgsMi44NmMtMC44NCwwLjc0LTIuMTIsMC42Ni0yLjg2LTAuMThjLTUuNjctNi40NS04Ljc5LTE0Ljc0LTguNzktMjMuMzRjMC00LjksMC45OC05LjY0LDIuOTItMTQuMDljMC44Ny0xLjk5LDIuNTctMy40Myw0LjY4LTMuOTVjMi4xMS0wLjUyLDQuMy0wLjA0LDUuOTksMS4zM2MyLjQzLDEuOTYsMy4yNyw1LjI3LDIuMDQsOC4wNmMtMS41MSwzLjQyLTIuMDksNy4yNC0xLjY5LDExLjA0YzAuNzQsNyw0Ljk1LDEzLjIsMTEuMjYsMTYuNjFjMCwwLDAsMCwwLDBjMi41OCwxLjM5LDUuMzIsMi4yMyw4LjE1LDIuNDljNS42LDAuNTEsMTEuMDctMS4xMSwxNS40My00LjU3YzAuODgtMC43LDIuMTUtMC41NSwyLjg1LDAuMzNjMC4zLDAuMzcsMC40NCwwLjgyLDAuNDQsMS4yNmMwLDAuNi0wLjI2LDEuMTktMC43NywxLjU5QzU2LjM2LDcwLjc0LDQ5Ljg2LDcyLjY3LDQzLjIyLDcyLjA3eiIvPgoJPGcgY2xhc3M9InN0MTkiPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxNjU5MjYyODAwNTEzMTA0NDAzMjAwMDAwMTQ4MDg3NTY2ODYzMTI1MjIxNjBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMjUuNjgwMiIgeTE9Ii0xODk4LjQ4MzIiIHgyPSIyMDI1LjY4MDIiIHkyPSItMTg4OC41MTg5IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjU5MjYyODAwNTEzMTA0NDAzMjAwMDAwMTQ4MDg3NTY2ODYzMTI1MjIxNjBfKTsiIGQ9Ik05MC41MywzOS4wNWg4Ljk2Yy0wLjI5LTEuMzItMC42NS0yLjY3LTEuMS00LjA1aC04Ljg2Qzg5LjUzLDM1LDkwLjA3LDM2LjQ4LDkwLjUzLDM5LjA1eiIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNTQ5ODA4MTk0NDEyOTU1MjU4ODAwMDAwMDM0MjAxMDE1ODAwNTA5NDgyODdfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzUuMjA5MiIgeTE9Ii0xODk4LjQ4MyIgeDI9IjIwMzUuMjA5MiIgeTI9Ii0xODg4LjUxOTgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNjtzdG9wLW9wYWNpdHk6MCIvPgoJCTwvbGluZWFyR3JhZGllbnQ+CgkJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA1NDk4MDgxOTQ0MTI5NTUyNTg4MDAwMDAwMzQyMDEwMTU4MDA1MDk0ODI4N18pOyIgZD0iTTkxLjE0LDQ4LjU4aDkuMzVjMC4wMS0xLjI4LTAuMDQtMi42My0wLjE2LTQuMDVoLTkuMThDOTEuMiw0NS43OCw5MS4yMSw0Ny4xNCw5MS4xNCw0OC41OHoiLz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDE4OTU4NDM3NjQ5ODMxOTU3MzQwMDAwMDAwNTExMDg1NjE2NjYxNzg1NzM4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQ0LjczNzkiIHkxPSItMTg5OC40ODMzIiB4Mj0iMjA0NC43Mzc5IiB5Mj0iLTE4ODguNTE5OCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDE4OTU4NDM3NjQ5ODMxOTU3MzQwMDAwMDAwNTExMDg1NjE2NjYxNzg1NzM4Xyk7IiBkPSJNODkuNjgsNTguMTFoOS42NGMwLjI4LTEuMTQsMC41Ni0yLjUsMC43Ny00LjA1aC05LjUzQzkwLjM1LDU1LjM2LDkwLjA2LDU2LjcyLDg5LjY4LDU4LjExeiIvPgoJPC9nPgoJPGcgY2xhc3M9InN0MTkiPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxNzAyNDIzNDMxNjM5ODcyMTA1MTAwMDAwMDgyODI0ODg5MDMyNjI0ODgyMTNfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDcuNjQyNSIgeTE9Ii0xODY1LjQwMDkiIHgyPSIyMDU2LjkwMjgiIHkyPSItMTg2NS4yMzI1IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxyZWN0IHg9IjEyMS4zMiIgeT0iNTguMTEiIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNzAyNDIzNDMxNjM5ODcyMTA1MTAwMDAwMDgyODI0ODg5MDMyNjI0ODgyMTNfKTsiIHdpZHRoPSI0LjA1IiBoZWlnaHQ9IjExLjQ4Ii8+CgkJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA3MzY4NzQzODY4NjMzMDI3MzAxMDAwMDAwODA2MTQyNzE4NTM3MDQ2NDkzNV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny40NzUyIiB5MT0iLTE4NTYuMTk3IiB4Mj0iMjA1Ni43MzU0IiB5Mj0iLTE4NTYuMDI4NyIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDczNjg3NDM4Njg2MzMwMjczMDEwMDAwMDA4MDYxNDI3MTg1MzcwNDY0OTM1Xyk7IiBkPSJNMTMwLjU3LDY5LjU5aDQuMDV2LTYuMTRjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNjLTEuMTIsMC0yLjAzLDAuOS0yLjAzLDIuMDNWNjkuNTl6Ii8+CgkJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEyNzAzMzU4NDA4MDg0NTk2NzUyMDAwMDAxMDE3OTgyMTAxMjgyOTMxNjc1MF8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny4zMDYiIHkxPSItMTg0Ni44OTYyIiB4Mj0iMjA1Ni41NjY0IiB5Mj0iLTE4NDYuNzI3OSIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cmVjdCB4PSIxMzkuODMiIHk9IjU4LjExIiBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTI3MDMzNTg0MDgwODQ1OTY3NTIwMDAwMDEwMTc5ODIxMDEyODI5MzE2NzUwXyk7IiB3aWR0aD0iNC4wNSIgaGVpZ2h0PSIxMS40OCIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNTY0MTMwOTM4OTg1OTY3Mjk0NzAwMDAwMDI3MzEyNzg1MjA3NTMxNzE2MzFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDcuMDc1NyIgeTE9Ii0xODM0LjIyNTIiIHgyPSIyMDU2LjMzNTkiIHkyPSItMTgzNC4wNTY4IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNTY0MTMwOTM4OTg1OTY3Mjk0NzAwMDAwMDI3MzEyNzg1MjA3NTMxNzE2MzFfKTsiIGQ9Ik0xNTMuOTEsNjkuNTloMS4xOWMwLjgzLTAuMjUsMS40My0xLjAyLDEuNDMtMS45M3YtOS41NWgtNC4wNXY5LjU1QzE1Mi40OSw2OC41NywxNTMuMDgsNjkuMzQsMTUzLjkxLDY5LjU5eiIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMzYzOTcwODMxOTY1OTUxMjY0NjAwMDAwMDQ0MzgzNjg2NjA4MTU1MTY4MDNfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDYuOTA3NyIgeTE9Ii0xODI0Ljk5MDEiIHgyPSIyMDU2LjE2OCIgeTI9Ii0xODI0LjgyMTgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNjtzdG9wLW9wYWNpdHk6MCIvPgoJCTwvbGluZWFyR3JhZGllbnQ+CgkJPHJlY3QgeD0iMTYxLjc0IiB5PSI1OC4xMSIgc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDEzNjM5NzA4MzE5NjU5NTEyNjQ2MDAwMDAwNDQzODM2ODY2MDgxNTUxNjgwM18pOyIgd2lkdGg9IjQuMDUiIGhlaWdodD0iMTEuNDgiLz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMTM1NjUyMzI2NzcxMDQwMDc5ODYwMDAwMDE1MTQ5Njg3MzUxNTA2MjE5MTUzXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQ2LjcyODMiIHkxPSItMTgxNS43MzgiIHgyPSIyMDU1Ljk4ODUiIHkyPSItMTgxNS41Njk3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxyZWN0IHg9IjE3MSIgeT0iNTguMTEiIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMzU2NTIzMjY3NzEwNDAwNzk4NjAwMDAwMTUxNDk2ODczNTE1MDYyMTkxNTNfKTsiIHdpZHRoPSI0LjA1IiBoZWlnaHQ9IjExLjQ4Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" class="card-logo" alt="Secret Key">
+    <h1>Secret Key</h1>
+    <div class="header-sub">Szyfrowanie sekretu</div>
+</div>
+
+<div class="card" id="main-card">
+
+    <div class="warning">
+        <strong>⚠ Używaj tylko lokalnie! Sekret nigdy nie opuszcza Twojej przeglądarki.</strong>
+        Całe przetwarzanie odbywa się w JavaScript — żadne dane nie są wysyłane na serwer.
+        Po wygenerowaniu udziałów zamknij kartę przeglądarki.
+    </div>
+
+    <!-- Alert -->
+    <div class="alert alert-error hidden" id="alert-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="alert-error-msg"></span>
+    </div>
+
+    <!-- Sekret -->
+    <div class="section-label" style="margin-top:0">Sekret</div>
+    <div class="secret-wrapper">
+        <textarea id="secret-input" placeholder="Wpisz lub wklej sekret (hasło, klucz, tekst)…" spellcheck="false" autocomplete="off"></textarea>
+        <div class="secret-footer">
+            <span class="secret-len" id="secret-len">0 znaków</span>
+            <button type="button" class="toggle-secret" id="toggle-secret" title="Pokaż / ukryj">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eye-icon">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Parametry -->
+    <div class="section-label" style="margin-top:0">Parametry podziału</div>
+    <div class="params-grid">
+        <!-- Liczba udziałów N -->
+        <div class="param-card">
+            <div class="param-label">Łączna liczba udziałów</div>
+            <div class="param-row">
+                <button type="button" class="param-btn" onclick="changeN(-1)">−</button>
+                <div class="param-val" id="val-n">5</div>
+                <button type="button" class="param-btn" onclick="changeN(+1)">+</button>
+            </div>
+            <div class="param-hint">Ile udziałów Secret Key zostanie wygenerowanych.</div>
+        </div>
+
+        <!-- Próg K -->
+        <div class="param-card">
+            <div class="param-label">Wymagane udziały do odszyfrowania</div>
+            <div class="param-row">
+                <button type="button" class="param-btn" onclick="changeK(-1)">−</button>
+                <div class="param-val" id="val-k">3</div>
+                <button type="button" class="param-btn" onclick="changeK(+1)">+</button>
+            </div>
+            <div class="param-hint">Ile kart jest potrzebnych, żeby wspólnie odtworzyć sekret.</div>
+            <div class="threshold-warning" id="threshold-warning">⚠ Próg nie może być większy niż N.</div>
+        </div>
+    </div>
+
+    <!-- Akcje -->
+    <div class="action-row">
+        <button type="button" class="btn btn-primary" onclick="doGenerate()">Generuj udziały</button>
+        <button type="button" class="btn btn-ghost"   onclick="resetAll()">Wyczyść</button>
+    </div>
+
+    <!-- Wyniki -->
+    <div id="results-area"></div>
+
+</div>
+
+<!-- CUSTOM CURSOR -->
+<svg id="cur-arrow" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M4 2 L20 11 L13 13 L10 20 Z" fill="none" stroke="#c084fc" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>
+<div id="cur-ring"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STAN
+// ═══════════════════════════════════════════════
+var N = 5, K = 3;
+var lastShares = [];
+var secretHidden = false;
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function esc(s) {
+    return String(s)
+        .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+        .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function pad2(n) { return String(n).padStart(2,'0'); }
+
+// ═══════════════════════════════════════════════
+//  LOADING SCREEN
+// ═══════════════════════════════════════════════
+var loadingEl   = document.getElementById('loading-screen');
+var loadingText = document.getElementById('loading-text');
+var loadingAt   = 0;
+var LOADING_MIN = 800;
+
+function showLoading(text) {
+    loadingText.textContent = text || 'Generowanie…';
+    loadingAt = Date.now();
+    loadingEl.classList.add('show');
+    document.dispatchEvent(new Event('cursorReset'));
+}
+function hideLoading(cb) {
+    var delay = Math.max(0, LOADING_MIN - (Date.now() - loadingAt));
+    setTimeout(function() { loadingEl.classList.remove('show'); if (cb) cb(); }, delay);
+}
+
+// ═══════════════════════════════════════════════
+//  ALERT + SHAKE
+// ═══════════════════════════════════════════════
+var alertEl  = document.getElementById('alert-error');
+var alertMsg = document.getElementById('alert-error-msg');
+var mainCard = document.getElementById('main-card');
+
+function showError(msg) {
+    alertMsg.textContent = msg;
+    alertEl.classList.remove('hidden');
+    alertEl.style.animation = 'none';
+    alertEl.offsetHeight;
+    alertEl.style.animation = 'alertIn 0.25s cubic-bezier(0.22,1,0.36,1) both';
+    mainCard.classList.remove('shake');
+    mainCard.offsetHeight;
+    mainCard.classList.add('shake');
+}
+function hideError() { alertEl.classList.add('hidden'); }
+
+// ═══════════════════════════════════════════════
+//  KOPIOWANIE
+// ═══════════════════════════════════════════════
+function copyText(text, btn, label) {
+    navigator.clipboard.writeText(text).then(function() {
+        if (btn) { var o=btn.textContent; btn.textContent='✓ '+(label||'Skopiowano'); setTimeout(function(){ btn.textContent=o; },2000); }
+    }).catch(function() {
+        var ta=document.createElement('textarea');
+        ta.value=text; ta.style.cssText='position:fixed;opacity:0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        if (btn) { var o=btn.textContent; btn.textContent='✓ Skopiowano'; setTimeout(function(){ btn.textContent=o; },2000); }
+    });
+}
+
+// ═══════════════════════════════════════════════
+//  PARAMETRY N / K
+// ═══════════════════════════════════════════════
+function updateParams() {
+    document.getElementById('val-n').textContent = N;
+    document.getElementById('val-k').textContent = K;
+    
+    var warn = document.getElementById('threshold-warning');
+    warn.classList.toggle('show', K > N);
+}
+
+function changeN(delta) {
+    var nv = N + delta;
+    if (nv < 2 || nv > 20) return;
+    N = nv;
+    if (K > N) K = N;
+    updateParams();
+}
+
+function changeK(delta) {
+    var nv = K + delta;
+    if (nv < 2) return;
+    K = nv;
+    if (K > N) N = K;
+    updateParams();
+}
+
+// ═══════════════════════════════════════════════
+//  SEKRET — licznik + show/hide
+// ═══════════════════════════════════════════════
+var secretInput = document.getElementById('secret-input');
+var secretLenEl = document.getElementById('secret-len');
+
+secretInput.addEventListener('input', function() {
+    var len = secretInput.value.length;
+    secretLenEl.textContent = len + ' ' + (len === 1 ? 'znak' : len < 5 ? 'znaki' : 'znaków');
+});
+
+document.getElementById('toggle-secret').addEventListener('click', function() {
+    secretHidden = !secretHidden;
+    secretInput.style.webkitTextSecurity = secretHidden ? 'disc' : '';
+    secretInput.style.textSecurity = secretHidden ? 'disc' : '';
+    var icon = document.getElementById('eye-icon');
+    icon.innerHTML = secretHidden
+        ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+        : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+});
+
+// ═══════════════════════════════════════════════
+//  GENEROWANIE
+// ═══════════════════════════════════════════════
+function doGenerate() {
+    hideError();
+
+    var secret = secretInput.value;
+    if (!secret.trim()) { showError('Wpisz sekret przed wygenerowaniem udziałów.'); return; }
+    if (K > N) { showError('Próg K nie może być większy niż liczba udziałów N.'); return; }
+
+    showLoading('Generowanie…');
+
+    setTimeout(function() {
+        try {
+            // identycznie jak iancoleman: str2hex + minPad=1024
+            var hex = secrets.str2hex(secret);
+            var shares = secrets.share(hex, N, K, 1024);
+            lastShares = shares;
+            hideLoading(function() {
+                renderResults(shares);
+            });
+        } catch(e) {
+            hideLoading(function() {
+                showError('Błąd generowania: ' + (e.message || 'nieznany błąd.'));
+            });
+        }
+    }, 50);
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER WYNIKÓW
+// ═══════════════════════════════════════════════
+function renderResults(shares) {
+    var area = document.getElementById('results-area');
+    var now  = new Date();
+    var ts   = now.getFullYear() + '-' + pad2(now.getMonth()+1) + '-' + pad2(now.getDate())
+             + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
+
+    var html = '<div class="results-section">';
+
+    // Stats
+    html += '<div class="section-label" style="margin-top:0">Wynik podziału</div>';
+    html += '<div class="stats-bar">';
+    html += '<div class="stat"><div class="stat-label">Udziałów</div><div class="stat-val accent">' + shares.length + '</div></div>';
+    html += '<div class="stat"><div class="stat-label">Próg</div><div class="stat-val success">' + K + ' z ' + N + '</div></div>';
+    html += '<div class="stat"><div class="stat-label">Algorytm</div><div class="stat-val info">Shamir SSS</div></div>';
+    html += '<div class="stat"><div class="stat-label">Wygenerowano</div><div class="stat-val">' + esc(ts) + '</div></div>';
+    html += '</div>';
+
+    // Karty udziałów
+    html += '<div class="section-label">Udziały do dystrybucji</div>';
+    html += '<div class="shares-grid">';
+
+    shares.forEach(function(share, i) {
+        var num = pad2(i + 1);
+        html +=
+            '<div class="share-card" style="animation-delay:' + (i * 0.04) + 's">' +
+                '<div class="share-header">' +
+                    '<div class="share-num">Udział ' + num + ' / ' + pad2(shares.length) + '</div>' +
+                    '<div class="share-actions">' +
+                        '<button type="button" class="copy-btn" data-share="' + esc(share) + '">Kopiuj</button>' +
+                        '<button type="button" class="dl-single-btn" data-idx="' + i + '">↓ .txt</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="hash-box" data-share="' + esc(share) + '">' +
+                    '<span class="hash-text">' + esc(share) + '</span>' +
+                    '<div class="hash-copied-overlay">✓ Skopiowano do schowka</div>' +
+                '</div>' +
+                '<div class="hash-hint">Kliknij udział aby skopiować do schowka.</div>' +
+            '</div>';
+    });
+
+    html += '</div>'; // shares-grid
+
+    // Podgląd pliku TXT ze wszystkimi udziałami
+    var fileContent = buildTxtFile(shares, ts);
+    var codeHtml = esc(fileContent)
+        .replace(/(^#[^\n]*)/gm, '<span class="cm">$1</span>')
+        .replace(/(Udział \d+:)/g, '<span class="cv">$1</span>')
+        .replace(/^(8[0-9a-f]{2}[0-9a-f]+)$/gm, '<span class="cn">$1</span>');
+
+    html +=
+        '<div class="file-block">' +
+            '<div class="file-block-header">' +
+                '<div class="file-block-title">Podgląd &nbsp;<span>secret-key-shares.txt</span></div>' +
+            '</div>' +
+            '<pre class="file-preview" id="file-preview">' + codeHtml + '</pre>' +
+            '<div class="download-row">' +
+                '<button type="button" class="btn-download" id="btn-dl-all">↓ Pobierz secret-key-shares.txt</button>' +
+                '<button type="button" class="btn-copy-file" id="btn-copy-file">Kopiuj</button>' +
+            '</div>' +
+        '</div>';
+
+    html += '</div>'; // results-section
+
+    area.innerHTML = html;
+
+    // Eventy przycisków po wstrzyknięciu HTML
+    document.getElementById('btn-dl-all').addEventListener('click', function() { downloadAll(shares, ts); });
+    document.getElementById('btn-copy-file').addEventListener('click', function() {
+        var pre = document.getElementById('file-preview');
+        if (pre) copyText(pre.innerText, this, 'Skopiowano');
+    });
+
+    setTimeout(function() { area.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+}
+
+// ═══════════════════════════════════════════════
+//  BUDOWANIE PLIKU TXT
+// ═══════════════════════════════════════════════
+function buildTxtFile(shares, ts) {
+    var lines = [];
+    lines.push('# ════════════════════════════════════════════');
+    lines.push('#  Secret Key Sharing — udziały');
+    lines.push('#  Wygenerowano: ' + ts);
+    lines.push('#  Algorytm:    Shamir SSS');
+    lines.push('#  Udziały:     ' + shares.length + '  |  Próg: ' + K + ' z ' + N);
+    lines.push('#');
+    lines.push('#  UWAGA: Przechowuj każdy udział osobno!');
+    lines.push('#  Do odtworzenia sekretu potrzeba minimum ' + K + ' udziałów.');
+    lines.push('# ════════════════════════════════════════════');
+    lines.push('');
+    shares.forEach(function(s, i) {
+        lines.push('Udział ' + pad2(i+1) + ':');
+        lines.push(s);
+        lines.push('');
+    });
+    return lines.join('\n');
+}
+
+function buildSingleTxt(share, idx, ts) {
+    var lines = [];
+    lines.push('# ════════════════════════════════════════════');
+    lines.push('#  Secret Key Sharing — Udział ' + pad2(idx+1) + ' z ' + pad2(N));
+    lines.push('#  Wygenerowano: ' + ts);
+    lines.push('#  Próg:        ' + K + ' z ' + N + ' udziałów');
+    lines.push('#');
+    lines.push('#  UWAGA: Nie udostępniaj tego pliku nikomu');
+    lines.push('#  poza zaufanymi osobami w Twoim schemacie!');
+    lines.push('# ════════════════════════════════════════════');
+    lines.push('');
+    lines.push(share);
+    lines.push('');
+    return lines.join('\n');
+}
+
+// ═══════════════════════════════════════════════
+//  POBIERANIE
+// ═══════════════════════════════════════════════
+function dlBlob(content, filename) {
+    var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadAll(shares, ts) {
+    dlBlob(buildTxtFile(shares, ts), 'secret-key-shares.txt');
+}
+
+// ═══════════════════════════════════════════════
+//  RESET
+// ═══════════════════════════════════════════════
+function resetAll() {
+    hideError();
+    secretInput.value = '';
+    secretLenEl.textContent = '0 znaków';
+    document.getElementById('results-area').innerHTML = '';
+    lastShares = [];
+    N = 5; K = 3;
+    updateParams();
+}
+
+// ═══════════════════════════════════════════════
+//  DELEGACJA KLIKNIĘĆ NA WYNIKACH
+// ═══════════════════════════════════════════════
+document.addEventListener('click', function(e) {
+    // Przycisk kopiuj w nagłówku karty
+    var copyBtn = e.target.closest('.copy-btn');
+    if (copyBtn && copyBtn.dataset.share) {
+        copyText(copyBtn.dataset.share, copyBtn, 'Skopiowano');
+        return;
+    }
+
+    // Przycisk pobierz single .txt
+    var dlSingle = e.target.closest('.dl-single-btn');
+    if (dlSingle) {
+        var idx = parseInt(dlSingle.dataset.idx, 10);
+        if (!isNaN(idx) && lastShares[idx]) {
+            var now = new Date();
+            var ts  = now.getFullYear() + '-' + pad2(now.getMonth()+1) + '-' + pad2(now.getDate())
+                    + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
+            dlBlob(buildSingleTxt(lastShares[idx], idx, ts), 'shamir-share-' + pad2(idx+1) + '.txt');
+            var orig = dlSingle.textContent;
+            dlSingle.textContent = '✓ Pobrano';
+            setTimeout(function() { dlSingle.textContent = orig; }, 2000);
+        }
+        return;
+    }
+
+    // Kliknięcie w hash-box (udział)
+    var box = e.target.closest('.hash-box');
+    if (box && box.dataset.share) {
+        copyText(box.dataset.share, null);
+        box.classList.add('copied');
+        setTimeout(function() { box.classList.remove('copied'); }, 1600);
+    }
+});
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+updateParams();
+
+// Kursor — wejście/wyjście textarea + input
+document.querySelectorAll('textarea, input').forEach(function(el) {
+    el.addEventListener('mouseenter', function() {
+        var arrow = document.getElementById('cur-arrow');
+        var ring  = document.getElementById('cur-ring');
+        if (arrow) arrow.style.opacity = '0';
+        if (ring)  ring.style.opacity  = '0';
+    });
+    el.addEventListener('mouseleave', function() {
+        var arrow = document.getElementById('cur-arrow');
+        var ring  = document.getElementById('cur-ring');
+        if (arrow) arrow.style.opacity = '1';
+        if (ring)  ring.style.opacity  = '0.75';
+    });
+});
+
+// ═══════════════════════════════════════════════
+//  CUSTOM CURSOR
+// ═══════════════════════════════════════════════
+if (window.matchMedia('(pointer: fine)').matches) {
+(function() {
+    var arrow = document.getElementById('cur-arrow');
+    var ring  = document.getElementById('cur-ring');
+    var mx = -200, my = -200, rx = -200, ry = -200;
+    var isMorphed = false, morphTarget = null, cursorVisible = false;
+
+    var MORPH_ALL  = '.btn, .btn-primary, .btn-ghost, .btn-copy-file, .hash-box';
+    var RING_HIDE  = '.copy-btn, .dl-single-btn, .param-btn, .param-card, .toggle-secret, .btn-download';
+
+    document.addEventListener('mousemove', function(e) {
+        mx = e.clientX; my = e.clientY;
+        arrow.style.left = mx+'px'; arrow.style.top = my+'px';
+        if (!cursorVisible) { cursorVisible=true; arrow.style.opacity='1'; ring.style.opacity='0.75'; }
+        if (isMorphed && morphTarget) applyMorph(morphTarget);
+    });
+
+    (function lerpLoop() {
+        if (!isMorphed) {
+            rx += (mx-rx)*0.13; ry += (my-ry)*0.13;
+            ring.style.left = (rx-18)+'px'; ring.style.top = (ry-18)+'px';
+        }
+        requestAnimationFrame(lerpLoop);
+    })();
+
+    function applyMorph(el) {
+        var r  = el.getBoundingClientRect();
+        var br = getComputedStyle(el).borderRadius || '10px';
+        ring.style.left = r.left+'px'; ring.style.top = r.top+'px';
+        ring.style.width = r.width+'px'; ring.style.height = r.height+'px';
+        ring.style.borderRadius = br;
+    }
+    function resetToCircle() {
+        ring.style.transition = 'none';
+        ring.style.width='36px'; ring.style.height='36px'; ring.style.borderRadius='50%';
+        ring.style.left=(mx-18)+'px'; ring.style.top=(my-18)+'px';
+        rx=mx; ry=my;
+        requestAnimationFrame(function(){ requestAnimationFrame(function(){ ring.style.transition=''; }); });
+    }
+
+    document.addEventListener('scroll', function() {
+        ring.style.opacity='0';
+        clearTimeout(window._scrollTimer);
+        window._scrollTimer = setTimeout(function() {
+            isMorphed=false; morphTarget=null;
+            arrow.classList.remove('is-morphed'); ring.classList.remove('is-morphed');
+            resetToCircle();
+            if (cursorVisible) ring.style.opacity='0.75';
+        }, 150);
+    }, { passive:true });
+
+    document.addEventListener('cursorReset', function() {
+        isMorphed=false; morphTarget=null;
+        arrow.classList.remove('is-morphed'); ring.classList.remove('is-morphed');
+        resetToCircle(); ring.style.opacity='0';
+        ring.style.borderColor=''; ring.style.boxShadow='';
+    });
+
+    new MutationObserver(function() {
+        setTimeout(function() { if (isMorphed && morphTarget) applyMorph(morphTarget); }, 20);
+    }).observe(document.body, { childList:true, subtree:true });
+
+    document.addEventListener('mouseover', function(e) {
+        var t = e.target.closest(MORPH_ALL); if (!t) return;
+        isMorphed=true; morphTarget=t;
+        arrow.classList.add('is-morphed'); ring.classList.add('is-morphed'); applyMorph(t);
+    });
+    document.addEventListener('mouseout', function(e) {
+        var t = e.target.closest(MORPH_ALL); if (!t) return;
+        if (e.relatedTarget && e.relatedTarget.closest(MORPH_ALL)) return;
+        isMorphed=false; morphTarget=null;
+        arrow.classList.remove('is-morphed'); ring.classList.remove('is-morphed'); resetToCircle();
+    });
+
+    // zielony ring na hash-box
+    document.addEventListener('mouseover', function(e) {
+        if (e.target.closest(RING_HIDE)) { ring.style.opacity='0'; return; }
+        if (e.target.closest('.hash-box')) {
+            ring.style.borderColor='rgba(74,222,128,0.85)';
+            ring.style.boxShadow='0 0 12px rgba(74,222,128,0.15), 0 0 0 1px rgba(74,222,128,0.06)';
+        }
+    });
+    document.addEventListener('mouseout', function(e) {
+        var h=e.target.closest(RING_HIDE); if (!h) return;
+        if (e.relatedTarget && e.relatedTarget.closest(RING_HIDE)) return;
+        if (cursorVisible && !isMorphed) ring.style.opacity='0.75';
+    });
+    document.addEventListener('mouseout', function(e) {
+        if (!e.target.closest('.hash-box')) return;
+        if (e.relatedTarget && e.relatedTarget.closest('.hash-box')) return;
+        ring.style.borderColor=''; ring.style.boxShadow='';
+    });
+
+    document.addEventListener('mousedown', function(e) {
+        arrow.classList.add('clicking');
+        var r=document.createElement('div'); r.className='cur-ripple';
+        r.style.left=e.clientX+'px'; r.style.top=e.clientY+'px';
+        document.body.appendChild(r); setTimeout(function(){ r.remove(); }, 600);
+    });
+    document.addEventListener('mouseup',    function() { arrow.classList.remove('clicking'); });
+    document.addEventListener('mouseleave', function() { arrow.style.opacity='0'; ring.style.opacity='0'; });
+    document.addEventListener('mouseenter', function() { arrow.style.opacity='1'; ring.style.opacity=isMorphed?'1':'0.75'; });
+})();
+}
+</script>
+
+</body>
+</html>
