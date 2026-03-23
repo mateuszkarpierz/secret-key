@@ -66,7 +66,7 @@ W sytuacji kryzysowej wyznaczone osoby wykonują **4 kroki**:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
-│  01 ZEBRANIE        Minimum 3 z 5 wyznaczonych osób    │
+│  01 ZEBRANIE        Minimum 3 z 5 wyznaczonych osób     │
 │     ────────        Każda ma kartę z fragmentem klucza  │
 │                                                         │
 │  02 LOGOWANIE       Dane z karty Secret Key             │
@@ -109,11 +109,11 @@ Hasło główne: "MojeHasloDoKeePass2024!"
          │
     ┌────┴────────────────────────────┐
     │                                 │
-  S1: 801a3f9c2e4b7d1...  → Osoba A  │
-  S2: 802c8f1a5e9b3d7...  → Osoba B  │  Każdy udział
-  S3: 803e2a7f4c1b9d5...  → Osoba C  │  jest bezużyteczny
-  S4: 804b6d3e8f2a1c9...  → Osoba D  │  bez pozostałych
-  S5: 805d9f7b2e4c3a1...  → Osoba E  │
+  S1: 801a3f9c2e4b7d1...  → Osoba A   │
+  S2: 802c8f1a5e9b3d7...  → Osoba B   │  Każdy udział
+  S3: 803e2a7f4c1b9d5...  → Osoba C   │  jest bezużyteczny
+  S4: 804b6d3e8f2a1c9...  → Osoba D   │  bez pozostałych
+  S5: 805d9f7b2e4c3a1...  → Osoba E   │
     │                                 │
     └────┬────────────────────────────┘
          │
