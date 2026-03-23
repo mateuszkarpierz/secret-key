@@ -315,7 +315,7 @@ function sendSmsCode(string $phone, string $code) {
 function rememberDevice(string $username): void {
     $token   = bin2hex(random_bytes(32)); // 64-znakowy losowy token
     $expires = time() + DEVICE_TOKEN_TTL;
-    $file    = __DIR__ . '/trusted_devices.json';
+    $file    = __DIR__ . '/../../../private/trusted_devices.json';
 
     // Wczytaj istniejące tokeny
     $devices = [];
@@ -352,7 +352,7 @@ function isTrustedDevice(string $username): bool {
     $token = $_COOKIE['sk_device'] ?? '';
     if ($token === '') return false;
 
-    $file = __DIR__ . '/trusted_devices.json';
+    $file = __DIR__ . '/../../../private/trusted_devices.json';
     if (!file_exists($file)) return false;
 
     $devices = json_decode(file_get_contents($file), true) ?? [];
