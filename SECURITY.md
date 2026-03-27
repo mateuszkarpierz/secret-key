@@ -6,7 +6,7 @@ Jeśli odkryłeś lukę bezpieczeństwa w projekcie Secret Key, prosimy o **odpo
 
 ### Jak zgłosić
 
-Wyślij szczegółowy opis na: **karpierz.me**
+Wyślij szczegółowy opis na: **dev@secretkey.website**
 
 ### Co zawrzeć w zgłoszeniu
 
