@@ -192,7 +192,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 
 ### Warstwy systemu
 
-**Warstwa autoryzacji** (`/key/`)
+**Warstwa autoryzacji** (`/app/`)
 - `login.php` — formularz logowania
 - `auth.php` — logika sesji, bcrypt, 2FA, brute-force, CSRF
 - `verify.php` — weryfikacja kodu SMS
@@ -262,7 +262,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 ```bash
 /home/user/
 ├── public_html/
-│   ├── key/           ← zawartość folderu /key/
+│   ├── app/           ← zawartość folderu /app/
 │   └── decrypt/       ← zawartość folderu /decrypt/
 └── private/           ← POZA public_html
     └── secret-key.php ← wygenerowany plik konfiguracyjny
@@ -295,7 +295,7 @@ Dla każdej wyznaczonej osoby przygotuj nośnik z:
 ```
 secret-key/
 │
-├── 📁 key/                    # Publiczny — system logowania
+├── 📁 app/                    # Publiczny — system logowania
 │   ├── login.php
 │   ├── auth.php
 │   ├── verify.php
