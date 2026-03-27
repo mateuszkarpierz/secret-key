@@ -1,6 +1,8 @@
-# Polityka bezpieczeństwa
+# 🔐 Polityka bezpieczeństwa
 
-## Zgłaszanie luk bezpieczeństwa
+---
+
+## 📬 Zgłaszanie luk bezpieczeństwa
 
 Jeśli odkryłeś lukę bezpieczeństwa w projekcie Secret Key, prosimy o **odpowiedzialne zgłoszenie** — nie twórz publicznego Issue na GitHubie.
 
@@ -10,39 +12,43 @@ Wyślij szczegółowy opis na: **dev@secretkey.website**
 
 ### Co zawrzeć w zgłoszeniu
 
-- Opis luki i potencjalnego wpływu
-- Kroki do odtworzenia (proof of concept)
-- Wersja systemu której dotyczy
-- Propozycja naprawy (opcjonalnie)
+| | Element |
+|---|---|
+| 📝 | Opis luki i potencjalnego wpływu |
+| 🔁 | Kroki do odtworzenia (proof of concept) |
+| 🏷️ | Wersja systemu, której dotyczy |
+| 💡 | Propozycja naprawy *(opcjonalnie)* |
 
 ### Czego oczekiwać
 
-- Potwierdzenie otrzymania zgłoszenia w ciągu **48 godzin**
-- Informacja o postępach w ciągu **7 dni**
-- Publiczne podziękowanie po naprawieniu luki (jeśli sobie życzysz)
+| Czas | Odpowiedź |
+|---|---|
+| **48h** | Potwierdzenie otrzymania zgłoszenia |
+| **7 dni** | Informacja o postępach |
+| Po naprawie | Publiczne podziękowanie *(jeśli sobie życzysz)* |
 
 ---
 
-## Wspierane wersje
+## 🏷️ Wspierane wersje
 
 | Wersja | Status |
-|--------|--------|
+|---|---|
 | v1.0.x | ✅ Wspierana |
 
 ---
 
-## Zakres
+## 🎯 Zakres zgłoszeń
 
-### W zakresie zgłoszeń
+### ✅ W zakresie
 
 - Obejście uwierzytelnienia (bcrypt, 2FA)
 - Podatności CSRF mimo zastosowanych zabezpieczeń
 - Możliwość odtworzenia sekretu Shamira bez wymaganej liczby udziałów
 - Ujawnienie danych z katalogu `/private/`
 - Podatności na ataki brute-force mimo rate limitingu
-- XSS, SQL Injection (choć system nie używa SQL)
+- XSS, SQL Injection *(choć system nie używa SQL)*
 
-### Poza zakresem
+### ❌ Poza zakresem
 
 - Ataki wymagające fizycznego dostępu do serwera
 - Ataki socjotechniczne na posiadaczy kart Secret Key
@@ -51,16 +57,22 @@ Wyślij szczegółowy opis na: **dev@secretkey.website**
 
 ---
 
-## Dobre praktyki przy wdrożeniu
+## 🛡️ Dobre praktyki przy wdrożeniu
 
 > ⚠️ Secret Key jest systemem **self-hosted** — bezpieczeństwo instalacji zależy w dużej mierze od konfiguracji Twojego serwera.
 
-- Upewnij się że katalog `/private/` jest **poza** `public_html`
-- Używaj HTTPS (SSL/TLS) na serwerze
-- Regularnie aktualizuj PHP do najnowszej wersji 8.x
-- Nie udostępniaj pliku `secret-key.php` publicznie
-- Używaj silnych, unikalnych haseł dla każdego konta w systemie
+| | Praktyka |
+|---|---|
+| 📁 | Katalog `/private/` trzymaj **poza** `public_html` |
+| 🔒 | Używaj HTTPS (SSL/TLS) na serwerze |
+| 🔄 | Regularnie aktualizuj PHP do najnowszej wersji 8.x |
+| 🚫 | Nie udostępniaj pliku `secret-key.php` publicznie |
+| 🔑 | Używaj silnych, unikalnych haseł dla każdego konta |
 
 ---
 
+<div align="center">
+
 Prawo autorskie © 2026 · [karpierz.me](https://karpierz.me)
+
+</div>
