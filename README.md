@@ -79,17 +79,17 @@ W sytuacji kryzysowej wyznaczone osoby wykonują cztery kroki:
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                                                                      │
-│  01  ZEBRANIE        Min. 3 z 5 wyznaczonych osób                    │
-│      ─────────       Każda ma kartę z fragmentem klucza              │
+│  01  ZEBRANIE        Min. 3 z 5 wyznaczonych osób                   │
+│      ─────────       Każda ma kartę z fragmentem klucza             │
 │                                                                      │
-│  02  LOGOWANIE       Dane logowania z karty Secret Key               │
-│      ──────────      + kod SMS na przypisany numer telefonu          │
+│  02  LOGOWANIE       Dane logowania z karty Secret Key              │
+│      ──────────      + kod SMS na przypisany numer telefonu         │
 │                                                                      │
-│  03  UDZIAŁY         Każda osoba wpisuje swój fragment lub           │
-│      ─────────       skanuje kod QR z karty                          │
+│  03  UDZIAŁY         Każda osoba wpisuje swój fragment lub          │
+│      ─────────       skanuje kod QR z karty                         │
 │                                                                      │
-│  04  DOSTĘP          Hasło odtworzone lokalnie w przeglądarce —      │
-│      ────────        nie trafia na serwer                            │
+│  04  DOSTĘP          Hasło odtworzone lokalnie w przeglądarce —     │
+│      ────────        nie trafia na serwer                           │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -116,7 +116,10 @@ Każda wyznaczona osoba otrzymuje spersonalizowany nośnik z czterema elementami
 
 ## Algorytm Shamira
 
-Secret Key używa biblioteki [`secrets.js`](https://github.com/amper5and/secrets.js) — **tej samej co [iancoleman.io/shamir](https://iancoleman.io/shamir/)**, co zapewnia pełną kompatybilność i możliwość niezależnej weryfikacji.
+Secret Key używa biblioteki [`secrets.js`](https://github.com/amper5and/secrets.js) do podziału i rekonstrukcji sekretu.
+
+> [!NOTE]
+> Użyta biblioteka jest **identyczna z tą stosowaną przez [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — format udziałów jest w pełni kompatybilny, co umożliwia niezależną weryfikację poza systemem.
 
 ### Podział i rekonstrukcja sekretu
 
@@ -127,11 +130,11 @@ Hasło główne: "MojeHasloDoKeePass2024!"
          │
     ┌────┴──────────────────────────────────┐
     │                                       │
-    │  S1: 801a3f9c2e4b7d1...  →  Osoba A   │  Każdy udział
-    │  S2: 802c8f1a5e9b3d7...  →  Osoba B   │  jest bezużyteczny
-    │  S3: 803e2a7f4c1b9d5...  →  Osoba C   │  bez wymaganej
-    │  S4: 804b6d3e8f2a1c9...  →  Osoba D   │  liczby pozostałych
-    │  S5: 805d9f7b2e4c3a1...  →  Osoba E   │
+    │  S1: 801a3f9c2e4b7d1...  →  Osoba A  │  Każdy udział
+    │  S2: 802c8f1a5e9b3d7...  →  Osoba B  │  jest bezużyteczny
+    │  S3: 803e2a7f4c1b9d5...  →  Osoba C  │  bez wymaganej
+    │  S4: 804b6d3e8f2a1c9...  →  Osoba D  │  liczby pozostałych
+    │  S5: 805d9f7b2e4c3a1...  →  Osoba E  │
     │                                       │
     └────┬──────────────────────────────────┘
          │
@@ -150,7 +153,8 @@ Sekret jest zakodowany jako wyraz wolny wielomianu nad ciałem GF(2⁸). Każdy 
 f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 ```
 
-Posiadanie **mniejszej niż wymagana** liczby udziałów nie daje **żadnej** informacji o sekrecie (information-theoretic security). Dodany padding 1024 bitów uniemożliwia ataki na małe sekrety.
+> [!IMPORTANT]
+> Posiadanie **mniejszej niż wymagana** liczby udziałów nie daje **żadnej** informacji o sekrecie (information-theoretic security). Dodany padding 1024 bitów uniemożliwia ataki na małe sekrety.
 
 ### Parametry implementacji
 
@@ -208,7 +212,8 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 - `trusted_devices.json` — tokeny zaufanych urządzeń
 - `secret-key.log` — logi zdarzeń
 
-> ⚠️ Wszystkie wrażliwe pliki konfiguracyjne przechowywane są **poza katalogiem publicznym** serwera — błędna konfiguracja webservera nie grozi ich ujawnieniem.
+> [!WARNING]
+> Wszystkie wrażliwe pliki konfiguracyjne przechowywane są **poza katalogiem publicznym** serwera — błędna konfiguracja webservera nie grozi ich ujawnieniem.
 
 ---
 
@@ -253,6 +258,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 3. Kliknij „Generuj udziały"
 4. Pobierz plik `secret-key-shares.txt`
 
+> [!TIP]
 > Oba narzędzia działają **całkowicie offline** — żadne dane nie opuszczają przeglądarki.
 
 ---
