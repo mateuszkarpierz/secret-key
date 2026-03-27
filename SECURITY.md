@@ -4,7 +4,8 @@
 
 ## 📬 Zgłaszanie luk bezpieczeństwa
 
-Jeśli odkryłeś lukę bezpieczeństwa w projekcie Secret Key, prosimy o **odpowiedzialne zgłoszenie** — nie twórz publicznego Issue na GitHubie.
+> [!CAUTION]
+> Nie twórz publicznego Issue na GitHubie — zgłoś lukę bezpośrednio na **dev@secretkey.website**
 
 ### Jak zgłosić
 
@@ -59,7 +60,8 @@ Wyślij szczegółowy opis na: **dev@secretkey.website**
 
 ## 🛡️ Dobre praktyki przy wdrożeniu
 
-> ⚠️ Secret Key jest systemem **self-hosted** — bezpieczeństwo instalacji zależy w dużej mierze od konfiguracji Twojego serwera.
+> [!WARNING]
+> Secret Key jest systemem **self-hosted** — bezpieczeństwo instalacji zależy w dużej mierze od konfiguracji Twojego serwera.
 
 | | Praktyka |
 |---|---|
