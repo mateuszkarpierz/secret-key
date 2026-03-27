@@ -79,17 +79,17 @@ W sytuacji kryzysowej wyznaczone osoby wykonują cztery kroki:
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                                                                      │
-│  01  ZEBRANIE        Min. 3 z 5 wyznaczonych osób                   │
-│      ─────────       Każda ma kartę z fragmentem klucza             │
+│  01  ZEBRANIE        Min. 3 z 5 wyznaczonych osób                    │
+│      ─────────       Każda ma kartę z fragmentem klucza              │
 │                                                                      │
-│  02  LOGOWANIE       Dane logowania z karty Secret Key              │
-│      ──────────      + kod SMS na przypisany numer telefonu         │
+│  02  LOGOWANIE       Dane logowania z karty Secret Key               │
+│      ──────────      + kod SMS na przypisany numer telefonu          │
 │                                                                      │
-│  03  UDZIAŁY         Każda osoba wpisuje swój fragment lub          │
-│      ─────────       skanuje kod QR z karty                         │
+│  03  UDZIAŁY         Każda osoba wpisuje swój fragment lub           │
+│      ─────────       skanuje kod QR z karty                          │
 │                                                                      │
-│  04  DOSTĘP          Hasło odtworzone lokalnie w przeglądarce —     │
-│      ────────        nie trafia na serwer                           │
+│  04  DOSTĘP          Hasło odtworzone lokalnie w przeglądarce —      │
+│      ────────        nie trafia na serwer                            │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -127,11 +127,11 @@ Hasło główne: "MojeHasloDoKeePass2024!"
          │
     ┌────┴──────────────────────────────────┐
     │                                       │
-    │  S1: 801a3f9c2e4b7d1...  →  Osoba A  │  Każdy udział
-    │  S2: 802c8f1a5e9b3d7...  →  Osoba B  │  jest bezużyteczny
-    │  S3: 803e2a7f4c1b9d5...  →  Osoba C  │  bez wymaganej
-    │  S4: 804b6d3e8f2a1c9...  →  Osoba D  │  liczby pozostałych
-    │  S5: 805d9f7b2e4c3a1...  →  Osoba E  │
+    │  S1: 801a3f9c2e4b7d1...  →  Osoba A   │  Każdy udział
+    │  S2: 802c8f1a5e9b3d7...  →  Osoba B   │  jest bezużyteczny
+    │  S3: 803e2a7f4c1b9d5...  →  Osoba C   │  bez wymaganej
+    │  S4: 804b6d3e8f2a1c9...  →  Osoba D   │  liczby pozostałych
+    │  S5: 805d9f7b2e4c3a1...  →  Osoba E   │
     │                                       │
     └────┬──────────────────────────────────┘
          │
