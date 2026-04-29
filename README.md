@@ -301,27 +301,36 @@ Dla każdej wyznaczonej osoby przygotuj nośnik z:
 ```
 secret-key/
 │
-├── 📁 app/                    # Publiczny — system logowania
-│   ├── login.php
+├── 📁 app/                        # Publiczny — system logowania
+│   ├── 📁 decrypt/                # Chroniony — panel użytkownika
+│   │   ├── .htaccess
+│   │   ├── card-secret-key.webp
+│   │   ├── demo-baza-hasel.txt
+│   │   ├── favicon.ico
+│   │   ├── index.php
+│   │   ├── key.svg
+│   │   ├── log.php
+│   │   └── prevent-actions.js
+│   ├── .htaccess
 │   ├── auth.php
-│   ├── verify.php
-│   ├── resend.php
+│   ├── favicon.ico
+│   ├── key.svg
+│   ├── login.php
 │   ├── logout.php
-│   └── prevent-actions.js
+│   ├── prevent-actions.js
+│   ├── resend.php
+│   └── verify.php
 │
-├── 📁 decrypt/                # Chroniony — panel użytkownika
-│   ├── index.php
-│   ├── log.php
-│   └── prevent-actions.js
+├── 📁 dashboard/                  # Narzędzia konfiguracyjne (offline)
+│   ├── card-back.js
+│   ├── card-front.js
+│   ├── dashboard.html
+│   ├── favicon.ico
+│   ├── generate-card.html
+│   ├── generate-hash.html
+│   └── generate-shamir.html
 │
-├── 📁 img/                    # Zasoby graficzne
-│   └── ...
-│
-├── dashboard.html             # Panel konfiguracyjny (offline)
-├── generate-hash.html         # Generator konfiguracji
-├── generate-shamir.html       # Generator udziałów Shamira
-├── presentation.html          # Prezentacja systemu
-└── favicon.ico
+└── 📁 img/                        # Zasoby graficzne
 ```
 
 ---
