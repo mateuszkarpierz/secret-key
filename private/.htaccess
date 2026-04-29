@@ -1,0 +1,3 @@
+# home/private/.htaccess
+Order deny,allow
+Deny from all
