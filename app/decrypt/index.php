@@ -11,39 +11,6 @@ if (empty($_SESSION['login_time'])) {
     $_SESSION['login_time'] = time();
 }
 
-// ─── Powiadomienie email — wysyłane raz po zalogowaniu, nie blokuje przekierowania ───
-if (!empty($_SESSION['pending_mail'])) {
-    $_SESSION['pending_mail'] = false;
-
-    $display = $_SESSION['display_name'] ?? $_SESSION['username'];
-    $ip      = $_SERVER['REMOTE_ADDR'] ?? '—';
-    $ua      = $_SERVER['HTTP_USER_AGENT'] ?? '—';
-    $dt      = date('d.m.Y H:i:s', $_SESSION['login_time']);
-    $panel   = 'https://karpierz.me/key/decrypt/';
-
-    $subject = '🔐 Logowanie do Secret Key Panel — ' . $display;
-    $message = "Nowe logowanie do panelu Secret Key.\n\n"
-             . "─────────────────────────────\n"
-             . "Użytkownik:   " . $display . " (" . ($_SESSION['username'] ?? '—') . ")\n"
-             . "Data i czas:  " . $dt . "\n"
-             . "Adres IP:     " . $ip . "\n"
-             . "Przeglądarka: " . $ua . "\n"
-             . "─────────────────────────────\n\n"
-             . "Panel: " . $panel . "\n";
-
-    $messageId = sprintf("<%s.%s@karpierz.me>", date('YmdHis'), uniqid());
-    $headers   = "Message-ID: $messageId\r\n";
-    $headers  .= "From: Secret Key <no-reply@karpierz.me>\r\n";
-    $headers  .= "Reply-To: no-reply@karpierz.me\r\n";
-    $headers  .= "Return-Path: no-reply@karpierz.me\r\n";
-    $headers  .= "X-Sender: no-reply@karpierz.me\r\n";
-    $headers  .= "X-Mailer: karpierz.me Secret Key Panel\r\n";
-    $headers  .= "X-Priority: 3\r\n";
-    $headers  .= "MIME-Version: 1.0\r\n";
-    $headers  .= "Content-Type: text/plain; charset=UTF-8\r\n";
-
-    @mail('mateusz@karpierz.me', $subject, $message, $headers, '-fno-reply@karpierz.me');
-}
 
 // Dane sesji do stopki
 $session_ip       = $_SERVER['REMOTE_ADDR'] ?? '—';
@@ -64,7 +31,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <title>Panel Secret Key</title>
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0a0c10;
@@ -190,7 +157,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             }
         }
         .header-logo {
-            width: 80px; height: 80px;
+            width: 100px; height: 100px;
             filter: drop-shadow(0 0 18px rgba(192,132,252,0.4));
             animation: float 4s ease-in-out infinite;
         }
@@ -199,10 +166,10 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             50% { transform: translateY(-6px); }
         }
         .header h1 {
-            font-family: 'Barlow Condensed', 'Impact', sans-serif;
+            font-family: 'Bungee', 'Barlow Condensed', 'Impact', sans-serif;
             font-size: 3.2rem;
             font-weight: 900;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.03em;
             text-transform: uppercase;
             line-height: 1;
             background: linear-gradient(135deg, #ffffff 40%, var(--accent));
@@ -995,21 +962,21 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         <div class="card" style="grid-column: 1 / -1;">
             <div class="section-label">
                 <span class="icon">💾</span>
-                <h3>Moja baza haseł oraz program</h3>
+                <h3>Baza haseł oraz program</h3>
             </div>
             <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:16px;">
-                Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku.
+                W wersji demonstracyjnej zamiast prawdziwej bazy haseł dostępny jest przykładowy plik tekstowy. W rzeczywistym wdrożeniu w tym miejscu znajduje się zaszyfrowana baza KeePassXC właściciela.
             </p>
             <div class="alert-box info">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB — bez niego baza haseł pozostanie zablokowana.
+                W prawdziwym systemie: bazę haseł można opcjonalnie wzmocnić dodatkowym kluczem sprzętowym USB — bez niego baza nadal pozostaje chroniona hasłem głównym.
             </div>
             <div class="download-grid">
-                <a href="mateusz-karpierz-baza-hasel.kdbx" download class="download-btn" onclick="logDownload('mateusz-karpierz-baza-hasel.kdbx')">
+                <a href="demo-baza-hasel.txt" download class="download-btn" onclick="logDownload('demo-baza-hasel.txt')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Pobierz bazę haseł
+                    Pobierz przykładowy plik (demo)
                 </a>
-                <a href="KeePassXC-2.7.9-Win64.msi" download class="download-btn">
+                <a href="https://keepassxc.org/download/" target="_blank" rel="noopener" class="download-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Pobierz KeePassXC
                 </a>
@@ -1019,7 +986,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v2.5.0 (build 87)</div>
+        <div class="footer-version">WERSJA SYSTEMU: v1.0.0</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label">IP</span>
@@ -1167,11 +1134,11 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
     // ─── Person data (fill with real data) ───
     var persons = [
-        { label: "1.", name: "Agata Karpierz", tel: "728-479-928" },
-        { label: "2.", name: "Piotr Gibas", tel: "663-364-177" },
-        { label: "3.", name: "Wojtek Dybał", tel: "722-364-355" },
-        { label: "4.", name: "Piotr Rymarczyk", tel: "602-241-220" },
-        { label: "5.", name: "Łukasz Suski", tel: "886-352-448" }
+        { label: "1.", name: "Jan Kowalski", tel: "123-456-789" },
+        { label: "2.", name: "Anna Kowalska", tel: "123-456-789" },
+        { label: "3.", name: "Piotr Kowalski", tel: "123-456-789" },
+        { label: "4.", name: "Maria Kowalska", tel: "123-456-789" },
+        { label: "5.", name: "Andrzej Kowalski", tel: "123-456-789" }
     ];
 
     // ─── Build person list with decrypt animation ───

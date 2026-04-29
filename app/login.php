@@ -77,7 +77,7 @@ $timedOut  = isset($_GET['timeout']);
     <title>Logowanie — Secret Key</title>
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@700;900&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@700;900&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg:           #0a0c10;
@@ -99,7 +99,7 @@ $timedOut  = isset($_GET['timeout']);
             --text-dim:     #94a3b8;
             --mono:         'Space Mono', monospace;
             --sans:         'Syne', sans-serif;
-            --heading:      'Barlow Condensed', Impact, sans-serif;
+            --heading:      'Bungee', 'Barlow Condensed', Impact, sans-serif;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -150,7 +150,7 @@ $timedOut  = isset($_GET['timeout']);
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 44px 40px 36px;
+            padding: 10px 40px 36px;
             width: 100%;
             max-width: 430px;
             text-align: center;
@@ -190,9 +190,9 @@ $timedOut  = isset($_GET['timeout']);
 
         /* ─── LOGO ─── */
         .card-logo {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 14px;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 5px;
             filter: drop-shadow(0 0 14px rgba(192,132,252,0.45));
             animation: logoFloat 4s ease-in-out infinite;
             position: relative;
@@ -207,7 +207,7 @@ $timedOut  = isset($_GET['timeout']);
             font-family: var(--heading);
             font-size: 3rem;
             font-weight: 900;
-            letter-spacing: 0.09em;
+            letter-spacing: 0.03em;
             text-transform: uppercase;
             line-height: 1;
             background: linear-gradient(140deg, #ffffff 35%, var(--accent) 100%);
@@ -418,7 +418,7 @@ $timedOut  = isset($_GET['timeout']);
         }
 
         @media (max-width: 480px) {
-            .login-card { padding: 32px 22px 28px; }
+            .login-card { padding: 10px 22px 28px; }
             .card-title  { font-size: 2.4rem; }
         }
 
@@ -593,10 +593,13 @@ $timedOut  = isset($_GET['timeout']);
             border: 1px solid rgba(192,132,252,0.25);
             color: var(--accent);
             flex-wrap: nowrap;
-            white-space: nowrap;
             justify-content: center;
+            white-space: nowrap;
         }
         .alert-info strong { white-space: nowrap; }
+        @media (max-width: 400px) {
+            .alert-info { font-size: 0.72rem; }
+        }
 
         /* ─── LOADING SCREEN ─── */
         .loading-screen {
@@ -840,7 +843,7 @@ $timedOut  = isset($_GET['timeout']);
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px">
                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                         </svg>
-                        Wysłano kod weryfikacyjny na <strong id="phone-display"></strong>
+                        Wysłano kod weryfikacyjny na&nbsp;<strong id="phone-display"></strong>
                     </div>
 
                     <div class="alert alert-error" id="alert-2fa" style="display:none">
