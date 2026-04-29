@@ -330,7 +330,11 @@ secret-key/
 │   ├── generate-hash.html
 │   └── generate-shamir.html
 │
-└── 📁 img/                        # Zasoby graficzne
+├── 📁 img/                        # Zasoby graficzne
+│
+└── 📁 private/                    # Poza public_html — pliki konfiguracyjne
+    ├── .htaccess
+    └── secret-key.php
 ```
 
 ---
