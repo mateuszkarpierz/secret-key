@@ -1,7 +1,7 @@
 <?php
 // ════════════════════════════════════════════════════════
 //  secret-key.php — wrażliwe dane systemu Secret Key
-//  Plik poza public_html: /private/demo-secret-key.php
+//  Plik poza public_html: /private/secret-key.php
 // ════════════════════════════════════════════════════════
 
 // Token API SMSPlanet
