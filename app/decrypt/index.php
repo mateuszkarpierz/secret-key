@@ -11,6 +11,39 @@ if (empty($_SESSION['login_time'])) {
     $_SESSION['login_time'] = time();
 }
 
+// ─── Powiadomienie email — wysyłane raz po zalogowaniu, nie blokuje przekierowania ───
+if (!empty($_SESSION['pending_mail'])) {
+    $_SESSION['pending_mail'] = false;
+
+    $display = $_SESSION['display_name'] ?? $_SESSION['username'];
+    $ip      = $_SERVER['REMOTE_ADDR'] ?? '—';
+    $ua      = $_SERVER['HTTP_USER_AGENT'] ?? '—';
+    $dt      = date('d.m.Y H:i:s', $_SESSION['login_time']);
+    $panel   = 'https://secretkey.moja-domena.pl';
+
+    $subject = '🔐 Logowanie do Secret Key Panel — ' . $display;
+    $message = "Nowe logowanie do panelu Secret Key.\n\n"
+             . "─────────────────────────────\n"
+             . "Użytkownik:   " . $display . " (" . ($_SESSION['username'] ?? '—') . ")\n"
+             . "Data i czas:  " . $dt . "\n"
+             . "Adres IP:     " . $ip . "\n"
+             . "Przeglądarka: " . $ua . "\n"
+             . "─────────────────────────────\n\n"
+             . "Panel: " . $panel . "\n";
+
+    $messageId = sprintf("<%s.%s@karpierz.me>", date('YmdHis'), uniqid());
+    $headers   = "Message-ID: $messageId\r\n";
+    $headers  .= "From: Secret Key <no-reply@twoja-domena.pl>\r\n";
+    $headers  .= "Reply-To: no-reply@twoja-domena.pl\r\n";
+    $headers  .= "Return-Path: no-reply@twoja-domena.pl\r\n";
+    $headers  .= "X-Sender: no-reply@twoja-domena.pl\r\n";
+    $headers  .= "X-Mailer: secretkey.moja-domena.pl Secret Key Panel\r\n";
+    $headers  .= "X-Priority: 3\r\n";
+    $headers  .= "MIME-Version: 1.0\r\n";
+    $headers  .= "Content-Type: text/plain; charset=UTF-8\r\n";
+
+    @mail('twoj-email@domena.pl', $subject, $message, $headers, '-fno-reply@twoja-domena.pl');
+}
 
 // Dane sesji do stopki
 $session_ip       = $_SERVER['REMOTE_ADDR'] ?? '—';
@@ -962,14 +995,14 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         <div class="card" style="grid-column: 1 / -1;">
             <div class="section-label">
                 <span class="icon">💾</span>
-                <h3>Baza haseł oraz program</h3>
+                <h3>Moja baza haseł oraz program</h3>
             </div>
             <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:16px;">
-                W wersji demonstracyjnej zamiast prawdziwej bazy haseł dostępny jest przykładowy plik tekstowy. W rzeczywistym wdrożeniu w tym miejscu znajduje się zaszyfrowana baza KeePassXC właściciela.
+                Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku.
             </p>
             <div class="alert-box info">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                W prawdziwym systemie: bazę haseł można opcjonalnie wzmocnić dodatkowym kluczem sprzętowym USB — bez niego baza nadal pozostaje chroniona hasłem głównym.
+                Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB — bez niego baza haseł pozostanie zablokowana.
             </div>
             <div class="download-grid">
                 <a href="demo-baza-hasel.txt" download class="download-btn" onclick="logDownload('demo-baza-hasel.txt')">
