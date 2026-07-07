@@ -206,6 +206,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 **Warstwa dostępu** (`/decrypt/`)
 - `index.php` — panel odszyfrowania z rekonstrukcją Shamira w JS
 - `log.php` — logowanie zdarzeń
+- `devtools-log.php` — rejestrowanie incydentów inspekcji DevTools
 
 **Warstwa danych** (`/private/` — poza `public_html`)
 - `secret-key.php` — hasze bcrypt, zamaskowane numery telefonów
@@ -219,7 +220,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 
 ## Bezpieczeństwo
 
-System łączy **sześć niezależnych warstw ochrony** — kompromitacja jednej nie daje dostępu do systemu.
+System łączy **siedem niezależnych warstw ochrony** — kompromitacja jednej nie daje dostępu do systemu.
 
 | Warstwa | Mechanizm | Szczegóły |
 |---|---|---|
@@ -229,6 +230,7 @@ System łączy **sześć niezależnych warstw ochrony** — kompromitacja jednej
 | 📱 **2FA SMS** | Kod 6-cyfrowy | Generowany kryptograficznie, ważny 10 min, cooldown 60s między wysyłkami |
 | 💻 **Trusted devices** | SHA-256, HttpOnly | Secure + SameSite=Strict, plik poza `public_html`, TTL 7 dni |
 | ⏱️ **Sesja** | Auto-logout | 30 min timeout, odnowienie identyfikatora sesji po każdej weryfikacji |
+| 🖥️ **Ochrona interfejsu** | DevTools detect | Detekcja narzędzi deweloperskich, fizyczne usunięcie DOM, rejestracja incydentu w logach z IP, REF# i czasem trwania |
 
 ---
 
@@ -306,18 +308,17 @@ secret-key/
 │   │   ├── .htaccess
 │   │   ├── card-secret-key.webp
 │   │   ├── demo-baza-hasel.txt
+│   │   ├── devtools-log.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
-│   │   ├── log.php
-│   │   └── prevent-actions.js
+│   │   └── log.php
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
 │   ├── key.svg
 │   ├── login.php
 │   ├── logout.php
-│   ├── prevent-actions.js
 │   ├── resend.php
 │   └── verify.php
 │
