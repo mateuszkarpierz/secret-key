@@ -1054,7 +1054,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Pobierz przykładowy plik (demo)
                 </a>
-                <a href="KeePassXC-2.7.9-Win64.msi" download class="download-btn">
+                <a href="https://keepassxc.org/download/" target="_blank" rel="noopener" class="download-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Pobierz KeePassXC
                 </a>
@@ -1064,7 +1064,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v2.5.0 (build 87)</div>
+        <div class="footer-version">WERSJA SYSTEMU: v1.1.0</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label">IP</span>
