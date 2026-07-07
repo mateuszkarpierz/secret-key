@@ -15,6 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+$csrfToken = trim($_POST['csrf_token'] ?? '');
+if (!validateCsrfToken($csrfToken)) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Nieprawidłowa sesja. Odśwież stronę i zaloguj się ponownie.']);
+    exit;
+}
+
 // Musi istnieć pending_2fa — czyli użytkownik przeszedł krok 1
 if (empty($_SESSION['pending_2fa']) || empty($_SESSION['pending_username'])) {
     echo json_encode(['status' => 'error', 'message' => 'Sesja wygasła. Zaloguj się ponownie.']);

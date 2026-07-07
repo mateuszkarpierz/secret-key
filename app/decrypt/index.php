@@ -43,6 +43,8 @@ if (!empty($_SESSION['pending_mail'])) {
     $headers  .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
     @mail('twoj-email@domena.pl', $subject, $message, $headers, '-fno-reply@twoja-domena.pl');
+        sk_log("MAIL FAILED: nie udało się wysłać powiadomienia o logowaniu — " . $display . " ('" . ($_SESSION['username'] ?? '—') . "') IP: " . $ip);
+    }
 }
 
 // Dane sesji do stopki
@@ -478,7 +480,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             font-family: var(--mono);
             font-size: 0.75rem;
             padding: 14px;
-            resize: vertical;
+            resize: none;
             min-height: 180px;
             height: 180px;
             outline: none;
@@ -554,7 +556,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             gap: 12px;
             margin-top: 16px;
         }
-        @media (max-width: 500px) { .download-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 700px) { .download-grid { grid-template-columns: 1fr; } }
 
         .download-btn {
             display: flex;
@@ -943,39 +945,39 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <!-- MAIN GRID -->
     <main class="container">
 
-        <!-- LEFT: Instructions only -->
-        <div class="card">
-            <div class="section-label">
-                <span class="icon">📋</span>
-                <h3>Instrukcja dostępu do bazy haseł</h3>
-            </div>
-            <div class="instruction-list">
-                <div class="instruction-item">
-                    <span class="instruction-num">01</span>
-                    <p class="instruction-text"><strong>Zbierzcie się razem.</strong> Skontaktuj się z osobami z listy po prawej stronie (lub poniżej na telefonie). Każda z nich posiada swoją część specjalnego kodu (Secret Key). Potrzebujecie minimum <strong>3 osoby z 5</strong> — dopiero wtedy możliwe jest odblokowanie hasła.</p>
-                </div>
-                <div class="instruction-item">
-                    <span class="instruction-num">02</span>
-                    <p class="instruction-text"><strong>Wejdźcie na tę stronę razem.</strong> Każda osoba powinna mieć przy sobie swoją kartę Secret Key — znajdziecie na niej długi ciąg znaków (np. <em>8015c7c4f263a74d…</em>). Kliknijcie „Co to jest Secret Key?" jeśli nie wiecie, gdzie go szukać.</p>
-                </div>
-                <div class="instruction-item">
-                    <span class="instruction-num">03</span>
-                    <p class="instruction-text"><strong>Wprowadźcie kody.</strong> W polu tekstowym po prawej stronie (lub poniżej na telefonie) wpisujcie kolejno kody z kart — każdy kod w osobnej linii, dokładnie tak jak jest napisany na karcie, bez żadnych spacji ani dodatkowych znaków.</p>
-                </div>
-                <div class="instruction-item">
-                    <span class="instruction-num">04</span>
-                    <p class="instruction-text"><strong>Hasło pojawi się automatycznie.</strong> Gdy wpiszecie co najmniej 3 kody, hasło do bazy haseł wyświetli się poniżej pola tekstowego. To właśnie hasło posłuży do otwarcia programu KeePassXC.</p>
-                </div>
-                <div class="instruction-item">
-                    <span class="instruction-num">05</span>
-                    <p class="instruction-text"><strong>Pobierzcie program i bazę haseł.</strong> Na dole strony znajdziecie dwa przyciski: pobierzcie program KeePassXC oraz plik z bazą haseł. Zainstalujcie program, otwórzcie nim pobrany plik i wpiszcie uzyskane hasło. Uwaga: oprócz hasła potrzebny jest też <strong>klucz sprzętowy</strong> (fizyczne urządzenie USB).</p>
-                </div>
-                <div class="instruction-item">
-                    <span class="instruction-num">06</span>
-                    <p class="instruction-text"><strong>Co dalej?</strong> Po uzyskaniu dostępu do bazy haseł znajdziecie tam dane logowania do wszystkich moich kont internetowych. Możecie je wtedy zamknąć lub przejąć zgodnie z wolą rodziny.</p>
-                </div>
-            </div>
-        </div>
+      <!-- LEFT: Instructions only -->
+      <div class="card">
+          <div class="section-label">
+              <span class="icon">📋</span>
+              <h3>Instrukcja dostępu do bazy haseł</h3>
+          </div>
+          <div class="instruction-list">
+              <div class="instruction-item">
+                  <span class="instruction-num">01</span>
+                  <p class="instruction-text"><strong>Zbierzcie się razem.</strong> Skontaktuj się z osobami z listy po prawej stronie (lub poniżej na telefonie). Każda z nich posiada swoją część specjalnego kodu (Secret Key). Potrzebujecie minimum <strong>3 osoby z 5</strong> — dopiero wtedy możliwe jest odblokowanie hasła.</p>
+              </div>
+              <div class="instruction-item">
+                  <span class="instruction-num">02</span>
+                  <p class="instruction-text"><strong>Wejdźcie na tę stronę razem.</strong> Każda osoba powinna mieć przy sobie swoją kartę Secret Key — znajdziecie na niej długi ciąg znaków (np. <em>8015c7c4f263a74d…</em>). Kliknijcie „Co to jest Secret Key?" jeśli nie wiecie, gdzie go szukać.</p>
+              </div>
+              <div class="instruction-item">
+                  <span class="instruction-num">03</span>
+                  <p class="instruction-text"><strong>Wprowadźcie kody.</strong> W polu tekstowym po prawej stronie (lub poniżej na telefonie) wpisujcie kolejno kody z kart — każdy kod w osobnej linii, dokładnie tak jak jest napisany na karcie, bez żadnych spacji ani dodatkowych znaków.</p>
+              </div>
+              <div class="instruction-item">
+                  <span class="instruction-num">04</span>
+                  <p class="instruction-text"><strong>Hasło pojawi się automatycznie.</strong> Gdy wpiszecie co najmniej 3 kody, hasło do bazy haseł wyświetli się poniżej pola tekstowego. To właśnie hasło posłuży do otwarcia programu KeePassXC.</p>
+              </div>
+              <div class="instruction-item">
+                  <span class="instruction-num">05</span>
+                  <p class="instruction-text"><strong>Pobierzcie program i bazę haseł.</strong> Na dole strony znajdziecie dwa przyciski: pobierzcie program KeePassXC oraz plik z bazą haseł. Zainstalujcie program, otwórzcie nim pobrany plik i wpiszcie uzyskane hasło. Uwaga: oprócz hasła potrzebny jest też <strong>klucz sprzętowy</strong> (fizyczne urządzenie USB).</p>
+              </div>
+              <div class="instruction-item">
+                  <span class="instruction-num">06</span>
+                  <p class="instruction-text"><strong>Co dalej?</strong> Po uzyskaniu dostępu do bazy haseł znajdziecie tam dane logowania do wszystkich moich kont internetowych. Możecie je wtedy zamknąć lub przejąć zgodnie z wolą rodziny.</p>
+              </div>
+          </div>
+      </div>
 
         <!-- RIGHT: Persons + Decrypt stacked -->
         <div style="display:flex; flex-direction:column; gap:24px;">
@@ -992,7 +994,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             </div>
 
             <!-- Decrypt -->
-            <div class="card">
+            <div class="card" style="flex:1; display:flex; flex-direction:column;">
                 <div class="section-label">
                     <span class="icon">🔓</span>
                     <h3>Odszyfrowywanie</h3>
@@ -1008,6 +1010,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                     id="parts-input"
                     rows="8"
                     placeholder="Wpisz swój kod z karty tutaj — jeden kod, jedna linia…"
+                    style="flex:1; min-height:120px;"
                 ></textarea>
 
                 <div class="key-counter">
@@ -1669,15 +1672,22 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             return 'Komputer';
         }
 
-        document.getElementById('si-browser').textContent = getBrowser();
-        document.getElementById('si-os').textContent      = getOS();
-        document.getElementById('si-device').textContent  = getDevice();
-        document.getElementById('si-screen').textContent  = screen.width + '×' + screen.height;
-        document.getElementById('si-tz').textContent      = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        function setText(id, value) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        setText('si-browser', getBrowser());
+        setText('si-os', getOS());
+        setText('si-device', getDevice());
+        setText('si-screen', screen.width + '×' + screen.height);
+        setText('si-tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
 
         // Live licznik czasu sesji
         var loginTs = <?= $session_login_ts ?> * 1000;
         function updateDuration() {
+            var el = document.getElementById('si-duration');
+            if (!el) return;
             var diff = Math.floor((Date.now() - loginTs) / 1000);
             var h = Math.floor(diff / 3600);
             var m = Math.floor((diff % 3600) / 60);
@@ -1685,7 +1695,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             var str = '';
             if (h > 0) str += h + 'h ';
             str += (m < 10 ? '0' : '') + m + 'm ' + (s < 10 ? '0' : '') + s + 's';
-            document.getElementById('si-duration').textContent = str;
+            el.textContent = str;
         }
         updateDuration();
         setInterval(updateDuration, 1000);
@@ -1698,7 +1708,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         fetch('log.php', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ event: 'DOWNLOAD', file: filename })
+            body:    JSON.stringify({ event: 'DOWNLOAD', file: filename, csrf_token: CSRF_TOKEN })
         });
     }
     </script>

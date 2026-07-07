@@ -1252,7 +1252,7 @@ $timedOut  = isset($_GET['timeout']);
         // Przywróć "Wysłano kod...", ukryj alert błędu
         document.getElementById('alert-info').style.display = '';
         document.getElementById('alert-2fa').style.display  = 'none';
-        fetch('resend.php', { method: 'POST' })
+        fetch('resend.php', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({ csrf_token: CSRF_TOKEN }) })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.status !== 'ok') {

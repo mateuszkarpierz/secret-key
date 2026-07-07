@@ -4,11 +4,19 @@
 //  Bez SQL. Dane przechowywane bezpośrednio w tym pliku.
 // ════════════════════════════════════════════════════════
 
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'secure'   => true,
+    'httponly' => true,
+    'samesite' => 'Strict',
+]);
 session_start();
 
 // ── KONFIGURACJA ─────────────────────────────────────────
 
 require_once __DIR__ . '/../../../private/secret-key.php';
+require_once __DIR__ . '/../../../private/rate-limit.php';
 
 define('PROTECTED_PAGE', 'decrypt');
 define('LOGIN_PAGE',     'login.php');
@@ -19,6 +27,10 @@ define('TWO_FA_TTL',          600);
 
 // Cooldown między wysłaniem SMS (w sekundach)
 define('RESEND_COOLDOWN',     60);
+
+// Maksymalna liczba błędnych prób logowania (hasło) w oknie czasowym
+define('LOGIN_MAX_ATTEMPTS', 3);
+define('LOGIN_WINDOW',       900); // 15 minut
 
 // Maksymalna liczba błędnych prób weryfikacji per sesja
 define('TWO_FA_MAX_ATTEMPTS', 3);
@@ -89,37 +101,23 @@ function attemptLogin(string $username, string $password): array {
     global $users, $display_names, $phone_numbers, $phone_masked;
 
     $ip      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $key     = 'attempts_' . md5($ip);
-    $userKey = 'attempts_user_' . md5($username);
+    $key     = 'ip_' . md5($ip);
+    $userKey = 'user_' . md5($username);
 
-    // Licznik per IP
-    if (!isset($_SESSION[$key])) {
-        $_SESSION[$key] = ['count' => 0, 'since' => time()];
-    }
-    if (time() - $_SESSION[$key]['since'] > 900) {
-        $_SESSION[$key] = ['count' => 0, 'since' => time()];
-    }
+    // Liczniki trwałe (plik na serwerze) — niezależne od ciasteczek/sesji klienta,
+    // więc nie da się ich zresetować po prostu nie odsyłając Set-Cookie.
+    $ipLimit   = rateLimitCheckAndIncrement($key, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW);
+    $userLimit = rateLimitCheckAndIncrement($userKey, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW);
 
-    // Licznik per username
-    if (!isset($_SESSION[$userKey])) {
-        $_SESSION[$userKey] = ['count' => 0, 'since' => time()];
-    }
-    if (time() - $_SESSION[$userKey]['since'] > 900) {
-        $_SESSION[$userKey] = ['count' => 0, 'since' => time()];
-    }
-
-    if ($_SESSION[$key]['count'] >= 3) {
+    if ($ipLimit['blocked']) {
         sk_log("LOGIN BLOCKED (IP): brute-force for '$username' IP: $ip");
         return ['status' => 'blocked', 'message' => 'Zbyt wiele nieudanych prób. Spróbuj ponownie za 15 minut.'];
     }
 
-    if ($_SESSION[$userKey]['count'] >= 3) {
+    if ($userLimit['blocked']) {
         sk_log("LOGIN BLOCKED (user): brute-force for '$username' IP: $ip");
         return ['status' => 'blocked', 'message' => 'Zbyt wiele nieudanych prób. Spróbuj ponownie za 15 minut.'];
     }
-
-    $_SESSION[$key]['count']++;
-    $_SESSION[$userKey]['count']++;
 
     if (!isset($users[$username]) || !password_verify($password, $users[$username])) {
         sk_log("LOGIN FAILED: invalid credentials for '$username' IP: $ip");
@@ -128,8 +126,8 @@ function attemptLogin(string $username, string $password): array {
 
     // Hasło OK — wyczyść oba liczniki
     if (isTrustedDevice($username)) {
-        $_SESSION[$key]     = ['count' => 0, 'since' => time()];
-        $_SESSION[$userKey] = ['count' => 0, 'since' => time()];
+        rateLimitReset($key);
+        rateLimitReset($userKey);
         $_SESSION['logged_in']    = true;
         $_SESSION['username']     = $username;
         $_SESSION['display_name'] = $display_names[$username] ?? $username;
@@ -157,19 +155,17 @@ function attemptLogin(string $username, string $password): array {
         return ['status' => 'sms_error', 'message' => 'Nie udało się wysłać SMS. Spróbuj ponownie za chwilę.'];
     }
 
-    $_SESSION[$key]     = ['count' => 0, 'since' => time()];
-    $_SESSION[$userKey] = ['count' => 0, 'since' => time()];
+    rateLimitReset($key);
+    rateLimitReset($userKey);
 
-    // Zachowaj resend_count i licznik prób per username przez regenerację sesji
-    $prevResendCount  = $_SESSION['resend_count'] ?? 0;
-    $prevUserAttempts = $_SESSION[$userKey] ?? ['count' => 0, 'since' => time()];
+    // Zachowaj resend_count przez regenerację sesji
+    $prevResendCount = $_SESSION['resend_count'] ?? 0;
 
     // Regeneruj ID sesji po weryfikacji hasła — zapobiega session fixation
     session_regenerate_id(true);
 
-    // Przywróć liczniki
+    // Przywróć licznik
     $_SESSION['resend_count'] = $prevResendCount;
-    $_SESSION[$userKey]       = $prevUserAttempts;
 
     // Dane tymczasowe 2FA — NIE ma 'logged_in'
     $_SESSION['pending_2fa']          = true;

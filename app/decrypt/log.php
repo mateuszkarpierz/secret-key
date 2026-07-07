@@ -18,6 +18,12 @@ if (empty($data['event'])) {
     exit;
 }
 
+$csrfToken = trim($data['csrf_token'] ?? '');
+if (!validateCsrfToken($csrfToken)) {
+    http_response_code(403);
+    exit;
+}
+
 $allowed = ['DECRYPT SUCCESS', 'DECRYPT FAILED', 'DECRYPT ERROR', 'DOWNLOAD'];
 $event   = $data['event'];
 if (!in_array($event, $allowed)) {
