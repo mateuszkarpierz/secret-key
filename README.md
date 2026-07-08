@@ -28,7 +28,7 @@ Nikt nie zna go samodzielnie — dopiero razem, w uzgodnionym momencie, mogą je
 
 <br>
 
-[**→ Zobacz demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Prezentacja systemu**](#jak-to-działa) &nbsp;·&nbsp; [**Instalacja**](#instalacja)
+[**→ Zobacz demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Prezentacja systemu**](https://secretkey.website) &nbsp;·&nbsp; [**Dokumentacja**](https://secretkey.website/docs)
 
 </div>
 
@@ -210,7 +210,9 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 
 **Warstwa danych** (`/private/` — poza `public_html`)
 - `secret-key.php` — hasze bcrypt, zamaskowane numery telefonów
-- `trusted_devices.json` — tokeny zaufanych urządzeń
+- `rate-limit.php` — trwały rate-limiting (liczniki niezależne od sesji)
+- `rate_limits.json` — liczniki prób logowania per IP/konto *(tworzy się automatycznie)*
+- `trusted_devices.json` — tokeny zaufanych urządzeń *(tworzy się automatycznie)*
 - `secret-key.log` — logi zdarzeń
 
 > [!WARNING]
@@ -225,11 +227,11 @@ System łączy **siedem niezależnych warstw ochrony** — kompromitacja jednej 
 | Warstwa | Mechanizm | Szczegóły |
 |---|---|---|
 | 🔒 **Hasła** | bcrypt | cost=10, format `$2y$`, weryfikacja odporna na ataki czasowe |
-| 🛡️ **CSRF** | Token 64 hex | Generowany kryptograficznie, weryfikowany przy każdym żądaniu |
-| 🚫 **Brute-force** | Rate limiting | 3 próby/IP + 3 próby/konto w oknie 15 min; 3 błędne kody SMS/h |
+| 🛡️ **CSRF** | Token 64 hex | Generowany kryptograficznie, weryfikowany na wszystkich endpointach zmieniających stan (logowanie, weryfikacja 2FA, ponowna wysyłka SMS, log zdarzeń) |
+| 🚫 **Brute-force** | Rate limiting | 3 próby/IP + 3 próby/konto w oknie 15 min; 3 błędne kody SMS/h. Liczniki trwałe po stronie serwera (plik, niezależny od sesji/cookies klienta) |
 | 📱 **2FA SMS** | Kod 6-cyfrowy | Generowany kryptograficznie, ważny 10 min, cooldown 60s między wysyłkami |
 | 💻 **Trusted devices** | SHA-256, HttpOnly | Secure + SameSite=Strict, plik poza `public_html`, TTL 7 dni |
-| ⏱️ **Sesja** | Auto-logout | 30 min timeout, odnowienie identyfikatora sesji po każdej weryfikacji |
+| ⏱️ **Sesja** | Auto-logout | Ciasteczko sesji z jawnymi flagami HttpOnly + Secure + SameSite=Strict; 30 min timeout, odnowienie identyfikatora sesji po każdej weryfikacji |
 | 🖥️ **Ochrona interfejsu** | DevTools detect | Detekcja narzędzi deweloperskich, fizyczne usunięcie DOM, rejestracja incydentu w logach z IP, REF# i czasem trwania |
 
 ---
@@ -273,7 +275,8 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 │   ├── app/           ← zawartość folderu /app/
 │   └── decrypt/       ← zawartość folderu /decrypt/
 └── private/           ← POZA public_html
-    └── secret-key.php ← wygenerowany plik konfiguracyjny
+    ├── secret-key.php  ← wygenerowany plik konfiguracyjny
+    └── rate-limit.php  ← plik systemowy z repozytorium (rate-limiting)
 ```
 
 ---
@@ -335,6 +338,7 @@ secret-key/
 │
 └── 📁 private/                    # Poza public_html — pliki konfiguracyjne
     ├── .htaccess
+    ├── rate-limit.php
     └── secret-key.php
 ```
 
