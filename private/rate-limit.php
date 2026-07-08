@@ -29,8 +29,11 @@ function rlWithLock(callable $mutator): array {
 
     flock($fp, LOCK_EX);
 
-    $size = filesize(RATE_LIMIT_FILE);
-    $raw  = $size > 0 ? fread($fp, $size) : '';
+    // Czytamy bezpośrednio z uchwytu pliku (stream_get_contents), a NIE przez
+    // filesize() + fread(). filesize() korzysta z cache'u stat() PHP, który pod
+    // PHP-FPM (workery wielokrotnego użytku) potrafi zwrócić nieaktualny rozmiar
+    // między żądaniami — prowadząc do ucięcia odczytu i utraty zapisanych liczników.
+    $raw  = stream_get_contents($fp);
     $data = json_decode($raw, true);
     if (!is_array($data)) {
         $data = [];

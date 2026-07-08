@@ -32,6 +32,11 @@ define('RESEND_COOLDOWN',     60);
 define('LOGIN_MAX_ATTEMPTS', 3);
 define('LOGIN_WINDOW',       900); // 15 minut
 
+// Maksymalna liczba zdarzeń DEVTOOLS OPEN/CLOSE per IP w oknie czasowym
+// (endpoint publiczny, bez logowania — ochrona przed zaśmiecaniem logu)
+define('DEVTOOLS_LOG_MAX_ATTEMPTS', 30);
+define('DEVTOOLS_LOG_WINDOW',       300); // 5 minut
+
 // Maksymalna liczba błędnych prób weryfikacji per sesja
 define('TWO_FA_MAX_ATTEMPTS', 3);
 
@@ -201,18 +206,13 @@ function verifyTwoFactor(string $code): string {
         return 'blocked';
     }
 
-    // Sprawdź limit błędnych prób per IP
-    $ip     = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $ipKey  = '2fa_ip_' . md5($ip);
-    $now    = time();
+    // Sprawdź limit błędnych prób per IP — licznik trwały (plik na serwerze),
+    // niezależny od sesji/cookies klienta, tak samo jak przy limicie hasła.
+    $ip      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $ipKey   = 'twofa_ip_' . md5($ip);
+    $ipLimit = rateLimitCheckAndIncrement($ipKey, TWO_FA_IP_MAX, TWO_FA_IP_WINDOW);
 
-    if (!isset($_SESSION[$ipKey])) {
-        $_SESSION[$ipKey] = ['count' => 0, 'since' => $now];
-    }
-    if ($now - $_SESSION[$ipKey]['since'] > TWO_FA_IP_WINDOW) {
-        $_SESSION[$ipKey] = ['count' => 0, 'since' => $now];
-    }
-    if ($_SESSION[$ipKey]['count'] >= TWO_FA_IP_MAX) {
+    if ($ipLimit['blocked']) {
         sk_log("2FA IP BLOCKED: too many failed attempts from IP: $ip");
         clearPending2FA();
         return 'ip_blocked';
@@ -221,14 +221,13 @@ function verifyTwoFactor(string $code): string {
     $_SESSION['2fa_attempts']++;
 
     if (!hash_equals((string)$_SESSION['2fa_code'], trim($code))) {
-        $_SESSION[$ipKey]['count']++;
         $remaining = TWO_FA_MAX_ATTEMPTS - $_SESSION['2fa_attempts'];
-        sk_log("2FA FAILED: wrong code for '" . ($_SESSION['pending_username'] ?? '?') . "' IP: $ip (remaining: $remaining, ip_attempts: " . $_SESSION[$ipKey]['count'] . ")");
+        sk_log("2FA FAILED: wrong code for '" . ($_SESSION['pending_username'] ?? '?') . "' IP: $ip (remaining: $remaining, ip_attempts: " . $ipLimit['count'] . ")");
         return 'invalid';
     }
 
     // Kod poprawny — wyczyść licznik IP i utwórz pełną sesję
-    $_SESSION[$ipKey] = ['count' => 0, 'since' => $now];
+    rateLimitReset($ipKey);
     $username = $_SESSION['pending_username'];
     $display  = $_SESSION['pending_display_name'];
     $ip       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';

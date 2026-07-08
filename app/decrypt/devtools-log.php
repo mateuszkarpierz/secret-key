@@ -28,10 +28,18 @@ if (!in_array($data['event'], $allowed)) {
     exit;
 }
 
+// Rate limiting per IP — endpoint jest publiczny (działa też przed logowaniem),
+// więc chronimy go przed zaśmiecaniem logu masowymi fałszywymi zdarzeniami.
+$ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+$devtoolsLimit = rateLimitCheckAndIncrement('devtools_' . md5($ip), DEVTOOLS_LOG_MAX_ATTEMPTS, DEVTOOLS_LOG_WINDOW);
+if ($devtoolsLimit['blocked']) {
+    http_response_code(429);
+    exit;
+}
+
 // Dane użytkownika — zalogowany lub gość
 $display  = $_SESSION['display_name'] ?? 'VISITOR';
 $username = $_SESSION['username']     ?? 'guest';
-$ip       = $_SERVER['REMOTE_ADDR']   ?? 'unknown';
 
 // Dane z JS — sanityzacja
 $ref      = isset($data['ref'])      ? preg_replace('/[^A-Z0-9# ]/', '', $data['ref'])         : 'REF #?????';
