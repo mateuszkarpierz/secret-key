@@ -1040,7 +1040,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         <div class="card" style="grid-column: 1 / -1;">
             <div class="section-label">
                 <span class="icon">💾</span>
-                <h3>Moja baza haseł oraz program</h3>
+                <h3>Pliki i program do odzyskania dostępu</h3>
             </div>
             <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:16px;">
                 Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku.
@@ -1050,7 +1050,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                 Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB — bez niego baza haseł pozostanie zablokowana.
             </div>
             <div class="download-grid">
-                <a href="demo-baza-hasel.txt" download class="download-btn" onclick="logDownload('demo-baza-hasel.txt')">
+                <a href="download.php?file=baza-hasel" class="download-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Pobierz przykładowy plik (demo)
                 </a>
@@ -1064,7 +1064,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v1.1.0</div>
+        <div class="footer-version">WERSJA SYSTEMU: v1.2.0</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label">IP</span>
@@ -1700,17 +1700,6 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         updateDuration();
         setInterval(updateDuration, 1000);
     })();
-    </script>
-
-    <script>
-    // ─── Logowanie pobierania pliku ───
-    function logDownload(filename) {
-        fetch('log.php', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ event: 'DOWNLOAD', file: filename, csrf_token: CSRF_TOKEN })
-        });
-    }
     </script>
 
     <script>

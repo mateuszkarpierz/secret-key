@@ -21,6 +21,7 @@ require_once __DIR__ . '/../../../private/rate-limit.php';
 define('PROTECTED_PAGE', 'decrypt');
 define('LOGIN_PAGE',     'login.php');
 define('LOG_FILE',       __DIR__ . '/../../../private/secret-key.log');
+define('PRIVATE_DIR',    __DIR__ . '/../../../private');
 
 // Czas ważności kodu 2FA w sekundach (10 minut)
 define('TWO_FA_TTL',          600);
@@ -264,7 +265,7 @@ function clearPending2FA(): void {
 
 function sendSmsCode(string $phone, string $code) {
     $ttlMin = TWO_FA_TTL / 60;
-    $msg    = "Kod weryfikacyjny: $code. Wazny $ttlMin min. Nie udostepniaj go nikomu.\n\n@karpierz.me #$code";
+    $msg    = "Kod weryfikacyjny: $code. Wazny $ttlMin min. Nie udostepniaj go nikomu.\n\n@moja-domena.pl #$code";
 
     $params = http_build_query([
         'from'          => SMS_SENDER,

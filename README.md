@@ -205,8 +205,9 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 
 **Warstwa dostępu** (`/decrypt/`)
 - `index.php` — panel odszyfrowania z rekonstrukcją Shamira w JS
+- `download.php` — bramkowane pobieranie plików (wymaga sesji, biała lista, log po stronie serwera)
 - `log.php` — logowanie zdarzeń
-- `devtools-log.php` — rejestrowanie incydentów inspekcji DevTools
+- `devtools-log.php` — rejestrowanie incydentów inspekcji DevTools (z rate-limitingiem per IP)
 
 **Warstwa danych** (`/private/` — poza `public_html`)
 - `secret-key.php` — hasze bcrypt, zamaskowane numery telefonów
@@ -214,6 +215,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 - `rate_limits.json` — liczniki prób logowania per IP/konto *(tworzy się automatycznie)*
 - `trusted_devices.json` — tokeny zaufanych urządzeń *(tworzy się automatycznie)*
 - `secret-key.log` — logi zdarzeń
+- `moja-baza-hasel.kdbx` *(i inne pliki do pobrania)* — serwowane wyłącznie przez `download.php`, nigdy bezpośrednio przez HTTP
 
 > [!WARNING]
 > Wszystkie wrażliwe pliki konfiguracyjne przechowywane są **poza katalogiem publicznym** serwera — błędna konfiguracja webservera nie grozi ich ujawnieniem.
@@ -222,7 +224,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 
 ## Bezpieczeństwo
 
-System łączy **siedem niezależnych warstw ochrony** — kompromitacja jednej nie daje dostępu do systemu.
+System łączy **osiem niezależnych warstw ochrony** — kompromitacja jednej nie daje dostępu do systemu.
 
 | Warstwa | Mechanizm | Szczegóły |
 |---|---|---|
@@ -233,6 +235,7 @@ System łączy **siedem niezależnych warstw ochrony** — kompromitacja jednej 
 | 💻 **Trusted devices** | SHA-256, HttpOnly | Secure + SameSite=Strict, plik poza `public_html`, TTL 7 dni |
 | ⏱️ **Sesja** | Auto-logout | Ciasteczko sesji z jawnymi flagami HttpOnly + Secure + SameSite=Strict; 30 min timeout, odnowienie identyfikatora sesji po każdej weryfikacji |
 | 🖥️ **Ochrona interfejsu** | DevTools detect | Detekcja narzędzi deweloperskich, fizyczne usunięcie DOM, rejestracja incydentu w logach z IP, REF# i czasem trwania |
+| 📥 **Bramkowane pobieranie** | `download.php` + biała lista | Pliki do pobrania leżą poza `public_html`; wymagana aktywna sesja, brak bezpośredniego URL, log zawsze po stronie serwera |
 
 ---
 
@@ -276,7 +279,8 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 │   └── decrypt/       ← zawartość folderu /decrypt/
 └── private/           ← POZA public_html
     ├── secret-key.php  ← wygenerowany plik konfiguracyjny
-    └── rate-limit.php  ← plik systemowy z repozytorium (rate-limiting)
+    ├── rate-limit.php  ← plik systemowy z repozytorium (rate-limiting)
+    └── moja-baza-hasel.kdbx  ← Twoje pliki do pobrania (serwowane przez download.php, NIE wgrywaj ich do public_html!)
 ```
 
 ---
@@ -291,7 +295,20 @@ require_once '/home/user/private/secret-key.php';
 
 ---
 
-### Krok 4 — Dystrybucja kart
+### Krok 4 — Domena w treści SMS (WebOTP)
+
+W `auth.php` treść wysyłanego kodu kończy się linijką `@domena #kod` — to format wymagany przez [WebOTP API](https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API), dzięki któremu przeglądarka na telefonie sama wypełnia pole kodu, bez ręcznego przepisywania z SMS-a. Podmień domenę na swoją:
+
+```php
+$msg = "Kod weryfikacyjny: $code. Wazny $ttlMin min. Nie udostepniaj go nikomu.\n\n@twoja-domena.pl #$code";
+```
+
+> [!WARNING]
+> Domena musi **dokładnie** zgadzać się z tą, pod którą hostujesz system (bez `https://`, bez ścieżki) — inaczej WebOTP zignoruje SMS i autouzupełnianie nie zadziała. Kod nadal dotrze i zadziała po ręcznym wpisaniu, tylko bez tej wygody.
+
+---
+
+### Krok 5 — Dystrybucja kart
 
 Dla każdej wyznaczonej osoby przygotuj nośnik z:
 - loginem i hasłem (z zakładki Konfiguracja)
@@ -310,8 +327,8 @@ secret-key/
 │   ├── 📁 decrypt/                # Chroniony — panel użytkownika
 │   │   ├── .htaccess
 │   │   ├── card-secret-key.webp
-│   │   ├── demo-baza-hasel.txt
 │   │   ├── devtools-log.php
+│   │   ├── download.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
@@ -338,6 +355,7 @@ secret-key/
 │
 └── 📁 private/                    # Poza public_html — pliki konfiguracyjne
     ├── .htaccess
+    ├── demo-baza-hasel.txt         # Przykładowy plik do pobrania (zastąp własnym)
     ├── rate-limit.php
     └── secret-key.php
 ```
