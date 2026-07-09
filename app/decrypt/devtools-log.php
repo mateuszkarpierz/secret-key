@@ -1,7 +1,6 @@
 <?php
 // ════════════════════════════════════════════════════════
 //  devtools-log.php — rejestruje wykrycie DevTools
-//  Lokalizacja: /public_html/app.secretkey.website/decrypt/
 // ════════════════════════════════════════════════════════
 
 require_once '../auth.php';
