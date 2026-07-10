@@ -280,7 +280,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 └── private/           ← POZA public_html
     ├── secret-key.php  ← wygenerowany plik konfiguracyjny
     ├── rate-limit.php  ← plik systemowy z repozytorium (rate-limiting)
-    └── moja-baza-hasel.kdbx  ← Twoje pliki do pobrania (serwowane przez download.php, NIE wgrywaj ich do public_html!)
+    └── moja-baza-hasel.kdbx  ← Twoje pliki (serwowane przez download.php)
 ```
 
 ---

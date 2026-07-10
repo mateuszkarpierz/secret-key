@@ -32,9 +32,9 @@ Wyślij szczegółowy opis na: **dev@secretkey.website**
 
 ## 🏷️ Wspierane wersje
 
-| Wersja | Status |
-|---|---|
-| v1.0.x | ✅ Wspierana |
+Wspierana jest zawsze **najnowsza wydana wersja**. Zgłoszenia dotyczące starszych wersji przyjmuję, ale w pierwszej kolejności proszę o aktualizację do najnowszego release'a — część luk mogła zostać już naprawiona.
+
+Aktualną wersję znajdziesz na [stronie Releases](https://github.com/mateuszkarpierz/secret-key/releases).
 
 ---
 
@@ -46,6 +46,7 @@ Wyślij szczegółowy opis na: **dev@secretkey.website**
 - Podatności CSRF mimo zastosowanych zabezpieczeń
 - Możliwość odtworzenia sekretu Shamira bez wymaganej liczby udziałów
 - Ujawnienie danych z katalogu `/private/`
+- Pobranie wrażliwych plików (np. bazy haseł) z pominięciem logowania, np. przez bezpośredni URL
 - Podatności na ataki brute-force mimo rate limitingu
 - XSS, SQL Injection *(choć system nie używa SQL)*
 
@@ -69,6 +70,7 @@ Wyślij szczegółowy opis na: **dev@secretkey.website**
 | 🔒 | Używaj HTTPS (SSL/TLS) na serwerze |
 | 🔄 | Regularnie aktualizuj PHP do najnowszej wersji 8.x |
 | 🚫 | Nie udostępniaj pliku `secret-key.php` publicznie |
+| 📥 | Nie linkuj bezpośrednio do wrażliwych plików w katalogu publicznym — serwuj je przez `download.php` (wymaga sesji, loguje pobrania) |
 | 🔑 | Używaj silnych, unikalnych haseł dla każdego konta |
 
 ---
