@@ -17,6 +17,7 @@ session_start();
 
 require_once __DIR__ . '/../../../private/secret-key.php';
 require_once __DIR__ . '/../../../private/rate-limit.php';
+require_once __DIR__ . '/../../../private/lang.php';
 
 define('PROTECTED_PAGE', 'decrypt');
 define('LOGIN_PAGE',     'login.php');
@@ -68,6 +69,60 @@ function validateCsrfToken(string $token): bool {
 }
 
 
+// ── OSOBY — helpery nad $people (patrz private/secret-key.php) ──
+
+function findPersonByLogin(string $login): ?array {
+    global $people;
+    foreach ($people as $p) {
+        if ($p['login'] === $login) {
+            return $p;
+        }
+    }
+    return null;
+}
+
+// Do listy posiadaczy w panelu (osoby już zalogowane, widzą się nawzajem w pełni)
+function formatPhoneDisplay(string $raw): string {
+    // +48123456789 → 123-456-789
+    $digits = preg_replace('/^\+48/', '', $raw);
+    return substr($digits, 0, 3) . '-' . substr($digits, 3, 3) . '-' . substr($digits, 6, 3);
+}
+
+// Do ekranu logowania/2FA (przed uwierzytelnieniem — celowo częściowo zamaskowany,
+// żeby nie ujawniać pełnego numeru np. komuś patrzącemu przez ramię)
+function formatPhoneMasked(string $raw): string {
+    // +48123456789 → +48 *** *** 789
+    $digits = preg_replace('/^\+48/', '', $raw);
+    return '+48 *** *** ' . substr($digits, 6, 3);
+}
+
+// ── TREŚĆ WŁASNA (instrukcje) — markdown-lite ────────────
+function md_lite(string $text): string {
+    $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    $text = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $text);
+    $text = preg_replace('/\*(.+?)\*/s',     '<em>$1</em>',         $text);
+    return $text;
+}
+
+// ── STAN "NIESKONFIGUROWANE" ─────────────────────────────
+// Widoczny, czerwony komunikat zamiast cichej pustej sekcji — gdy deployer
+// zapomni uzupełnić $instructions/$downloads w configu, albo ukryje w panelu
+// (show_in_panel => false) wszystkich posiadaczy naraz.
+function empty_state_box(string $message): string {
+    return '<div class="alert-box danger">'
+        . '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+        . htmlspecialchars($message)
+        . '</div>';
+}
+
+// ── TEKSTY INTERFEJSU (private/lang.php) ─────────────────
+function t(string $key, ...$args): string {
+    global $lang;
+    $text = $lang[$key] ?? $key;
+    return $args ? vsprintf($text, $args) : $text;
+}
+
+
 // ── LOGOWANIE DO PLIKU ───────────────────────────────────
 
 function sk_log(string $message): void {
@@ -104,8 +159,6 @@ function requireLogin(): void {
 // Pełna sesja powstaje dopiero po weryfikacji kodu w verify.php.
 
 function attemptLogin(string $username, string $password): array {
-    global $users, $display_names, $phone_numbers, $phone_masked;
-
     $ip      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $key     = 'ip_' . md5($ip);
     $userKey = 'user_' . md5($username);
@@ -117,18 +170,22 @@ function attemptLogin(string $username, string $password): array {
 
     if ($ipLimit['blocked']) {
         sk_log("LOGIN BLOCKED (IP): brute-force for '$username' IP: $ip");
-        return ['status' => 'blocked', 'message' => 'Zbyt wiele nieudanych prób. Spróbuj ponownie za 15 minut.'];
+        return ['status' => 'blocked', 'message' => t('auth_too_many_attempts')];
     }
 
     if ($userLimit['blocked']) {
         sk_log("LOGIN BLOCKED (user): brute-force for '$username' IP: $ip");
-        return ['status' => 'blocked', 'message' => 'Zbyt wiele nieudanych prób. Spróbuj ponownie za 15 minut.'];
+        return ['status' => 'blocked', 'message' => t('auth_too_many_attempts')];
     }
 
-    if (!isset($users[$username]) || !password_verify($password, $users[$username])) {
+    $person = findPersonByLogin($username);
+
+    if ($person === null || !password_verify($password, $person['password'])) {
         sk_log("LOGIN FAILED: invalid credentials for '$username' IP: $ip");
-        return ['status' => 'invalid', 'message' => 'Nieprawidłowy login lub hasło. Sprawdź dane na swojej karcie Secret Key.'];
+        return ['status' => 'invalid', 'message' => t('auth_invalid_credentials')];
     }
+
+    $displayName = $person['first_name'];
 
     // Hasło OK — wyczyść oba liczniki
     if (isTrustedDevice($username)) {
@@ -136,19 +193,19 @@ function attemptLogin(string $username, string $password): array {
         rateLimitReset($userKey);
         $_SESSION['logged_in']    = true;
         $_SESSION['username']     = $username;
-        $_SESSION['display_name'] = $display_names[$username] ?? $username;
+        $_SESSION['display_name'] = $displayName;
         $_SESSION['login_time']   = time();
         $_SESSION['pending_mail'] = true;
         $_SESSION['last_activity'] = time();
         session_regenerate_id(true);
-        sk_log("LOGIN SUCCESS (trusted device): " . ($display_names[$username] ?? $username) . " ('$username') IP: $ip");
+        sk_log("LOGIN SUCCESS (trusted device): $displayName ('$username') IP: $ip");
         return ['status' => 'trusted', 'redirect' => PROTECTED_PAGE];
     }
 
     // Urządzenie niezaufane — generuj i wyślij kod 2FA
     $code   = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-    $phone  = $phone_numbers[$username];
-    $masked = $phone_masked[$username];
+    $phone  = $person['phone'];
+    $masked = formatPhoneMasked($phone);
 
     // ── TRYB TESTOWY — usuń przed wdrożeniem na produkcję! ──
     // $smsResult = true; $code = '123456';
@@ -158,7 +215,7 @@ function attemptLogin(string $username, string $password): array {
 
     if ($smsResult !== true) {
         sk_log("2FA SMS ERROR: '$username' ($phone) — $smsResult");
-        return ['status' => 'sms_error', 'message' => 'Nie udało się wysłać SMS. Spróbuj ponownie za chwilę.'];
+        return ['status' => 'sms_error', 'message' => t('auth_sms_send_failed')];
     }
 
     rateLimitReset($key);
@@ -176,7 +233,7 @@ function attemptLogin(string $username, string $password): array {
     // Dane tymczasowe 2FA — NIE ma 'logged_in'
     $_SESSION['pending_2fa']          = true;
     $_SESSION['pending_username']     = $username;
-    $_SESSION['pending_display_name'] = $display_names[$username] ?? $username;
+    $_SESSION['pending_display_name'] = $displayName;
     $_SESSION['pending_phone_masked'] = $masked;
     $_SESSION['2fa_phone']            = $phone;
     $_SESSION['2fa_code']             = $code;
@@ -184,7 +241,7 @@ function attemptLogin(string $username, string $password): array {
     $_SESSION['sms_sent_at']          = time();
     $_SESSION['2fa_attempts']         = 0;
 
-    sk_log("2FA SENT: " . ($display_names[$username] ?? $username) . " ('$username') IP: $ip");
+    sk_log("2FA SENT: $displayName ('$username') IP: $ip");
 
     return ['status' => 'ok', 'phone_masked' => $masked];
 }
@@ -265,7 +322,7 @@ function clearPending2FA(): void {
 
 function sendSmsCode(string $phone, string $code) {
     $ttlMin = TWO_FA_TTL / 60;
-    $msg    = "Kod weryfikacyjny: $code. Wazny $ttlMin min. Nie udostepniaj go nikomu.\n\n@moja-domena.pl #$code";
+    $msg    = "Kod weryfikacyjny: $code. Wazny $ttlMin min. Nie udostepniaj go nikomu.\n\n" . SMS_AUTOFILL_DOMAIN . " #$code";
 
     $params = http_build_query([
         'from'          => SMS_SENDER,

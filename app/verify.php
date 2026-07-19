@@ -23,12 +23,12 @@ $remember   = !empty($input['remember']);
 $csrfToken  = trim($input['csrf_token'] ?? $_POST['csrf_token'] ?? '');
 
 if (!validateCsrfToken($csrfToken)) {
-    echo json_encode(['status' => 'error', 'message' => 'Nieprawidłowy token. Odśwież stronę.']);
+    echo json_encode(['status' => 'error', 'message' => t('common_error_bad_token')]);
     exit;
 }
 
 if ($code === '' || !preg_match('/^\d{6}$/', $code)) {
-    echo json_encode(['status' => 'error', 'message' => 'Podaj 6-cyfrowy kod.']);
+    echo json_encode(['status' => 'error', 'message' => t('verify_bad_code_format')]);
     exit;
 }
 
@@ -45,27 +45,28 @@ switch ($result) {
 
     case 'invalid':
         $remaining = TWO_FA_MAX_ATTEMPTS - ($_SESSION['2fa_attempts'] ?? TWO_FA_MAX_ATTEMPTS);
-        $msg = 'Nieprawidłowy kod.';
+        $msg = t('verify_invalid_code');
         if ($remaining > 0) {
-            $msg .= ' Pozostało ' . $remaining . ' ' . ($remaining === 1 ? 'próba' : ($remaining < 5 ? 'próby' : 'prób')) . '.';
+            $plKey = $remaining === 1 ? 'verify_attempts_left_1' : ($remaining < 5 ? 'verify_attempts_left_few' : 'verify_attempts_left_many');
+            $msg .= ' ' . t($plKey, $remaining);
         }
         echo json_encode(['status' => 'invalid', 'message' => $msg]);
         break;
 
     case 'expired':
-        echo json_encode(['status' => 'expired', 'message' => 'Kod wygasł. Zaloguj się ponownie.']);
+        echo json_encode(['status' => 'expired', 'message' => t('verify_expired')]);
         break;
 
     case 'blocked':
-        echo json_encode(['status' => 'blocked', 'message' => 'Zbyt wiele błędnych prób. Zaloguj się ponownie.']);
+        echo json_encode(['status' => 'blocked', 'message' => t('verify_blocked')]);
         break;
 
     case 'ip_blocked':
-        echo json_encode(['status' => 'blocked', 'message' => 'Zbyt wiele błędnych prób z tego urządzenia. Spróbuj ponownie za godzinę.']);
+        echo json_encode(['status' => 'blocked', 'message' => t('verify_ip_blocked')]);
         break;
 
     case 'no_2fa':
     default:
-        echo json_encode(['status' => 'error', 'message' => 'Sesja wygasła. Zaloguj się ponownie.']);
+        echo json_encode(['status' => 'error', 'message' => t('verify_session_expired')]);
         break;
 }

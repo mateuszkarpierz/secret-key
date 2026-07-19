@@ -11,13 +11,11 @@
 require_once '../auth.php';
 requireLogin();
 
-// Biała lista: klucz z URL → prawdziwa nazwa pliku w /private/.
-// Użytkownik nigdy nie podaje bezpośrednio nazwy pliku — eliminuje to
-// ryzyko path traversal (np. ?file=../../../secret-key.php).
-$allowed = [
-    'baza-hasel' => 'demo-baza-hasel.txt',
-    
-];
+// Biała lista: klucz z URL → prawdziwa nazwa pliku w private/.
+$allowed = [];
+foreach (($downloads ?? []) as $d) {
+    $allowed[$d['key']] = $d['filename'];
+}
 
 $key = $_GET['file'] ?? '';
 

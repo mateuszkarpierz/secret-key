@@ -18,13 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $csrfToken = trim($_POST['csrf_token'] ?? '');
 if (!validateCsrfToken($csrfToken)) {
     http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Nieprawidłowa sesja. Odśwież stronę i zaloguj się ponownie.']);
+    echo json_encode(['status' => 'error', 'message' => t('resend_bad_session')]);
     exit;
 }
 
 // Musi istnieć pending_2fa — czyli użytkownik przeszedł krok 1
 if (empty($_SESSION['pending_2fa']) || empty($_SESSION['pending_username'])) {
-    echo json_encode(['status' => 'error', 'message' => 'Sesja wygasła. Zaloguj się ponownie.']);
+    echo json_encode(['status' => 'error', 'message' => t('resend_session_expired')]);
     exit;
 }
 
@@ -32,25 +32,24 @@ if (empty($_SESSION['pending_2fa']) || empty($_SESSION['pending_username'])) {
 $elapsed = time() - ($_SESSION['sms_sent_at'] ?? 0);
 if ($elapsed < RESEND_COOLDOWN) {
     $wait = RESEND_COOLDOWN - $elapsed;
-    echo json_encode(['status' => 'error', 'message' => "Poczekaj jeszcze {$wait} s przed ponownym wysłaniem."]);
+    echo json_encode(['status' => 'error', 'message' => t('resend_wait_seconds', $wait)]);
     exit;
 }
 
 // Sprawdź limit resendów na sesję
 $resendCount = $_SESSION['resend_count'] ?? 0;
 if ($resendCount >= 3) {
-    echo json_encode(['status' => 'error', 'message' => 'Przekroczono limit wysyłania kodów. Zaloguj się ponownie.']);
+    echo json_encode(['status' => 'error', 'message' => t('resend_limit_reached')]);
     exit;
 }
 
 $username = $_SESSION['pending_username'];
 $ip       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
-global $phone_numbers, $display_names;
-
-$phone = $phone_numbers[$username] ?? null;
+$person = findPersonByLogin($username);
+$phone  = $person['phone'] ?? null;
 if (!$phone) {
-    echo json_encode(['status' => 'error', 'message' => 'Błąd konfiguracji.']);
+    echo json_encode(['status' => 'error', 'message' => t('resend_config_error')]);
     exit;
 }
 
@@ -60,7 +59,7 @@ $smsResult = sendSmsCode($phone, $code);
 
 if ($smsResult !== true) {
     sk_log("2FA RESEND ERROR: '$username' ($phone) — $smsResult");
-    echo json_encode(['status' => 'error', 'message' => 'Nie udało się wysłać SMS. Spróbuj za chwilę.']);
+    echo json_encode(['status' => 'error', 'message' => t('resend_sms_failed')]);
     exit;
 }
 
@@ -71,6 +70,6 @@ $_SESSION['2fa_attempts'] = 0;
 $_SESSION['sms_sent_at']  = time();
 $_SESSION['resend_count'] = ($resendCount + 1);
 
-sk_log("2FA RESENT: " . ($display_names[$username] ?? $username) . " ('$username') IP: $ip");
+sk_log("2FA RESENT: " . ($person['first_name'] ?? $username) . " ('$username') IP: $ip");
 
 echo json_encode(['status' => 'ok']);

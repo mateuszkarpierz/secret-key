@@ -198,19 +198,20 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 
 **Warstwa autoryzacji** (`/app/`)
 - `login.php` — formularz logowania
-- `auth.php` — logika sesji, bcrypt, 2FA, brute-force, CSRF
+- `auth.php` — logika sesji, bcrypt, 2FA, brute-force, CSRF, oraz helpery `t()` (teksty UI), `md_lite()` (markdown-lite), `empty_state_box()`
 - `verify.php` — weryfikacja kodu SMS
 - `resend.php` — ponowna wysyłka SMS
 - `logout.php` — wylogowanie
 
 **Warstwa dostępu** (`/decrypt/`)
 - `index.php` — panel odszyfrowania z rekonstrukcją Shamira w JS
-- `download.php` — bramkowane pobieranie plików (wymaga sesji, biała lista, log po stronie serwera)
+- `download.php` — bramkowane pobieranie plików (wymaga sesji, biała lista budowana z configu, log po stronie serwera)
 - `log.php` — logowanie zdarzeń
 - `devtools-log.php` — rejestrowanie incydentów inspekcji DevTools (z rate-limitingiem per IP)
 
 **Warstwa danych** (`/private/` — poza `public_html`)
-- `secret-key.php` — hasze bcrypt, zamaskowane numery telefonów
+- `secret-key.php` — jeden plik configu: osoby (`$people`), pliki do pobrania (`$downloads`), instrukcja (`$instructions`), powiadomienie email (`$email_notify`), domena SMS
+- `lang.php` — teksty interfejsu (jeden język, bez przełącznika — patrz [Instalacja](#instalacja))
 - `rate-limit.php` — trwały rate-limiting (liczniki niezależne od sesji)
 - `rate_limits.json` — liczniki prób logowania per IP/konto *(tworzy się automatycznie)*
 - `trusted_devices.json` — tokeny zaufanych urządzeń *(tworzy się automatycznie)*
@@ -255,9 +256,12 @@ System łączy **osiem niezależnych warstw ochrony** — kompromitacja jednej n
 Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 
 **Konfiguracja** — generuje plik `secret-key.php`:
-1. Wprowadź loginy, hasła i numery telefonów dla każdej wyznaczonej osoby
-2. Kliknij „Generuj konfigurację"
-3. Pobierz wygenerowany plik `secret-key.php`
+1. Token API SMSPlanet, nazwa nadawcy SMS oraz domena do autouzupełniania kodu (Android/iOS) — sama domena, bez `@` i bez `https://`
+2. Dla każdej wyznaczonej osoby: login, hasło, imię, nazwisko, numer telefonu i czy ma być widoczna na liście posiadaczy w panelu
+3. Pliki do pobrania (baza haseł, baza 2FA, instalator programu) — klucz, etykieta przycisku, nazwa pliku
+4. Kroki instrukcji dla panelu (formatowanie `**pogrubienie**` / `*kursywa*`)
+5. Opcjonalnie: powiadomienie email o każdym logowaniu (adres odbiorcy, nadawca, link do panelu)
+6. Kliknij „Generuj konfigurację" i pobierz wygenerowany plik `secret-key.php`
 
 **Szyfrowanie** — dzieli hasło główne na udziały Shamira:
 1. Wpisz hasło główne do bazy haseł
@@ -266,7 +270,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 4. Pobierz plik `secret-key-shares.txt`
 
 > [!TIP]
-> Oba narzędzia działają **całkowicie offline** — żadne dane nie opuszczają przeglądarki.
+> Oba narzędzia działają **całkowicie offline** — żadne dane nie opuszczają przeglądarki. Formularz generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
 
 ---
 
@@ -279,9 +283,13 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 │   └── decrypt/       ← zawartość folderu /decrypt/
 └── private/           ← POZA public_html
     ├── secret-key.php  ← wygenerowany plik konfiguracyjny
+    ├── lang.php        ← teksty interfejsu (jeden język, patrz Krok 1)
     ├── rate-limit.php  ← plik systemowy z repozytorium (rate-limiting)
     └── moja-baza-hasel.kdbx  ← Twoje pliki (serwowane przez download.php)
 ```
+
+> [!WARNING]
+> `lang.php` musi trafić na serwer **razem** z `secret-key.php`. `auth.php` ładuje go przez `require_once` — brak pliku wysypuje cały system (fatal error na każdej stronie), nie tylko tłumaczenia.
 
 ---
 
@@ -297,14 +305,16 @@ require_once '/home/user/private/secret-key.php';
 
 ### Krok 4 — Domena w treści SMS (WebOTP)
 
-W `auth.php` treść wysyłanego kodu kończy się linijką `@domena #kod` — to format wymagany przez [WebOTP API](https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API), dzięki któremu przeglądarka na telefonie sama wypełnia pole kodu, bez ręcznego przepisywania z SMS-a. Podmień domenę na swoją:
+Treść wysyłanego kodu SMS kończy się linijką `@domena #kod` — to format wymagany przez [WebOTP API](https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API), dzięki któremu przeglądarka na telefonie sama wypełnia pole kodu, bez ręcznego przepisywania z SMS-a.
+
+Domenę ustawiasz w **Kroku 1**, w formularzu dashboardu (pole „Domena do autouzupełniania SMS") — wpisujesz samą domenę, bez `@` i bez `https://` (dashboard dokleja `@` automatycznie). Trafia do configu jako:
 
 ```php
-$msg = "Kod weryfikacyjny: $code. Wazny $ttlMin min. Nie udostepniaj go nikomu.\n\n@twoja-domena.pl #$code";
+define('SMS_AUTOFILL_DOMAIN', '@twoja-domena.pl');
 ```
 
 > [!WARNING]
-> Domena musi **dokładnie** zgadzać się z tą, pod którą hostujesz system (bez `https://`, bez ścieżki) — inaczej WebOTP zignoruje SMS i autouzupełnianie nie zadziała. Kod nadal dotrze i zadziała po ręcznym wpisaniu, tylko bez tej wygody.
+> Domena musi **dokładnie** zgadzać się z tą, pod którą hostujesz system — inaczej WebOTP zignoruje SMS i autouzupełnianie nie zadziała. Kod nadal dotrze i zadziała po ręcznym wpisaniu, tylko bez tej wygody.
 
 ---
 
@@ -356,6 +366,7 @@ secret-key/
 └── 📁 private/                    # Poza public_html — pliki konfiguracyjne
     ├── .htaccess
     ├── demo-baza-hasel.txt         # Przykładowy plik do pobrania (zastąp własnym)
+    ├── lang.php                    # Teksty interfejsu (jeden język)
     ├── rate-limit.php
     └── secret-key.php
 ```

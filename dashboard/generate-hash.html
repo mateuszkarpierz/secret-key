@@ -212,22 +212,22 @@
             40%  { opacity: 0; transform: translateX(-14px) scaleY(0.9); }
             100% { opacity: 0; transform: translateX(-14px) scaleY(0);   max-height: 0;    margin-bottom: 0; }
         }
-        .user-card {
+        .user-card, .download-card, .instruction-card {
             background: var(--surface2); border: 1px solid var(--border);
             border-radius: 14px; overflow: hidden; transition: border-color 0.2s;
             animation: cardSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .user-card:focus-within { border-color: rgba(192,132,252,0.35); }
-        .user-card.removing {
+        .user-card:focus-within, .download-card:focus-within, .instruction-card:focus-within { border-color: rgba(192,132,252,0.35); }
+        .user-card.removing, .download-card.removing, .instruction-card.removing {
             animation: cardSlideOut 0.32s cubic-bezier(0.4, 0, 0.6, 1) forwards;
             pointer-events: none; overflow: hidden;
         }
-        .user-card-header {
+        .user-card-header, .download-card-header, .instruction-card-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 9px 14px; border-bottom: 1px solid var(--border);
             background: var(--surface3);
         }
-        .user-num { font-family: var(--mono); font-size: 0.6rem; color: var(--accent); letter-spacing: 0.1em; }
+        .user-num, .download-num, .instruction-num { font-family: var(--mono); font-size: 0.6rem; color: var(--accent); letter-spacing: 0.1em; }
         .remove-btn {
             background: none; border: none; color: var(--text-muted);
             font-size: 0.68rem; font-family: var(--mono); padding: 3px 2px;
@@ -235,22 +235,42 @@
         }
         .remove-btn:hover { color: var(--danger); }
 
-        .user-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
-        .user-field {
+        .user-fields, .download-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+        .user-field, .download-field {
             background: var(--surface2); padding: 10px 13px;
             display: flex; flex-direction: column; gap: 6px;
         }
-        .user-field-label {
+        .user-field-label, .download-field-label {
             font-family: var(--mono); font-size: 0.52rem;
             letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
         }
-        .user-field-inner { display: flex; align-items: center; }
-        .user-field input {
+        .user-field-inner, .download-field-inner { display: flex; align-items: center; gap: 6px; }
+        .user-field input, .download-field input {
             background: transparent; border: none; outline: none;
             color: var(--text); font-family: var(--mono); font-size: 0.8rem; width: 100%;
         }
-        .user-field input.f-sans { font-family: var(--sans); font-size: 0.82rem; }
-        .user-field input::placeholder { color: var(--text-muted); }
+        .user-field input.f-sans, .download-field input.f-sans { font-family: var(--sans); font-size: 0.82rem; }
+        .user-field input::placeholder, .download-field input::placeholder { color: var(--text-muted); }
+
+        /* ─── INSTRUCTION STEP — jedno pole markdown-lite na krok ─── */
+        .instruction-field { padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; }
+        .instruction-field textarea {
+            background: transparent; border: none; outline: none; resize: vertical;
+            color: var(--text); font-family: var(--sans); font-size: 0.85rem; line-height: 1.55;
+            width: 100%; min-height: 84px;
+        }
+        .instruction-field textarea::placeholder { color: var(--text-muted); }
+        .instruction-field textarea.i-text {
+            height: 120px; min-height: 120px; resize: none;
+        }
+        .instruction-field-hint {
+            font-family: var(--sans); font-size: 0.68rem; color: var(--text-muted);
+            line-height: 1.5; padding-top: 7px; border-top: 1px solid var(--border);
+        }
+        .instruction-field-hint code {
+            background: var(--surface3); padding: 1px 5px; border-radius: 4px;
+            font-family: var(--mono); color: var(--accent);
+        }
 
         /* ─── PASSWORD TOGGLE ─── */
         .field-password { position: relative; }
@@ -262,6 +282,127 @@
             transition: color 0.2s; outline: none;
         }
         .toggle-password:hover { color: var(--accent); }
+
+        /* ─── SHOW-IN-PANEL TOGGLE / PROGRAM TOGGLE ─── */
+        .user-field-toggle, .download-field-toggle {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; padding-top: 1px;
+        }
+        .toggle-hint {
+            font-family: var(--sans); font-size: 0.7rem; color: var(--text-muted);
+            line-height: 1.4; margin-top: 2px;
+        }
+        .toggle-switch {
+            position: relative; display: inline-block;
+            width: 38px; height: 21px; flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0; width: 0; height: 0; position: absolute;
+        }
+        .toggle-switch-track {
+            position: absolute; inset: 0; cursor: pointer;
+            background: var(--border-glow); border-radius: 99px;
+            transition: background 0.2s;
+        }
+        .toggle-switch-track::before {
+            content: ''; position: absolute;
+            left: 3px; top: 3px; width: 15px; height: 15px;
+            background: var(--text-dim); border-radius: 50%;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-switch-track {
+            background: rgba(192,132,252,0.35);
+        }
+        .toggle-switch input:checked + .toggle-switch-track::before {
+            transform: translateX(17px);
+            background: var(--accent);
+        }
+        .toggle-switch input:focus-visible + .toggle-switch-track {
+            box-shadow: 0 0 0 3px rgba(192,132,252,0.2);
+        }
+
+        /* ─── COLLAPSIBLE BODY (np. sekcja Powiadomienie e-mail) ─── */
+        .collapsible-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .collapsible-body.open {
+            max-height: 640px;
+        }
+
+        /* ─── DOWNLOADS — FILE PICKER (tylko nazwa pliku, nic nie jest wysyłane) ─── */
+        .download-field input[type="file"] {
+            font-family: var(--sans); font-size: 0.76rem; color: var(--text-dim); width: 100%;
+        }
+        .download-field input[type="file"].d-file {
+            width: auto; flex: 0 1 auto; min-width: 0; max-width: 100%;
+        }
+        .download-field input[type="file"]::file-selector-button {
+            background: var(--surface3); border: 1px solid var(--border);
+            color: var(--text); border-radius: 8px; padding: 5px 10px;
+            font-family: var(--sans); font-size: 0.72rem; font-weight: 600;
+            margin-right: 10px; cursor: pointer; transition: all 0.15s;
+        }
+        .download-field input[type="file"]::file-selector-button:hover {
+            border-color: var(--accent); color: var(--accent);
+        }
+        .download-field-hint {
+            font-family: var(--sans); font-size: 0.68rem; color: #fbbf24;
+            line-height: 1.5; margin-top: 3px;
+        }
+        .download-field-hint.muted { color: var(--text-muted); }
+
+        /* ── INFO TOOLTIP (ten sam mechanizm co w generate-card.html) ── */
+        .info-tip {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 15px; height: 15px;
+            flex-shrink: 0; cursor: help;
+            position: relative;
+            opacity: 0.55;
+            transition: opacity 0.2s, color 0.2s;
+            margin-left: 6px;
+            pointer-events: all;
+            color: var(--accent);
+        }
+        .info-tip:hover { opacity: 1; color: var(--accent); }
+        .info-tip svg { display: block; width: 15px; height: 15px; }
+        .info-tip::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 12px);
+            left: -8px;
+            background: var(--surface3);
+            border: 1px solid var(--border-glow);
+            color: var(--text-dim);
+            font-family: var(--sans); font-size: 0.72rem;
+            letter-spacing: 0.01em; text-transform: none; font-weight: 400;
+            padding: 8px 12px; border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+            white-space: normal; text-align: left; line-height: 1.45;
+            width: 220px;
+            opacity: 0; pointer-events: none;
+            transform: translateY(4px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            z-index: 9999;
+        }
+        .info-tip::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 4px;
+            border: 5px solid transparent;
+            border-bottom-color: var(--border-glow);
+            opacity: 0; pointer-events: none;
+            transform: translateY(4px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            z-index: 10001;
+        }
+        .info-tip:hover::after,
+        .info-tip:hover::before {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
         /* ─── ADD USER BTN ─── */
         .add-user-btn {
@@ -1697,6 +1838,42 @@
             <div class="field-group-label">Nazwa nadawcy SMS</div>
             <input type="text" id="sms_sender" placeholder="np. Secret Key" autocomplete="off">
         </div>
+        <div class="field-group" style="grid-column: 1 / -1;">
+            <div class="field-group-label">Domena do autouzupełniania SMS (Android/iOS)</div>
+            <input type="text" id="sms_autofill_domain" placeholder="np. twoja-domena.pl" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="section-label">Powiadomienie e-mail o logowaniu</div>
+    <div class="instruction-card" style="margin-bottom:14px;">
+        <div class="instruction-card-header">
+            <div class="instruction-num">Ustawienia powiadomień</div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="email-notify-enabled" onchange="toggleEmailNotifyBody(this)">
+                <span class="toggle-switch-track"></span>
+            </label>
+        </div>
+        <div class="collapsible-body" id="email-notify-body">
+            <div class="user-fields">
+                <div class="download-field">
+                    <div class="download-field-label">Adres, na który przychodzi powiadomienie</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-to" class="f-sans" placeholder="np. jan@twoja-domena.pl" autocomplete="off"></div>
+                </div>
+                <div class="download-field">
+                    <div class="download-field-label">Adres nadawcy (from_email)</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-from-email" class="f-sans" placeholder="np. no-reply@twoja-domena.pl" autocomplete="off"></div>
+                </div>
+                <div class="download-field">
+                    <div class="download-field-label">Nazwa nadawcy</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-from-name" class="f-sans" placeholder="np. Secret Key" autocomplete="off"></div>
+                </div>
+                <div class="download-field">
+                    <div class="download-field-label">Link do panelu (wklejany w treści wiadomości)</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-panel-url" class="f-sans" placeholder="np. https://twoja-domena.pl" autocomplete="off"></div>
+                </div>
+            </div>
+            <div class="instruction-field-hint" style="padding:10px 14px 12px;">Wyłącznik u góry całkowicie wyłącza wysyłkę maila po zalogowaniu — bez usuwania danych z pól poniżej.</div>
+        </div>
     </div>
 
     <div class="divider"></div>
@@ -1707,6 +1884,49 @@
     <button type="button" class="add-user-btn" id="add-btn" onclick="addUser()">
         <span style="font-size:1.2rem;line-height:1;margin-top:-1px">+</span>
         Dodaj kolejnego użytkownika
+    </button>
+
+    <div class="divider"></div>
+
+    <div class="section-label" style="margin-top:0">Pliki do pobrania</div>
+    <div class="warning" style="margin-bottom:16px">
+        <strong>⚠ Wybór pliku tutaj tylko pobiera jego nazwę.</strong>
+        Ten formularz nie wysyła nigdzie zawartości pliku (generator konfiguracji działa w pełni offline). Samą bazę haseł, bazę 2FA czy instalator programu musisz osobno wgrać na serwer do folderu <code>/private/</code>.
+    </div>
+
+    <div class="instruction-card" style="margin-bottom:14px;">
+        <div class="instruction-card-header">
+            <div class="instruction-num">Teksty w tej sekcji panelu</div>
+        </div>
+        <div class="download-field" style="border-bottom:1px solid var(--border);">
+            <div class="download-field-label">Nagłówek sekcji</div>
+            <div class="download-field-inner"><input type="text" id="download-heading-text" class="f-sans" placeholder="np. Plik i program do odzyskania dostępu"></div>
+        </div>
+        <div class="download-field" style="border-bottom:1px solid var(--border);">
+            <div class="download-field-label">Tekst wprowadzający (nad przyciskami)</div>
+            <div class="download-field-inner"><input type="text" id="download-intro-text" class="f-sans" placeholder="np. Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku."></div>
+        </div>
+        <div class="download-field">
+            <div class="download-field-label">Tekst ostrzeżenia (niebieski box z ikoną)</div>
+            <div class="download-field-inner"><input type="text" id="alert-box-text" class="f-sans" placeholder="np. Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB."></div>
+        </div>
+    </div>
+
+    <div class="user-list" id="download-list"></div>
+
+    <button type="button" class="add-user-btn" id="add-download-btn" onclick="addDownload()">
+        <span style="font-size:1.2rem;line-height:1;margin-top:-1px">+</span>
+        Dodaj plik do pobrania
+    </button>
+
+    <div class="divider"></div>
+
+    <div class="section-label" style="margin-top:0">Instrukcja</div>
+    <div class="user-list" id="instruction-list"></div>
+
+    <button type="button" class="add-user-btn" id="add-instruction-btn" onclick="addInstruction()">
+        <span style="font-size:1.2rem;line-height:1;margin-top:-1px">+</span>
+        Dodaj kolejny krok
     </button>
 
     <div class="action-row">
@@ -1837,12 +2057,26 @@ function addUser() {
                 '</div>' +
             '</div>' +
             '<div class="user-field">' +
-                '<div class="user-field-label">Imię wyświetlane w panelu</div>' +
-                '<div class="user-field-inner"><input type="text" class="u-name f-sans" placeholder="np. Mateusz"></div>' +
+                '<div class="user-field-label">Imię</div>' +
+                '<div class="user-field-inner"><input type="text" class="u-first-name f-sans" placeholder="np. Mateusz"></div>' +
             '</div>' +
             '<div class="user-field">' +
-                '<div class="user-field-label">Telefon do weryfikacji 2FA</div>' +
+                '<div class="user-field-label">Nazwisko</div>' +
+                '<div class="user-field-inner"><input type="text" class="u-last-name f-sans" placeholder="np. Karpierz"></div>' +
+            '</div>' +
+            '<div class="user-field">' +
+                '<div class="user-field-label">Telefon do weryfikacji 2FA (+48)</div>' +
                 '<div class="user-field-inner"><input type="text" class="u-phone" placeholder="np. 123456789" maxlength="9" inputmode="numeric"></div>' +
+            '</div>' +
+            '<div class="user-field">' +
+                '<div class="user-field-label">Widoczny w panelu</div>' +
+                '<div class="user-field-toggle">' +
+                    '<span class="toggle-hint">Lista posiadaczy Secret Key. Wyłącz dla kont bez fizycznej karty (np. serwisowych) — logowanie działa tak samo.</span>' +
+                    '<label class="toggle-switch">' +
+                        '<input type="checkbox" class="u-show-in-panel" checked>' +
+                        '<span class="toggle-switch-track"></span>' +
+                    '</label>' +
+                '</div>' +
             '</div>' +
         '</div>';
 
@@ -1864,7 +2098,7 @@ function removeUser(btn) {
 }
 
 function updateNums() {
-    var cards = document.querySelectorAll('.user-card');
+    var cards = document.querySelectorAll('#user-list .user-card');
     cards.forEach(function(c, i) {
         var num = c.querySelector('.user-num');
         var btn = c.querySelector('.remove-btn');
@@ -1884,14 +2118,217 @@ function togglePw(btn) {
         : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
 }
 
+// Sekcja "Powiadomienie e-mail" jest domyślnie zwinięta — rozwija się dopiero
+// gdy deployer świadomie włączy przełącznik (mniej pól na start, dla kogoś
+// kto w ogóle nie chce powiadomień email).
+function toggleEmailNotifyBody(checkbox) {
+    var body = document.getElementById('email-notify-body');
+    if (!body) return;
+    if (checkbox.checked) body.classList.add('open');
+    else body.classList.remove('open');
+}
+
+// ══════════════════════════════════════════════
+//  DOWNLOAD CARDS ("Pliki do pobrania")
+//  Formularz wyciąga tylko METADANE (klucz/etykieta/nazwa pliku).
+//  Zawartość pliku nigdy nie jest odczytywana ani wysyłana — to
+//  narzędzie działa w pełni offline (patrz warning w sekcji).
+// ══════════════════════════════════════════════
+function addDownload() {
+    var list = document.getElementById('download-list');
+    var n    = list.children.length;
+
+    var card = document.createElement('div');
+    card.className = 'download-card';
+    card.innerHTML =
+        '<div class="download-card-header">' +
+            '<div class="download-num">Plik ' + String(n+1).padStart(2,'0') + '</div>' +
+            '<button type="button" class="remove-btn" onclick="removeDownload(this)">✕ Usuń</button>' +
+        '</div>' +
+        '<div class="download-fields">' +
+            '<div class="download-field">' +
+                '<div class="download-field-label">Klucz (identyfikator w adresie)</div>' +
+                '<div class="download-field-inner"><input type="text" class="d-key" placeholder="np. baza-hasel" autocomplete="off"></div>' +
+            '</div>' +
+            '<div class="download-field">' +
+                '<div class="download-field-label">Etykieta przycisku</div>' +
+                '<div class="download-field-inner"><input type="text" class="d-label f-sans" placeholder="np. Pobierz bazę haseł"></div>' +
+            '</div>' +
+            '<div class="download-field" style="grid-column: 1 / -1;">' +
+                '<div class="download-field-label">Plik — wskaż lokalnie tylko po to, by wpisać nazwę</div>' +
+                '<div class="download-field-inner">' +
+                    '<span class="info-tip" data-tip="Wybór pliku tutaj tylko pobiera jego nazwę — nic nie jest wysyłane. Sam plik wgrywasz osobno na serwer do folderu /private/."><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>' +
+                    '<input type="file" class="d-file" onchange="fillFilename(this)">' +
+                '</div>' +
+                '<div class="download-field-inner" style="margin-top:6px"><input type="text" class="d-filename f-sans" placeholder="nazwa-pliku.rozszerzenie (uzupełni się automatycznie)"></div>' +
+            '</div>' +
+            '<div class="download-field" style="grid-column: 1 / -1;">' +
+                '<div class="download-field-toggle">' +
+                    '<span class="toggle-hint">To instalator programu do odszyfrowywania — doda nagłówek „Hasło do bazy X" w panelu.</span>' +
+                    '<label class="toggle-switch">' +
+                        '<input type="checkbox" class="d-is-program" onchange="toggleProgramField(this)">' +
+                        '<span class="toggle-switch-track"></span>' +
+                    '</label>' +
+                '</div>' +
+            '</div>' +
+            '<div class="download-field d-program-name-field" style="grid-column: 1 / -1; display:none;">' +
+                '<div class="download-field-label">Nazwa programu (tylko do nagłówka w panelu)</div>' +
+                '<div class="download-field-inner"><input type="text" class="d-program-name f-sans" placeholder="np. KeePassXC — krótka nazwa"></div>' +
+            '</div>' +
+        '</div>';
+
+    list.appendChild(card);
+    updateDownloadNums();
+    registerInputCursor(card);
+    card.querySelector('.d-key').focus();
+}
+
+function removeDownload(btn) {
+    var list = document.getElementById('download-list');
+    var card = btn.closest('.download-card');
+    if (list.children.length <= 1) {
+        card.querySelectorAll('input').forEach(function(i) {
+            if (i.type === 'checkbox') { i.checked = false; } else { i.value = ''; }
+        });
+        var nameField = card.querySelector('.d-program-name-field');
+        if (nameField) nameField.style.display = 'none';
+        return;
+    }
+    card.classList.add('removing');
+    setTimeout(function() { card.remove(); updateDownloadNums(); }, 340);
+}
+
+function updateDownloadNums() {
+    var cards = document.querySelectorAll('#download-list .download-card');
+    cards.forEach(function(c, i) {
+        var num = c.querySelector('.download-num');
+        var btn = c.querySelector('.remove-btn');
+        if (num) num.textContent = 'Plik ' + String(i+1).padStart(2,'0');
+        if (btn) btn.style.display = (cards.length <= 1) ? 'none' : '';
+    });
+}
+
+function toggleProgramField(checkbox) {
+    var card  = checkbox.closest('.download-card');
+    var field = card.querySelector('.d-program-name-field');
+    field.style.display = checkbox.checked ? '' : 'none';
+    if (!checkbox.checked) card.querySelector('.d-program-name').value = '';
+}
+
+// Wyłącznie lokalny wybór — czyta file.name, NIGDY nie czyta/wysyła zawartości pliku.
+function fillFilename(fileInput) {
+    var file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    var card = fileInput.closest('.download-card');
+    var filenameInput = card ? card.querySelector('.d-filename') : null;
+    if (filenameInput) filenameInput.value = file.name;
+}
+
+function collectDownloads() {
+    var downloads = [];
+    document.querySelectorAll('#download-list .download-card').forEach(function(card) {
+        var key         = card.querySelector('.d-key').value.trim();
+        var label       = card.querySelector('.d-label').value.trim();
+        var filename    = card.querySelector('.d-filename').value.trim();
+        var isProgram   = card.querySelector('.d-is-program').checked;
+        var programName = card.querySelector('.d-program-name').value.trim();
+        if (key === '' || label === '' || filename === '') return;
+        var entry = { key: key, label: label, filename: filename };
+        if (isProgram) entry.name = programName || label;
+        downloads.push(entry);
+    });
+    return downloads;
+}
+
+// ══════════════════════════════════════════════
+//  INSTRUCTION STEPS ("Instrukcja")
+//  Jedno pole tekstowe na krok, markdown-lite: **pogrubienie** i *kursywa*.
+//  Numer kroku (num) liczony automatycznie z pozycji karty przy generowaniu.
+// ══════════════════════════════════════════════
+function addInstruction() {
+    var list = document.getElementById('instruction-list');
+    var n    = list.children.length;
+
+    var card = document.createElement('div');
+    card.className = 'instruction-card';
+    card.innerHTML =
+        '<div class="instruction-card-header">' +
+            '<div class="instruction-num">Krok ' + String(n+1).padStart(2,'0') + '</div>' +
+            '<button type="button" class="remove-btn" onclick="removeInstruction(this)">✕ Usuń</button>' +
+        '</div>' +
+        '<div class="instruction-field">' +
+            '<textarea class="i-text" placeholder="**Zbierzcie się razem.** Skontaktuj się z osobami z listy po prawej stronie…"></textarea>' +
+            '<div class="instruction-field-hint">' +
+                'Formatowanie: <code>**pogrubienie**</code> (np. na tytuł kroku na początku) i <code>*kursywa*</code> (np. na przykładowy kod czy nazwę pliku). Reszta to zwykły tekst.' +
+            '</div>' +
+        '</div>';
+
+    list.appendChild(card);
+    updateInstructionNums();
+    card.querySelector('.i-text').focus();
+}
+
+function removeInstruction(btn) {
+    var list = document.getElementById('instruction-list');
+    var card = btn.closest('.instruction-card');
+    if (list.children.length <= 1) {
+        card.querySelector('.i-text').value = '';
+        return;
+    }
+    card.classList.add('removing');
+    setTimeout(function() { card.remove(); updateInstructionNums(); }, 340);
+}
+
+// Podpowiedź formatowania jest w markupie KAŻDEJ karty, ale widoczna tylko na tej,
+// która aktualnie jest pierwsza w kolejności — nie tej, która była pierwsza w
+// momencie tworzenia. Dzięki temu usunięcie kroku 1 nie zostawia reszty kroków
+// bez żadnej podpowiedzi (przesunięty krok 2 automatycznie ją dziedziczy).
+function updateInstructionNums() {
+    var cards = document.querySelectorAll('#instruction-list .instruction-card');
+    cards.forEach(function(c, i) {
+        var num  = c.querySelector('.instruction-num');
+        var btn  = c.querySelector('.remove-btn');
+        var hint = c.querySelector('.instruction-field-hint');
+        if (num) num.textContent = 'Krok ' + String(i+1).padStart(2,'0');
+        if (btn) btn.style.display = (cards.length <= 1) ? 'none' : '';
+        if (hint) hint.style.display = (i === 0) ? '' : 'none';
+    });
+}
+
+function collectInstructions() {
+    var instructions = [];
+    document.querySelectorAll('#instruction-list .instruction-card').forEach(function(card, i) {
+        var text = card.querySelector('.i-text').value.trim();
+        if (text === '') return;
+        instructions.push({ num: String(instructions.length + 1).padStart(2, '0'), text: text });
+    });
+    return instructions;
+}
+
 function resetAll() {
     hideError();
     document.getElementById('sms_token').value  = '';
     document.getElementById('sms_sender').value = '';
+    document.getElementById('sms_autofill_domain').value = '';
+    document.getElementById('download-heading-text').value = '';
+    document.getElementById('download-intro-text').value = '';
+    document.getElementById('alert-box-text').value = '';
+    document.getElementById('email-notify-enabled').checked = false;
+    document.getElementById('email-notify-body').classList.remove('open');
+    document.getElementById('email-notify-to').value = '';
+    document.getElementById('email-notify-from-email').value = '';
+    document.getElementById('email-notify-from-name').value = '';
+    document.getElementById('email-notify-panel-url').value = '';
     document.getElementById('results-area').innerHTML = '';
     var list = document.getElementById('user-list');
     while (list.firstChild) list.removeChild(list.firstChild);
     addUser();
+    var dlist = document.getElementById('download-list');
+    while (dlist.firstChild) dlist.removeChild(dlist.firstChild);
+    addDownload();
+    var ilist = document.getElementById('instruction-list');
+    while (ilist.firstChild) ilist.removeChild(ilist.firstChild);
+    addInstruction();
 }
 
 // collectFormData — zastąpione logiką JS-only
@@ -1910,8 +2347,9 @@ function renderResults(data) {
                     '<div>' +
                         '<div class="result-login">' + esc(u.login) + '</div>' +
                         '<div class="result-meta">' +
-                            'Imię: <span>' + esc(u.name)  + '</span>' +
-                            ' &nbsp;·&nbsp; Tel: <span>'  + esc(u.phone) + '</span>' +
+                            'Imię: <span>' + esc(u.firstName || u.login) + '</span>' +
+                            ' &nbsp;·&nbsp; Nazwisko: <span>' + esc(u.lastName || '—') + '</span>' +
+                            ' &nbsp;·&nbsp; Widoczny w panelu: <span>' + (u.showInPanel ? 'tak' : 'nie') + '</span>' +
                             ' &nbsp;·&nbsp; Hasło: <span>' + u.pw_len + ' znaków</span>' +
                         '</div>' +
                     '</div>' +
@@ -1964,7 +2402,7 @@ function renderResults(data) {
 //  AJAX: GENERUJ PODGLĄD
 // ══════════════════════════════════════════════
 function validatePhones() {
-    var cards = document.querySelectorAll('.user-card');
+    var cards = document.querySelectorAll('#user-list .user-card');
     for (var i = 0; i < cards.length; i++) {
         var phoneInput = cards[i].querySelector('.u-phone');
         var val = phoneInput ? phoneInput.value.trim() : '';
@@ -1984,26 +2422,82 @@ function validatePhones() {
     return true;
 }
 
+function validateDownloadKeys() {
+    var seen  = {};
+    var cards = document.querySelectorAll('#download-list .download-card');
+    for (var i = 0; i < cards.length; i++) {
+        var keyInput = cards[i].querySelector('.d-key');
+        var val = keyInput ? keyInput.value.trim() : '';
+        if (val === '') continue;
+        if (seen[val]) {
+            showError('Klucz „' + val + '" jest użyty więcej niż raz w sekcji „Pliki do pobrania" — klucze muszą być unikalne (to one trafiają do adresu pobierania).');
+            var keyField = keyInput.closest('.download-field');
+            keyField.style.background = 'rgba(248,113,113,0.06)';
+            keyField.style.borderLeft = '2px solid rgba(248,113,113,0.7)';
+            keyInput.focus();
+            setTimeout(function(f) {
+                return function() { f.style.background = ''; f.style.borderLeft = ''; };
+            }(keyField), 2500);
+            return false;
+        }
+        seen[val] = true;
+    }
+    return true;
+}
+
+function validateInstructionsMarkdown() {
+    var cards = document.querySelectorAll('#instruction-list .instruction-card');
+    for (var i = 0; i < cards.length; i++) {
+        var textarea = cards[i].querySelector('.i-text');
+        var val = textarea.value;
+        if (val.trim() === '') continue;
+        var boldMarkers  = (val.match(/\*\*/g) || []).length;
+        var withoutBold  = val.replace(/\*\*([\s\S]+?)\*\*/g, '');
+        var starCount    = (withoutBold.match(/\*/g) || []).length;
+        if (boldMarkers % 2 !== 0 || starCount % 2 !== 0) {
+            var num = String(i + 1).padStart(2, '0');
+            showError('Krok ' + num + ': niesparowane ** (pogrubienie) lub * (kursywa) w tekście — sprawdź formatowanie.');
+            var field = textarea.closest('.instruction-field');
+            field.style.background = 'rgba(248,113,113,0.06)';
+            field.style.borderLeft = '2px solid rgba(248,113,113,0.7)';
+            textarea.focus();
+            setTimeout(function(f) {
+                return function() { f.style.background = ''; f.style.borderLeft = ''; };
+            }(field), 2500);
+            return false;
+        }
+    }
+    return true;
+}
+
 function collectUsers() {
     var users = [];
-    document.querySelectorAll('.user-card').forEach(function(card) {
-        var login = card.querySelector('.u-login').value.trim();
-        var pw    = card.querySelector('.u-pw').value.trim();
-        var name  = card.querySelector('.u-name').value.trim();
-        var phone = card.querySelector('.u-phone').value.trim().replace(/\D/g, '');
+    document.querySelectorAll('#user-list .user-card').forEach(function(card) {
+        var login       = card.querySelector('.u-login').value.trim();
+        var pw          = card.querySelector('.u-pw').value.trim();
+        var firstName   = card.querySelector('.u-first-name').value.trim();
+        var lastName    = card.querySelector('.u-last-name').value.trim();
+        var phoneDigits = card.querySelector('.u-phone').value.trim().replace(/\D/g, '');
+        var showInPanel = card.querySelector('.u-show-in-panel').checked;
         if (login === '' || pw === '') return;
-        if (phone.length === 9) phone = '48' + phone;
-        var last3 = phone.length >= 3 ? phone.slice(-3) : phone;
-        users.push({ login: login, pw: pw, name: name || login, phone: phone, mask: phone ? '+48 *** *** ' + last3 : '' });
+        var phone = phoneDigits.length === 9 ? '+48' + phoneDigits : '';
+        var last3 = phoneDigits.length >= 3 ? phoneDigits.slice(-3) : phoneDigits;
+        users.push({
+            login: login,
+            pw: pw,
+            firstName: firstName || login,
+            lastName: lastName,
+            phone: phone,
+            mask: phone ? '+48 *** *** ' + last3 : '',
+            showInPanel: showInPanel
+        });
     });
     return users;
 }
 
-function buildFileContent(users, hashes, smsToken, smsSender) {
-    var maxKey = 0;
-    users.forEach(function(u) { if (("'" + u.login + "'").length > maxKey) maxKey = ("'" + u.login + "'").length; });
-    function pad(s) { while (s.length < maxKey) s += ' '; return s; }
-    function ve(v) { return "'" + v.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"; }
+function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain, downloads, instructions, downloadHeading, downloadIntro, alertBoxText, emailNotify) {
+    function ve(v) { return "'" + String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"; }
+    function vb(v) { return v ? 'true' : 'false'; }
 
     var lines = [];
     lines.push('<?php');
@@ -2016,24 +2510,60 @@ function buildFileContent(users, hashes, smsToken, smsSender) {
     lines.push("define('SMSPLANET_TOKEN', " + ve(smsToken)  + ');');
     lines.push("define('SMS_SENDER',      " + ve(smsSender) + ');');
     lines.push('');
-    lines.push('// Hashe haseł użytkowników (bcrypt)');
-    lines.push('$users = [');
-    users.forEach(function(u, i) { lines.push('  ' + pad("'" + u.login + "'") + ' => ' + ve(hashes[i]) + ','); });
+    lines.push('// Domena widoczna w treści SMS-a (autouzupełnianie kodu na Android/iOS) —');
+    lines.push('// musi zaczynać się od "@" i być domeną, na której faktycznie działa panel.');
+    lines.push("define('SMS_AUTOFILL_DOMAIN', " + ve(smsAutofillDomain) + ');');
+    lines.push('');
+    lines.push('// Osoby systemu — jedno źródło prawdy (login, hasło, dane 2FA, widoczność w panelu)');
+    lines.push('$people = [');
+    users.forEach(function(u, i) {
+        lines.push('  [');
+        lines.push("    'login'         => " + ve(u.login)      + ',');
+        lines.push("    'password'      => " + ve(hashes[i])    + ',');
+        lines.push("    'first_name'    => " + ve(u.firstName)  + ',');
+        lines.push("    'last_name'     => " + ve(u.lastName)   + ',');
+        lines.push("    'phone'         => " + ve(u.phone)      + ',');
+        lines.push("    'show_in_panel' => " + vb(u.showInPanel) + ',');
+        lines.push('  ],');
+    });
     lines.push('];');
     lines.push('');
-    lines.push('// Wyświetlane imiona dla każdego loginu');
-    lines.push('$display_names = [');
-    users.forEach(function(u) { lines.push('  ' + pad("'" + u.login + "'") + ' => ' + ve(u.name) + ','); });
+    lines.push('// Pliki do pobrania — jedno źródło dla przycisków w panelu (index.php)');
+    lines.push('// i białej listy pobierania (download.php). Same pliki wgrywane są');
+    lines.push('// ręcznie na serwer do /private/ — ten config trzyma tylko metadane.');
+    lines.push('$downloads = [');
+    downloads.forEach(function(d) {
+        var parts = [];
+        parts.push("'key' => " + ve(d.key));
+        parts.push("'label' => " + ve(d.label));
+        parts.push("'filename' => " + ve(d.filename));
+        if (d.name) parts.push("'name' => " + ve(d.name));
+        lines.push('  [' + parts.join(', ') + '],');
+    });
     lines.push('];');
     lines.push('');
-    lines.push('// Numery telefonów do 2FA (format: 48XXXXXXXXX)');
-    lines.push('$phone_numbers = [');
-    users.forEach(function(u) { lines.push('  ' + pad("'" + u.login + "'") + ' => ' + ve(u.phone) + ','); });
+    lines.push('// Teksty w sekcji „Pliki do pobrania" panelu — zwykły tekst, BEZ markdown-lite');
+    lines.push('// (formatowanie ** / * działa tylko w $instructions poniżej).');
+    lines.push('$download_heading = ' + ve(downloadHeading) + ';');
+    lines.push('$download_intro = ' + ve(downloadIntro) + ';');
+    lines.push('$alert_box_text = ' + ve(alertBoxText) + ';');
+    lines.push('');
+    lines.push('// Powiadomienie e-mail o logowaniu — jedno źródło prawdy dla adresu/domeny/URL.');
+    lines.push('// enabled => false wyłącza wysyłkę całkowicie, bez ruszania kodu.');
+    lines.push('$email_notify = [');
+    lines.push("  'enabled'    => " + vb(emailNotify.enabled) + ',');
+    lines.push("  'to'         => " + ve(emailNotify.to) + ',');
+    lines.push("  'from_email' => " + ve(emailNotify.fromEmail) + ',');
+    lines.push("  'from_name'  => " + ve(emailNotify.fromName) + ',');
+    lines.push("  'panel_url'  => " + ve(emailNotify.panelUrl) + ',');
     lines.push('];');
     lines.push('');
-    lines.push('// Zamaskowane numery wyświetlane w UI');
-    lines.push('$phone_masked = [');
-    users.forEach(function(u) { lines.push('  ' + pad("'" + u.login + "'") + ' => ' + ve(u.mask) + ','); });
+    lines.push('// Kroki instrukcji — markdown-lite: **pogrubienie** i *kursywa*,');
+    lines.push('// renderowane przez md_lite() w decrypt/index.php.');
+    lines.push('$instructions = [');
+    instructions.forEach(function(s) {
+        lines.push("  ['num' => " + ve(s.num) + ', ' + "'text' => " + ve(s.text) + '],');
+    });
     lines.push('];');
     return lines.join('\n');
 }
@@ -2041,10 +2571,26 @@ function buildFileContent(users, hashes, smsToken, smsSender) {
 function doGenerate() {
     hideError();
     if (!validatePhones()) return;
+    if (!validateDownloadKeys()) return;
+    if (!validateInstructionsMarkdown()) return;
 
-    var smsToken  = document.getElementById('sms_token').value.trim();
-    var smsSender = document.getElementById('sms_sender').value.trim();
-    var users = collectUsers();
+    var smsToken      = document.getElementById('sms_token').value.trim();
+    var smsSender     = document.getElementById('sms_sender').value.trim();
+    var smsAutofillDomain = document.getElementById('sms_autofill_domain').value.trim().replace(/^@+/, '');
+    if (smsAutofillDomain) smsAutofillDomain = '@' + smsAutofillDomain;
+    var downloadHeading = document.getElementById('download-heading-text').value.trim();
+    var downloadIntro = document.getElementById('download-intro-text').value.trim();
+    var alertBoxText  = document.getElementById('alert-box-text').value.trim();
+    var emailNotify = {
+        enabled:   document.getElementById('email-notify-enabled').checked,
+        to:        document.getElementById('email-notify-to').value.trim(),
+        fromEmail: document.getElementById('email-notify-from-email').value.trim(),
+        fromName:  document.getElementById('email-notify-from-name').value.trim(),
+        panelUrl:  document.getElementById('email-notify-panel-url').value.trim()
+    };
+    var users        = collectUsers();
+    var downloads    = collectDownloads();
+    var instructions = collectInstructions();
 
     if (users.length === 0) {
         showError('Podaj dane co najmniej jednego użytkownika (login + hasło).');
@@ -2059,8 +2605,19 @@ function doGenerate() {
     function hashNext() {
         if (i >= users.length) {
             hideLoading(function() {
-                var fileContent = buildFileContent(users, hashes, smsToken, smsSender);
-                renderResults({ users: users.map(function(u,j){ return { login:u.login, hash:hashes[j], name:u.name, phone:u.phone, pw_len:u.pw.length }; }), file_content: fileContent });
+                var fileContent = buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain, downloads, instructions, downloadHeading, downloadIntro, alertBoxText, emailNotify);
+                renderResults({ users: users.map(function(u,j){
+                    return {
+                        login: u.login,
+                        hash: hashes[j],
+                        firstName: u.firstName,
+                        lastName: u.lastName,
+                        phone: u.phone,
+                        mask: u.mask,
+                        showInPanel: u.showInPanel,
+                        pw_len: u.pw.length
+                    };
+                }), downloads: downloads, instructions: instructions, downloadHeading: downloadHeading, downloadIntro: downloadIntro, alertBoxText: alertBoxText, file_content: fileContent });
                 window._lastFileContent = fileContent;
             });
             return;
@@ -2127,7 +2684,14 @@ function registerInputCursor(parent) {
 // ══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
     addUser();
+    addDownload();
+    addInstruction();
     registerInputCursor(document.querySelector('.sms-grid'));
+
+    // addUser/addDownload/addInstruction każde na końcu robią focus() na swoim
+    // nowym polu — przy starcie strony wygrywa ten wywołany jako ostatni
+    // (Krok 01 instrukcji), a nie chcemy tego. Wracamy fokus na pierwsze pole.
+    document.getElementById('sms_token').focus();
 
     // pkt 5 — blokuj litery w polach telefonu (tylko 9 cyfr)
     document.addEventListener('input', function(e) {
@@ -2160,7 +2724,7 @@ if (window.matchMedia('(pointer: fine)').matches) {
     var isMorphed = false, morphTarget = null, cursorVisible = false;
 
     var MORPH_ALL = '.btn, .btn-primary, .btn-ghost, .btn-copy-file, .add-user-btn, .hash-box';
-    var RING_HIDE = '.copy-btn, .btn-download, .remove-btn, .toggle-password';
+    var RING_HIDE = '.copy-btn, .btn-download, .remove-btn, .toggle-password, .toggle-switch, .info-tip';
 
     document.addEventListener('mousemove', function(e) {
         mx = e.clientX; my = e.clientY;

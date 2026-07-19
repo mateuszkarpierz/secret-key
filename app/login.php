@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $csrfToken = trim($_POST['csrf_token'] ?? '');
     if (!validateCsrfToken($csrfToken)) {
-        echo json_encode(['status' => 'error', 'message' => 'Nieprawidłowy token. Odśwież stronę.', 'shake' => false]);
+        echo json_encode(['status' => 'error', 'message' => t('common_error_bad_token'), 'shake' => false]);
         exit;
     }
 
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if ($username === '' || $password === '') {
-        echo json_encode(['status' => 'error', 'message' => 'Wpisz login i hasło.', 'shake' => true]);
+        echo json_encode(['status' => 'error', 'message' => t('login_empty_fields'), 'shake' => true]);
         exit;
     }
 
@@ -67,14 +67,14 @@ $loggedOut = isset($_GET['wylogowano']);
 $timedOut  = isset($_GET['timeout']);
 ?>
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="<?= htmlspecialchars(t('_html_lang')) ?>">
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta name="author" content="Mateusz Karpierz">
     <meta name="robots" content="noindex,nofollow">
     <meta name="googlebot" content="noindex">
-    <title>Logowanie — Secret Key</title>
+    <title><?= htmlspecialchars(t('login_page_title')) ?></title>
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@700;900&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
@@ -772,14 +772,14 @@ $timedOut  = isset($_GET['timeout']);
         <div class="loading-bar-track">
             <div class="loading-bar-fill"></div>
         </div>
-        <div class="loading-text">Odszyfrowywanie…</div>
+        <div class="loading-text"><?= htmlspecialchars(t('twofa_decrypting')) ?></div>
     </div>
     <?php endif; ?>
 
     <!-- ═══ VERIFY SCREEN ═══ -->
     <div class="verify-screen" id="verify-screen">
         <img src="key.svg" class="loading-logo" alt="Secret Key">
-        <div class="loading-text" id="verify-text">Weryfikowanie…</div>
+        <div class="loading-text" id="verify-text"><?= htmlspecialchars(t('twofa_verifying')) ?></div>
     </div>
 
     <div id="particles"></div>
@@ -821,16 +821,16 @@ $timedOut  = isset($_GET['timeout']);
                             <line x1="12" y1="8" x2="12" y2="12"/>
                             <line x1="12" y1="16" x2="12.01" y2="16"/>
                         </svg>
-                        Sesja wygasła z powodu nieaktywności.
+                        <?= htmlspecialchars(t('login_session_expired')) ?>
                     </div>
                     <?php else: ?>
-                    <p class="card-intro">Znajdujesz się na tej stronie, ponieważ jesteś posiadaczem <strong>1&nbsp;z&nbsp;5&nbsp;części</strong> kodu Secret Key.</p>
+                    <p class="card-intro"><?= t('login_card_intro') ?></p>
                     <div class="hint-box">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
                             <rect x="3" y="11" width="18" height="11" rx="2"/>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                         </svg>
-                        <span>Dane do logowania znajdują się na Twojej karcie&nbsp;<strong>Secret Key</strong>.</span>
+                        <span><?= t('login_hint_box') ?></span>
                     </div>
                     <?php endif; ?>
 
@@ -845,20 +845,20 @@ $timedOut  = isset($_GET['timeout']);
                     </div>
 
                     <div class="field">
-                        <label for="username">Login</label>
+                        <label for="username"><?= htmlspecialchars(t('login_label_username')) ?></label>
                         <input type="text" id="username" name="username"
-                            placeholder="Twój login z karty"
+                            placeholder="<?= htmlspecialchars(t('login_placeholder_username')) ?>"
                             value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
                             autocomplete="username">
                     </div>
 
                     <div class="field">
-                        <label for="password">Hasło</label>
+                        <label for="password"><?= htmlspecialchars(t('login_label_password')) ?></label>
                         <div class="field-password">
                             <input type="password" id="password" name="password"
-                                placeholder="Twoje hasło z karty"
+                                placeholder="<?= htmlspecialchars(t('login_placeholder_password')) ?>"
                                 autocomplete="current-password">
-                            <button type="button" class="toggle-password" id="toggle-pw" aria-label="Pokaż hasło">
+                            <button type="button" class="toggle-password" id="toggle-pw" aria-label="<?= htmlspecialchars(t('login_show_password')) ?>">
                                 <svg id="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                                     <circle cx="12" cy="12" r="3"/>
@@ -873,7 +873,7 @@ $timedOut  = isset($_GET['timeout']);
                             <polyline points="10 17 15 12 10 7"/>
                             <line x1="15" y1="12" x2="3" y2="12"/>
                         </svg>
-                        Zaloguj się
+                        <?= htmlspecialchars(t('login_submit_btn')) ?>
                     </button>
 
                 </div><!-- end step-login -->
@@ -885,7 +885,7 @@ $timedOut  = isset($_GET['timeout']);
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px">
                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                         </svg>
-                        Wysłano kod weryfikacyjny na&nbsp;<strong id="phone-display"></strong>
+                        <?= t('twofa_sent_to') ?><strong id="phone-display"></strong>
                     </div>
 
                     <div class="alert alert-error" id="alert-2fa" style="display:none">
@@ -897,7 +897,7 @@ $timedOut  = isset($_GET['timeout']);
                         <span id="alert-2fa-msg"></span>
                     </div>
 
-                    <p class="card-intro" style="margin-bottom:20px">Wpisz <strong>6-cyfrowy kod</strong> z wiadomości SMS, aby potwierdzić swoją tożsamość.</p>
+                    <p class="card-intro" style="margin-bottom:20px"><?= t('twofa_intro') ?></p>
 
                     <div class="otp-wrap">
                         <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" id="d0" autocomplete="one-time-code">
@@ -910,20 +910,20 @@ $timedOut  = isset($_GET['timeout']);
 
                     <label class="remember-device">
                         <input type="checkbox" id="remember-device">
-                        <span>Zapamiętaj to urządzenie na 7 dni</span>
+                        <span><?= htmlspecialchars(t('twofa_remember_device')) ?></span>
                     </label>
 
                     <button type="button" class="submit-btn" id="btn-verify">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Weryfikuj
+                        <?= htmlspecialchars(t('twofa_verify_btn')) ?>
                     </button>
 
                     <div class="resend-row">
-                        <span>Nie dostałeś SMS-a?</span>
+                        <span><?= htmlspecialchars(t('twofa_no_sms_question')) ?></span>
                         <button class="resend-btn" id="resend-btn" disabled>
-                            Wyślij kod ponownie za (<span id="resend-timer">60</span> <span id="resend-unit">sekund</span>)
+                            <?= t('twofa_resend_btn_waiting') ?>60</span> <span id="resend-unit">sekund</span>)
                         </button>
                     </div>
 
@@ -940,12 +940,28 @@ $timedOut  = isset($_GET['timeout']);
 
             </div><!-- end card-body -->
 
-            <p class="card-footer">obszar zastrzeżony &nbsp;·&nbsp; autoryzacja wymagana</p>
+            <p class="card-footer"><?= t('login_footer_restricted') ?></p>
         </div>
     </div>
 
     <script>
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
+    // ─── Teksty UI wstrzykiwane z private/lang.php (patrz t() w auth.php) ───
+    var I18N = {
+        emptyFields:      '<?= addslashes(t('login_empty_fields')) ?>',
+        welcomeBack:      '<?= addslashes(t('login_welcome_back')) ?>',
+        genericError:     '<?= addslashes(t('common_error_generic')) ?>',
+        connectionError:  '<?= addslashes(t('common_error_connection')) ?>',
+        resendSending:    '<?= addslashes(t('twofa_resend_sending')) ?>',
+        resendReady:      '<?= addslashes(t('twofa_resend_btn_ready')) ?>',
+        smsSendFailed:    '<?= addslashes(t('resend_sms_failed')) ?>',
+        verifying:        '<?= addslashes(t('twofa_verifying')) ?>',
+        resendWaitingPrefix: '<?= addslashes(t('twofa_resend_btn_waiting')) ?>',
+        unit1:            '<?= addslashes(t('twofa_resend_unit_1')) ?>',
+        unitFew:          '<?= addslashes(t('twofa_resend_unit_few')) ?>',
+        unitMany:         '<?= addslashes(t('twofa_resend_unit_many')) ?>',
+        refPrefix:        '<?= addslashes(t('jokescreen_ref_prefix')) ?>'
+    };
 
     // ─── Loading screen ───
     var loadingScreen = document.getElementById('loading-screen');
@@ -1019,7 +1035,7 @@ $timedOut  = isset($_GET['timeout']);
         alertEl.style.display = 'none';
 
         if (!username || !password) {
-            showLoginError('Wpisz login i hasło.', true);
+            showLoginError(I18N.emptyFields, true);
             return;
         }
 
@@ -1034,7 +1050,7 @@ $timedOut  = isset($_GET['timeout']);
             .then(function(data) {
                 if (data.status === 'trusted') {
                     // Zaufane urządzenie — overlay zostaje z nowym tekstem, redirect
-                    text.textContent = 'Witaj ponownie…';
+                    text.textContent = I18N.welcomeBack;
                     setTimeout(function() {
                         window.location.href = data.redirect;
                     }, 800);
@@ -1083,12 +1099,12 @@ $timedOut  = isset($_GET['timeout']);
                     }, 2000);
                 } else {
                     verifyScreen.classList.remove('show');
-                    showLoginError(data.message || 'Wystąpił błąd.', data.shake);
+                    showLoginError(data.message || I18N.genericError, data.shake);
                 }
             })
             .catch(function(err) {
                 verifyScreen.classList.remove('show');
-                showLoginError('Błąd połączenia. Spróbuj ponownie.', false);
+                showLoginError(I18N.connectionError, false);
             });
     });
 
@@ -1158,7 +1174,7 @@ $timedOut  = isset($_GET['timeout']);
                     // Pokaż verify screen i przekieruj
                     var verifyScreen = document.getElementById('verify-screen');
                     var text   = document.getElementById('verify-text');
-                    text.textContent = 'Weryfikowanie…';
+                    text.textContent = I18N.verifying;
                     verifyScreen.classList.add('show');
                     setTimeout(function() {
                         window.location.href = data.redirect;
@@ -1166,7 +1182,7 @@ $timedOut  = isset($_GET['timeout']);
                 } else {
                     // Ukryj "Wysłano kod..." gdy pojawia się błąd
                     alertInfo.style.display = 'none';
-                    alertMsg.textContent = data.message || 'Wystąpił błąd.';
+                    alertMsg.textContent = data.message || I18N.genericError;
                     alertEl.style.display = '';
                     card.classList.remove('shake');
                     void card.offsetWidth;
@@ -1189,7 +1205,7 @@ $timedOut  = isset($_GET['timeout']);
             .catch(function() {
                 btn.disabled = false;
                 alertInfo.style.display = 'none';
-                alertMsg.textContent = 'Błąd połączenia. Spróbuj ponownie.';
+                alertMsg.textContent = I18N.connectionError;
                 alertEl.style.display = '';
             });
     });
@@ -1219,9 +1235,9 @@ $timedOut  = isset($_GET['timeout']);
     // Wyślij ponownie
     var timerInterval;
     function odmienSekund(n) {
-        if (n === 1) return 'sekunda';
-        if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'sekundy';
-        return 'sekund';
+        if (n === 1) return I18N.unit1;
+        if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return I18N.unitFew;
+        return I18N.unitMany;
     }
     function startTimer(seconds) {
         clearInterval(timerInterval);
@@ -1230,7 +1246,7 @@ $timedOut  = isset($_GET['timeout']);
         var timerEl   = document.getElementById('resend-timer');
         var unitEl    = document.getElementById('resend-unit');
         resendBtn.disabled = true;
-        resendBtn.innerHTML = 'Wyślij kod ponownie za (<span id="resend-timer">' + timeLeft + '</span> <span id="resend-unit">' + odmienSekund(timeLeft) + '</span>)';
+        resendBtn.innerHTML = I18N.resendWaitingPrefix + timeLeft + '</span> <span id="resend-unit">' + odmienSekund(timeLeft) + '</span>)';
         timerEl = document.getElementById('resend-timer');
         unitEl  = document.getElementById('resend-unit');
         timerInterval = setInterval(function() {
@@ -1240,7 +1256,7 @@ $timedOut  = isset($_GET['timeout']);
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 resendBtn.disabled = false;
-                resendBtn.innerHTML = 'Wyślij ponownie';
+                resendBtn.innerHTML = I18N.resendReady;
             }
         }, 1000);
     }
@@ -1259,7 +1275,7 @@ $timedOut  = isset($_GET['timeout']);
                     var alertEl  = document.getElementById('alert-2fa');
                     var alertMsg = document.getElementById('alert-2fa-msg');
                     document.getElementById('alert-info').style.display = 'none';
-                    alertMsg.textContent = data.message || 'Nie udało się wysłać SMS.';
+                    alertMsg.textContent = data.message || I18N.smsSendFailed;
                     alertEl.style.display = '';
                 }
             })
@@ -1462,9 +1478,9 @@ $timedOut  = isset($_GET['timeout']);
     <div class="sk-jk-header">
       <div class="sk-jk-header-left">
         <div class="sk-jk-status-dot"></div>
-        <span class="sk-jk-header-title">Naruszenie bezpieczeństwa</span>
+        <span class="sk-jk-header-title"><?= htmlspecialchars(t('jokescreen_title')) ?></span>
       </div>
-      <span class="sk-jk-header-id" id="sk-ref">REF #00000</span>
+      <span class="sk-jk-header-id" id="sk-ref"><?= htmlspecialchars(t('jokescreen_ref_prefix')) ?>00000</span>
     </div>
     <div class="sk-jk-body">
       <div class="sk-jk-icon">
@@ -1479,33 +1495,33 @@ $timedOut  = isset($_GET['timeout']);
           </svg>
         </div>
       </div>
-      <div class="sk-jk-title">Dostęp wstrzymany</div>
-      <div class="sk-jk-desc">Wykryto próbę inspekcji chronionego zasobu.<br>Sesja została wstrzymana do czasu zamknięcia narzędzi deweloperskich.</div>
+      <div class="sk-jk-title"><?= htmlspecialchars(t('jokescreen_access_halted')) ?></div>
+      <div class="sk-jk-desc"><?= htmlspecialchars(t('jokescreen_subtitle')) ?><br><?= htmlspecialchars(t('jokescreen_subtitle_2')) ?></div>
       <div class="sk-jk-divider">
         <div class="sk-jk-divider-line"></div>
-        <span class="sk-jk-divider-text">Zarejestrowane naruszenia</span>
+        <span class="sk-jk-divider-text"><?= htmlspecialchars(t('jokescreen_violations_label')) ?></span>
         <div class="sk-jk-divider-line"></div>
       </div>
       <div class="sk-jk-violations">
         <div class="sk-jk-viol">
           <div class="sk-jk-viol-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
-          <span class="sk-jk-viol-text">Inspekcja kodu źródłowego</span>
-          <span class="sk-jk-viol-tag red">WYKRYTO</span>
+          <span class="sk-jk-viol-text"><?= htmlspecialchars(t('jokescreen_violation_1')) ?></span>
+          <span class="sk-jk-viol-tag red"><?= htmlspecialchars(t('jokescreen_detected_tag')) ?></span>
         </div>
         <div class="sk-jk-viol">
           <div class="sk-jk-viol-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-          <span class="sk-jk-viol-text">Panel deweloperski aktywny</span>
-          <span class="sk-jk-viol-tag red">WYKRYTO</span>
+          <span class="sk-jk-viol-text"><?= htmlspecialchars(t('jokescreen_violation_2')) ?></span>
+          <span class="sk-jk-viol-tag red"><?= htmlspecialchars(t('jokescreen_detected_tag')) ?></span>
         </div>
         <div class="sk-jk-viol">
           <div class="sk-jk-viol-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
-          <span class="sk-jk-viol-text">Debugowanie sesji użytkownika</span>
-          <span class="sk-jk-viol-tag red">WYKRYTO</span>
+          <span class="sk-jk-viol-text"><?= htmlspecialchars(t('jokescreen_violation_3')) ?></span>
+          <span class="sk-jk-viol-tag red"><?= htmlspecialchars(t('jokescreen_detected_tag')) ?></span>
         </div>
       </div>
       <div class="sk-jk-timer-wrap">
         <div class="sk-jk-timer-label">
-          <span class="sk-jk-timer-lbl">Czas naruszenia</span>
+          <span class="sk-jk-timer-lbl"><?= htmlspecialchars(t('jokescreen_time_label')) ?></span>
           <span class="sk-jk-timer-val" id="sk-timer">00:00</span>
         </div>
         <div class="sk-jk-timer-track">
@@ -1514,10 +1530,10 @@ $timedOut  = isset($_GET['timeout']);
       </div>
     </div>
     <div class="sk-jk-footer">
-      <span class="sk-jk-footer-text">zamknij devtools → strona wróci</span>
+      <span class="sk-jk-footer-text"><?= htmlspecialchars(t('jokescreen_close_hint')) ?></span>
       <div class="sk-jk-footer-badge">
         <div class="sk-jk-footer-badge-dot"></div>
-        <span>Ochrona aktywna</span>
+        <span><?= htmlspecialchars(t('jokescreen_footer_active')) ?></span>
       </div>
     </div>
   </div>
@@ -1529,6 +1545,10 @@ $timedOut  = isset($_GET['timeout']);
 //# sourceMappingURL=devtools-detector.js.map
 </script>
 
+<!-- ═══════════════════════════════════════ -->
+<!-- PREVENT ACTIONS (improved) -->
+<!-- blokada prawego przycisku myszy, kopiowania/zaznaczania, F11/F12/DevTools -->
+<!-- ═══════════════════════════════════════ -->
 <script>
 (function () {
   'use strict';
@@ -1606,7 +1626,7 @@ $timedOut  = isset($_GET['timeout']);
     joker  =document.getElementById('sk-joker');
     timerEl=document.getElementById('sk-timer');
     refEl  =document.getElementById('sk-ref');
-    refEl.textContent='REF #'+String(Math.floor(Math.random()*99999)).padStart(5,'0');
+    refEl.textContent=I18N.refPrefix+String(Math.floor(Math.random()*99999)).padStart(5,'0');
 
     document.querySelectorAll('img,video,canvas,svg').forEach(function(el){
       el.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();});

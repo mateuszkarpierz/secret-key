@@ -2,48 +2,93 @@
 require_once '../auth.php';
 requireLogin();
 
-// Fallback — jeśli stara sesja nie ma display_name, odczytaj z mapy
+// Fallback — jeśli stara sesja nie ma display_name, odczytaj z $people
 if (empty($_SESSION['display_name']) && !empty($_SESSION['username'])) {
-    $_SESSION['display_name'] = $display_names[$_SESSION['username']] ?? $_SESSION['username'];
+    $sessionPerson = findPersonByLogin($_SESSION['username']);
+    $_SESSION['display_name'] = $sessionPerson['first_name'] ?? $_SESSION['username'];
 }
 // Fallback dla starych sesji bez login_time
 if (empty($_SESSION['login_time'])) {
     $_SESSION['login_time'] = time();
 }
 
+// ─── Lista posiadaczy do panelu — budowana z $people, filtrowana przez show_in_panel ───
+// (konta bez show_in_panel, np. administracyjne, logują się normalnie, ale nie trafiają na listę)
+$visiblePeople = array_values(array_filter($people, fn($p) => $p['show_in_panel'] ?? true));
+$personsForJs  = array_map(function ($p, $i) {
+    return [
+        'label' => ($i + 1) . '.',
+        'name'  => trim($p['first_name'] . ' ' . $p['last_name']),
+        'tel'   => formatPhoneDisplay($p['phone']),
+    ];
+}, $visiblePeople, array_keys($visiblePeople));
+
+// ─── Pliki do pobrania — z $downloads. Wpis z kluczem 'name' oznacza program
+// do odszyfrowywania (np. KeePassXC) — jego 'name' trafia do nagłówka hasła. ───
+$downloads    = $downloads ?? [];
+$programEntry = null;
+foreach ($downloads as $d) {
+    if (!empty($d['name'])) { $programEntry = $d; break; }
+}
+$programName = $programEntry['name'] ?? 'programu';
+
+// ─── Kroki instrukcji — markdown-lite, patrz $instructions w secret-key.php ───
+$instructions = $instructions ?? [];
+
+// ─── Teksty sekcji „Pliki do pobrania" — zwykły tekst, BEZ markdown-lite, patrz secret-key.php ───
+$download_heading = $download_heading ?? 'Pliki do pobrania';
+$download_intro = $download_intro ?? 'Pobierz pliki potrzebne do odzyskania dostępu.';
+$alert_box_text = $alert_box_text ?? '';
+
+// ─── Powiadomienie e-mail o logowaniu — jedno źródło prawdy dla adresu/domeny/URL panelu ───
+$email_notify = $email_notify ?? ['enabled' => false];
+
 // ─── Powiadomienie email — wysyłane raz po zalogowaniu, nie blokuje przekierowania ───
 if (!empty($_SESSION['pending_mail'])) {
     $_SESSION['pending_mail'] = false;
 
-    $display = $_SESSION['display_name'] ?? $_SESSION['username'];
-    $ip      = $_SERVER['REMOTE_ADDR'] ?? '—';
-    $ua      = $_SERVER['HTTP_USER_AGENT'] ?? '—';
-    $dt      = date('d.m.Y H:i:s', $_SESSION['login_time']);
-    $panel   = 'https://secretkey.moja-domena.pl';
+    $to        = $email_notify['to'] ?? '';
+    $fromEmail = $email_notify['from_email'] ?? '';
+    $fromName  = $email_notify['from_name'] ?? 'Secret Key';
+    $panel     = $email_notify['panel_url'] ?? '';
 
-    $subject = '🔐 Logowanie do Secret Key Panel — ' . $display;
-    $message = "Nowe logowanie do panelu Secret Key.\n\n"
-             . "─────────────────────────────\n"
-             . "Użytkownik:   " . $display . " (" . ($_SESSION['username'] ?? '—') . ")\n"
-             . "Data i czas:  " . $dt . "\n"
-             . "Adres IP:     " . $ip . "\n"
-             . "Przeglądarka: " . $ua . "\n"
-             . "─────────────────────────────\n\n"
-             . "Panel: " . $panel . "\n";
+    if (empty($email_notify['enabled'])) {
+        // Wyłączone świadomie w configu (email_notify.enabled => false) — nic nie wysyłamy, nic nie logujemy.
+    } elseif ($to === '' || $fromEmail === '') {
+        sk_log("MAIL SKIPPED: email_notify.enabled=true, ale brak 'to' lub 'from_email' w \$email_notify (private/secret-key.php).");
+    } else {
+        $display = $_SESSION['display_name'] ?? $_SESSION['username'];
+        $ip      = $_SERVER['REMOTE_ADDR'] ?? '—';
+        $ua      = $_SERVER['HTTP_USER_AGENT'] ?? '—';
+        $dt      = date('d.m.Y H:i:s', $_SESSION['login_time']);
 
-    $messageId = sprintf("<%s.%s@twoja-domena.pl>", date('YmdHis'), uniqid());
-    $headers   = "Message-ID: $messageId\r\n";
-    $headers  .= "From: Secret Key <no-reply@twoja-domena.pl>\r\n";
-    $headers  .= "Reply-To: no-reply@twoja-domena.pl\r\n";
-    $headers  .= "Return-Path: no-reply@twoja-domena.pl\r\n";
-    $headers  .= "X-Sender: no-reply@twoja-domena.pl\r\n";
-    $headers  .= "X-Mailer: secretkey.moja-domena.pl Secret Key Panel\r\n";
-    $headers  .= "X-Priority: 3\r\n";
-    $headers  .= "MIME-Version: 1.0\r\n";
-    $headers  .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $subject = t('mail_subject_prefix') . $display;
+        $message = t('mail_body_intro') . "\n\n"
+                 . "─────────────────────────────\n"
+                 . t('mail_body_user_label') . $display . " (" . ($_SESSION['username'] ?? '—') . ")\n"
+                 . t('mail_body_date_label') . $dt . "\n"
+                 . t('mail_body_ip_label') . $ip . "\n"
+                 . t('mail_body_browser_label') . $ua . "\n"
+                 . "─────────────────────────────\n\n"
+                 . t('mail_body_panel_label') . $panel . "\n";
 
-    @mail('twoj-email@domena.pl', $subject, $message, $headers, '-fno-reply@twoja-domena.pl');
-        sk_log("MAIL FAILED: nie udało się wysłać powiadomienia o logowaniu — " . $display . " ('" . ($_SESSION['username'] ?? '—') . "') IP: " . $ip);
+        // Domena do Message-ID wyprowadzona z from_email — jedno źródło, nie osobna stała.
+        $fromDomain = substr(strrchr($fromEmail, '@'), 1) ?: 'localhost';
+        $messageId  = sprintf("<%s.%s@%s>", date('YmdHis'), uniqid(), $fromDomain);
+
+        $headers  = "Message-ID: $messageId\r\n";
+        $headers .= "From: " . $fromName . " <" . $fromEmail . ">\r\n";
+        $headers .= "Reply-To: " . $fromEmail . "\r\n";
+        $headers .= "Return-Path: " . $fromEmail . "\r\n";
+        $headers .= "X-Sender: " . $fromEmail . "\r\n";
+        $headers .= "X-Mailer: " . $fromName . " Panel\r\n";
+        $headers .= "X-Priority: 3\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+
+        if (!@mail($to, $subject, $message, $headers, '-f' . $fromEmail)) {
+            sk_log("MAIL FAILED: nie udało się wysłać powiadomienia o logowaniu — " . $display . " ('" . ($_SESSION['username'] ?? '—') . "') IP: " . $ip);
+        }
     }
 }
 
@@ -56,14 +101,14 @@ $session_login_ts = $_SESSION['login_time'];
 $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 ?>
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="<?= htmlspecialchars(t('_html_lang')) ?>">
 <head>
     <meta charset="utf-8" />
     <meta name="author" content="Mateusz Karpierz">
     <meta name="robots" content="noindex,nofollow">
     <meta name="googlebot" content="noindex">
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Panel Secret Key</title>
+    <title><?= htmlspecialchars(t('panel_header_title')) ?></title>
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
@@ -550,9 +595,13 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         }
 
         /* ─── DOWNLOAD SECTION ─── */
+        /* auto-fit zamiast sztywnych "1fr 1fr 1fr" — liczba plików jest teraz
+           dynamiczna ($downloads w configu), więc siatka musi się dopasować
+           do 1, 2, 3, 4+ przycisków bez pustych dziur ani samotnie zawiniętych
+           elementów w nowym wierszu. */
         .download-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
             margin-top: 16px;
         }
@@ -596,6 +645,11 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             background: var(--info-dim);
             border: 1px solid rgba(56,189,248,0.2);
             color: var(--info);
+        }
+        .alert-box.danger {
+            background: var(--danger-dim);
+            border: 1px solid rgba(248,113,113,0.28);
+            color: var(--danger);
         }
         .alert-box svg { flex-shrink: 0; margin-top: 1px; }
 
@@ -914,10 +968,10 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal-box">
             <button class="modal-close" id="modal-close">&times;</button>
-            <p class="modal-title">Co to jest Secret key?</p>
+            <p class="modal-title"><?= htmlspecialchars(t('modal_secret_key_title')) ?></p>
             <img src="card-secret-key.webp" class="modal-card-img" alt="Secret Key Card">
             <div class="modal-note">
-                Secret key to specjalny ciąg znaków kryptograficznych, który znajduje się na odwrocie karty w miejscu zaznaczonym czerwoną obramówką. Jest on również umieszczony w kodzie QR.
+                <?= htmlspecialchars(t('modal_secret_key_note')) ?>
             </div>
         </div>
     </div>
@@ -926,7 +980,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <header class="header">
         <div class="header-actions">
             <span class="welcome-text">
-                Witaj, <?= htmlspecialchars($_SESSION['display_name'] ?? 'Gość') ?>
+                <?= htmlspecialchars(t('panel_welcome')) ?><?= htmlspecialchars($_SESSION['display_name'] ?? t('panel_welcome_fallback_name')) ?>
             </span>
             <a href="../logout.php" class="logout-btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -934,7 +988,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                Wyloguj
+                <?= htmlspecialchars(t('panel_logout_btn')) ?>
             </a>
         </div>
         <img src="key.svg" class="header-logo" alt="Key Logo">
@@ -945,39 +999,24 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <!-- MAIN GRID -->
     <main class="container">
 
-      <!-- LEFT: Instructions only -->
-      <div class="card">
-          <div class="section-label">
-              <span class="icon">📋</span>
-              <h3>Instrukcja dostępu do bazy haseł</h3>
-          </div>
-          <div class="instruction-list">
-              <div class="instruction-item">
-                  <span class="instruction-num">01</span>
-                  <p class="instruction-text"><strong>Zbierzcie się razem.</strong> Skontaktuj się z osobami z listy po prawej stronie (lub poniżej na telefonie). Każda z nich posiada swoją część specjalnego kodu (Secret Key). Potrzebujecie minimum <strong>3 osoby z 5</strong> — dopiero wtedy możliwe jest odblokowanie hasła.</p>
-              </div>
-              <div class="instruction-item">
-                  <span class="instruction-num">02</span>
-                  <p class="instruction-text"><strong>Wejdźcie na tę stronę razem.</strong> Każda osoba powinna mieć przy sobie swoją kartę Secret Key — znajdziecie na niej długi ciąg znaków (np. <em>8015c7c4f263a74d…</em>). Kliknijcie „Co to jest Secret Key?" jeśli nie wiecie, gdzie go szukać.</p>
-              </div>
-              <div class="instruction-item">
-                  <span class="instruction-num">03</span>
-                  <p class="instruction-text"><strong>Wprowadźcie kody.</strong> W polu tekstowym po prawej stronie (lub poniżej na telefonie) wpisujcie kolejno kody z kart — każdy kod w osobnej linii, dokładnie tak jak jest napisany na karcie, bez żadnych spacji ani dodatkowych znaków.</p>
-              </div>
-              <div class="instruction-item">
-                  <span class="instruction-num">04</span>
-                  <p class="instruction-text"><strong>Hasło pojawi się automatycznie.</strong> Gdy wpiszecie co najmniej 3 kody, hasło do bazy haseł wyświetli się poniżej pola tekstowego. To właśnie hasło posłuży do otwarcia programu KeePassXC.</p>
-              </div>
-              <div class="instruction-item">
-                  <span class="instruction-num">05</span>
-                  <p class="instruction-text"><strong>Pobierzcie program i bazę haseł.</strong> Na dole strony znajdziecie dwa przyciski: pobierzcie program KeePassXC oraz plik z bazą haseł. Zainstalujcie program, otwórzcie nim pobrany plik i wpiszcie uzyskane hasło. Uwaga: oprócz hasła potrzebny jest też <strong>klucz sprzętowy</strong> (fizyczne urządzenie USB).</p>
-              </div>
-              <div class="instruction-item">
-                  <span class="instruction-num">06</span>
-                  <p class="instruction-text"><strong>Co dalej?</strong> Po uzyskaniu dostępu do bazy haseł znajdziecie tam dane logowania do wszystkich moich kont internetowych. Możecie je wtedy zamknąć lub przejąć zgodnie z wolą rodziny.</p>
-              </div>
-          </div>
-      </div>
+        <!-- LEFT: Instructions only -->
+        <div class="card">
+            <div class="section-label">
+                <span class="icon">📋</span>
+                <h3><?= htmlspecialchars(t('panel_instructions_title')) ?></h3>
+            </div>
+            <div class="instruction-list">
+                <?php if (empty($instructions)): ?>
+                <?= empty_state_box('Brak skonfigurowanych kroków instrukcji — uzupełnij $instructions w private/secret-key.php.') ?>
+                <?php endif; ?>
+                <?php foreach ($instructions as $step): ?>
+                <div class="instruction-item">
+                    <span class="instruction-num"><?= htmlspecialchars($step['num']) ?></span>
+                    <p class="instruction-text"><?= md_lite($step['text']) ?></p>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
 
         <!-- RIGHT: Persons + Decrypt stacked -->
         <div style="display:flex; flex-direction:column; gap:24px;">
@@ -986,9 +1025,12 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             <div class="card">
                 <div class="section-label">
                     <span class="icon">👤</span>
-                    <h3>Lista posiadaczy Secret key</h3>
+                    <h3><?= htmlspecialchars(t('panel_persons_title')) ?></h3>
                 </div>
                 <div class="person-list" id="person-list">
+                    <?php if (empty($visiblePeople)): ?>
+                    <?= empty_state_box('Brak widocznych posiadaczy — sprawdź show_in_panel w $people (private/secret-key.php).') ?>
+                    <?php endif; ?>
                     <!-- Generated by JS -->
                 </div>
             </div>
@@ -997,37 +1039,37 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             <div class="card" style="flex:1; display:flex; flex-direction:column;">
                 <div class="section-label">
                     <span class="icon">🔓</span>
-                    <h3>Odszyfrowywanie</h3>
+                    <h3><?= htmlspecialchars(t('panel_decrypt_title')) ?></h3>
                 </div>
 
                 <div class="decrypt-label">
-                    <span>Wprowadź Secret key</span>
-                    <a class="hint-link" id="hint-btn">Co to jest Secret key?</a>
+                    <span><?= htmlspecialchars(t('panel_decrypt_label')) ?></span>
+                    <a class="hint-link" id="hint-btn"><?= htmlspecialchars(t('panel_decrypt_hint_link')) ?></a>
                 </div>
 
                 <textarea
                     class="parts secret-textarea"
                     id="parts-input"
                     rows="8"
-                    placeholder="Wpisz swój kod z karty tutaj — jeden kod, jedna linia…"
+                    placeholder="<?= htmlspecialchars(t('panel_decrypt_placeholder')) ?>"
                     style="flex:1; min-height:120px;"
                 ></textarea>
 
                 <div class="key-counter">
-                    <span class="key-counter-label">KLUCZE:</span>
+                    <span class="key-counter-label"><?= htmlspecialchars(t('panel_key_counter_label')) ?></span>
                     <span class="key-counter-val" id="key-count">0</span>
                     <span class="key-counter-sep">/</span>
-                    <span class="key-counter-max">3 wymagane</span>
+                    <span class="key-counter-max">3 <?= htmlspecialchars(t('panel_key_counter_required')) ?></span>
                     <span class="key-counter-dots" id="key-dots">
                         <span class="kdot" id="kdot-1"></span>
                         <span class="kdot" id="kdot-2"></span>
                         <span class="kdot" id="kdot-3"></span>
                     </span>
                 </div>
-                    <p class="result-title">Hasło do bazy KeePassXC</p>
+                    <p class="result-title"><?= htmlspecialchars(t('panel_password_title_prefix')) ?><?= htmlspecialchars($programName) ?></p>
                     <div class="result-locked" id="result-locked">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        Czekam na kody… wpisz co najmniej 3, a hasło pojawi się w tym miejscu.
+                        <?= htmlspecialchars(t('panel_decrypt_waiting')) ?>
                     </div>
                     <div class="result-value" id="result-value"></div>
                     <div class="result-error" id="result-error"></div>
@@ -1040,74 +1082,78 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         <div class="card" style="grid-column: 1 / -1;">
             <div class="section-label">
                 <span class="icon">💾</span>
-                <h3>Pliki i program do odzyskania dostępu</h3>
+                <h3><?= trim($download_heading) !== '' ? htmlspecialchars($download_heading) : '<span style="color:var(--text-muted); font-weight:400;">(brak tytułu sekcji)</span>' ?></h3>
             </div>
             <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:16px;">
-                Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku.
+                <?= htmlspecialchars($download_intro) ?>
             </p>
+            <?php if ($alert_box_text !== ''): ?>
             <div class="alert-box info">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB — bez niego baza haseł pozostanie zablokowana.
+                <?= htmlspecialchars($alert_box_text) ?>
             </div>
+            <?php endif; ?>
+            <?php if (trim($download_heading) === '' || empty($downloads)): ?>
+            <?= empty_state_box('Sekcja niekompletna — wymagany jest tytuł ($download_heading) oraz przynajmniej jeden wpis w $downloads (private/secret-key.php).') ?>
+            <?php else: ?>
             <div class="download-grid">
-                <a href="download.php?file=baza-hasel" class="download-btn">
+                <?php foreach ($downloads as $d): ?>
+                <a href="download.php?file=<?= urlencode($d['key']) ?>" class="download-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Pobierz przykładowy plik (demo)
+                    <?= htmlspecialchars($d['label']) ?>
                 </a>
-                <a href="https://keepassxc.org/download/" target="_blank" rel="noopener" class="download-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Pobierz KeePassXC
-                </a>
+                <?php endforeach; ?>
             </div>
+            <?php endif; ?>
         </div>
 
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v1.2.0</div>
+        <div class="footer-version">WERSJA SYSTEMU: v2.0.0</div>
         <div class="session-info">
             <span class="si-item">
-                <span class="si-label">IP</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
                 <span class="si-val"><?= htmlspecialchars($session_ip) ?></span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">PRZEGLĄDARKA</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_browser')) ?></span>
                 <span class="si-val" id="si-browser">—</span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">SYSTEM</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_system')) ?></span>
                 <span class="si-val" id="si-os">—</span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">URZĄDZENIE</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_device')) ?></span>
                 <span class="si-val" id="si-device">—</span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">EKRAN</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_screen')) ?></span>
                 <span class="si-val" id="si-screen">—</span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">JĘZYK</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_language')) ?></span>
                 <span class="si-val"><?= htmlspecialchars($session_lang) ?></span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">STREFA CZASOWA</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_timezone')) ?></span>
                 <span class="si-val" id="si-tz">—</span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">ZALOGOWANO</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_logged_in')) ?></span>
                 <span class="si-val"><?= $session_login_dt ?></span>
             </span>
             <span class="si-dot">·</span>
             <span class="si-item">
-                <span class="si-label">CZAS SESJI</span>
+                <span class="si-label"><?= htmlspecialchars(t('session_info_session_time')) ?></span>
                 <span class="si-val" id="si-duration">—</span>
             </span>
         </div>
@@ -1115,8 +1161,12 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 
     <!-- ═══════════════════════════════════════ -->
     <!-- SECRETS.JS LIBRARY (Shamir's Secret Sharing) -->
+    <!-- secrets.js — oryginalny plik z iancoleman.io/shamir (MIT) -->
     <!-- ═══════════════════════════════════════ -->
     <script>
+// @preserve author Alexander Stetsyuk
+// @preserve author Glenn Rempe <glenn@rempe.us>
+// @license MIT
 (function (root, factory) {
     "use strict";
     if (typeof define === "function" && define.amd) {
@@ -1201,22 +1251,19 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </script>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- PREVENT ACTIONS (improved) -->
-    <!-- ═══════════════════════════════════════ -->
-
-    <!-- ═══════════════════════════════════════ -->
     <!-- PAGE LOGIC -->
     <!-- ═══════════════════════════════════════ -->
     <script>
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
-    // ─── Person data (fill with real data) ───
-    var persons = [
-        { label: "1.", name: "Jan Kowalski", tel: "123-456-789" },
-        { label: "2.", name: "Anna Kowalska", tel: "123-456-789" },
-        { label: "3.", name: "Piotr Kowalski", tel: "123-456-789" },
-        { label: "4.", name: "Maria Kowalska", tel: "123-456-789" },
-        { label: "5.", name: "Andrzej Kowalski", tel: "123-456-789" }
-    ];
+    // ─── Teksty UI wstrzykiwane z private/lang.php (patrz t() w auth.php) ───
+    var I18N_JS = {
+        personRevealBtn:   '<?= addslashes(t('panel_person_reveal_btn')) ?>',
+        personPhonePrefix: '<?= addslashes(t('panel_person_phone_prefix')) ?>',
+        errorPrefix:       '<?= addslashes(t('panel_decrypt_error_prefix')) ?>',
+        jokescreenRefPrefix: '<?= addslashes(t('jokescreen_ref_prefix')) ?>'
+    };
+    // ─── Dane posiadaczy — z $people w secret-key.php (filtrowane przez show_in_panel) ───
+    var persons = <?= json_encode($personsForJs, JSON_UNESCAPED_UNICODE) ?>;
 
     // ─── Build person list with decrypt animation ───
     var CHARS = '0123456789abcdefghijklmnopqrstuvwxyz@#$%&?!';
@@ -1267,7 +1314,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         // Reveal button
         var btn = document.createElement('button');
         btn.className = 'reveal-btn';
-        btn.textContent = 'odszyfruj';
+        btn.textContent = I18N_JS.personRevealBtn;
 
         // Top line: num + info (locked) + btn
         var topLine = document.createElement('div');
@@ -1302,7 +1349,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 
                 // Animate name first, then tel
                 scrambleAnimate(nameEl, personData.name, 500, function() {
-                    scrambleAnimate(telEl, 'Telefon: ' + personData.tel, 400, null);
+                    scrambleAnimate(telEl, I18N_JS.personPhonePrefix + personData.tel, 400, null);
                 });
 
                 // Update original info to hide it cleanly
@@ -1416,7 +1463,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                 }, 1500);
             }
         } catch(e) {
-            showError('Błąd: ' + e.message);
+            showError(I18N_JS.errorPrefix + e.message);
             clearTimeout(window._decryptLogTimer);
             window._decryptLogTimer = setTimeout(function() {
                 fetch('log.php', { method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -1729,9 +1776,9 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <div class="sk-jk-header">
       <div class="sk-jk-header-left">
         <div class="sk-jk-status-dot"></div>
-        <span class="sk-jk-header-title">Naruszenie bezpieczeństwa</span>
+        <span class="sk-jk-header-title"><?= htmlspecialchars(t('jokescreen_title')) ?></span>
       </div>
-      <span class="sk-jk-header-id" id="sk-ref">REF #00000</span>
+      <span class="sk-jk-header-id" id="sk-ref"><?= htmlspecialchars(t('jokescreen_ref_prefix')) ?>00000</span>
     </div>
     <div class="sk-jk-body">
       <div class="sk-jk-icon">
@@ -1746,33 +1793,33 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
           </svg>
         </div>
       </div>
-      <div class="sk-jk-title">Dostęp wstrzymany</div>
-      <div class="sk-jk-desc">Wykryto próbę inspekcji chronionego zasobu.<br>Sesja została wstrzymana do czasu zamknięcia narzędzi deweloperskich.</div>
+      <div class="sk-jk-title"><?= htmlspecialchars(t('jokescreen_access_halted')) ?></div>
+      <div class="sk-jk-desc"><?= htmlspecialchars(t('jokescreen_subtitle')) ?><br><?= htmlspecialchars(t('jokescreen_subtitle_2')) ?></div>
       <div class="sk-jk-divider">
         <div class="sk-jk-divider-line"></div>
-        <span class="sk-jk-divider-text">Zarejestrowane naruszenia</span>
+        <span class="sk-jk-divider-text"><?= htmlspecialchars(t('jokescreen_violations_label')) ?></span>
         <div class="sk-jk-divider-line"></div>
       </div>
       <div class="sk-jk-violations">
         <div class="sk-jk-viol">
           <div class="sk-jk-viol-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
-          <span class="sk-jk-viol-text">Inspekcja kodu źródłowego</span>
-          <span class="sk-jk-viol-tag red">WYKRYTO</span>
+          <span class="sk-jk-viol-text"><?= htmlspecialchars(t('jokescreen_violation_1')) ?></span>
+          <span class="sk-jk-viol-tag red"><?= htmlspecialchars(t('jokescreen_detected_tag')) ?></span>
         </div>
         <div class="sk-jk-viol">
           <div class="sk-jk-viol-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-          <span class="sk-jk-viol-text">Panel deweloperski aktywny</span>
-          <span class="sk-jk-viol-tag red">WYKRYTO</span>
+          <span class="sk-jk-viol-text"><?= htmlspecialchars(t('jokescreen_violation_2')) ?></span>
+          <span class="sk-jk-viol-tag red"><?= htmlspecialchars(t('jokescreen_detected_tag')) ?></span>
         </div>
         <div class="sk-jk-viol">
           <div class="sk-jk-viol-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
-          <span class="sk-jk-viol-text">Debugowanie sesji użytkownika</span>
-          <span class="sk-jk-viol-tag red">WYKRYTO</span>
+          <span class="sk-jk-viol-text"><?= htmlspecialchars(t('jokescreen_violation_3')) ?></span>
+          <span class="sk-jk-viol-tag red"><?= htmlspecialchars(t('jokescreen_detected_tag')) ?></span>
         </div>
       </div>
       <div class="sk-jk-timer-wrap">
         <div class="sk-jk-timer-label">
-          <span class="sk-jk-timer-lbl">Czas naruszenia</span>
+          <span class="sk-jk-timer-lbl"><?= htmlspecialchars(t('jokescreen_time_label')) ?></span>
           <span class="sk-jk-timer-val" id="sk-timer">00:00</span>
         </div>
         <div class="sk-jk-timer-track">
@@ -1781,10 +1828,10 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
       </div>
     </div>
     <div class="sk-jk-footer">
-      <span class="sk-jk-footer-text">zamknij devtools → strona wróci</span>
+      <span class="sk-jk-footer-text"><?= htmlspecialchars(t('jokescreen_close_hint')) ?></span>
       <div class="sk-jk-footer-badge">
         <div class="sk-jk-footer-badge-dot"></div>
-        <span>Ochrona aktywna</span>
+        <span><?= htmlspecialchars(t('jokescreen_footer_active')) ?></span>
       </div>
     </div>
   </div>
@@ -1796,6 +1843,10 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 //# sourceMappingURL=devtools-detector.js.map
 </script>
 
+<!-- ═══════════════════════════════════════ -->
+<!-- PREVENT ACTIONS (improved) -->
+<!-- blokada prawego przycisku myszy, kopiowania/zaznaczania, F11/F12/DevTools -->
+<!-- ═══════════════════════════════════════ -->
 <script>
 (function () {
   'use strict';
@@ -1873,7 +1924,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     joker  =document.getElementById('sk-joker');
     timerEl=document.getElementById('sk-timer');
     refEl  =document.getElementById('sk-ref');
-    refEl.textContent='REF #'+String(Math.floor(Math.random()*99999)).padStart(5,'0');
+    refEl.textContent=I18N_JS.jokescreenRefPrefix+String(Math.floor(Math.random()*99999)).padStart(5,'0');
 
     document.querySelectorAll('img,video,canvas,svg').forEach(function(el){
       el.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();});
