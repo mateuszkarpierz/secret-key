@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Mateusz Karpierz (karpierz.me)
 var CARD_FRONT_TPL = `<svg
    version="1.1"
    id="fr-svg1"
