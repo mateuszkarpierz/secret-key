@@ -1,4 +1,6 @@
 <?php
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Mateusz Karpierz (karpierz.me)
 require_once '../auth.php';
 requireLogin();
 
@@ -913,7 +915,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 
         /* ─── cursor: none tylko dla myszy ─── */
         @media (pointer: fine) { * { cursor: none !important; } }
-
+    
 /* ══ JOKER SCREEN v3 ══ */
 #sk-joker{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:32px 24px;background:#0a0c10;text-align:center;opacity:0;visibility:hidden;transition:opacity 0.45s cubic-bezier(0.22,1,0.36,1),visibility 0.45s;box-sizing:border-box;font-family:'Syne',sans-serif;overflow:hidden;}
 #sk-joker.sk-visible{opacity:1;visibility:visible}

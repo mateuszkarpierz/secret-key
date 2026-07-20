@@ -1,4 +1,6 @@
 <?php
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Mateusz Karpierz (karpierz.me)
 // ════════════════════════════════════════════════════════
 //  auth.php — obsługa sesji, logowania i 2FA via SMS
 //  Bez SQL. Dane przechowywane bezpośrednio w tym pliku.

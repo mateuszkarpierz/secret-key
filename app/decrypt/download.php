@@ -1,4 +1,6 @@
 <?php
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Mateusz Karpierz (karpierz.me)
 // ════════════════════════════════════════════════════════
 //  download.php — bramkowane pobieranie plików (baza haseł, Aegis 2FA)
 //
