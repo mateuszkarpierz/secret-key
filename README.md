@@ -20,8 +20,6 @@
 
 <div align="center">
 
-<br>
-
 ### Kryptograficzny system awaryjnego dostępu do bazy haseł
 
 <br>
