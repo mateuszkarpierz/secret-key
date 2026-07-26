@@ -69,7 +69,7 @@ $people = [
 // ręcznie na serwer do /private/ — ten config trzyma tylko metadane.
 $downloads = [
   ['key' => 'baza-hasel', 'label' => 'Pobierz przykładowy plik (demo)',     'filename' => 'demo-baza-hasel.txt'],
-  ['key' => 'program',    'label' => 'Pobierz KeePassXC',                   'filename' => 'demo-baza-hasel.txt', 'name' => 'KeePassXC'],
+  ['key' => 'program',    'label' => 'Pobierz KeePassXC',                   'filename' => 'KeePassXC.msi', 'name' => 'KeePassXC'],
 ];
 
 // Teksty w sekcji „Pliki do pobrania" panelu — zwykły tekst, BEZ markdown-lite

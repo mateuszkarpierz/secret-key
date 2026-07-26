@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="readme_i18n/README_en.md">English</a>
+</p>
+
 <div align="center">
 
 <img src="img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
