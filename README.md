@@ -1,10 +1,24 @@
-<p align="center">
-  <a href="readme_i18n/README_en.md">English</a>
-</p>
-
 <div align="center">
 
 <img src="img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
+
+</div>
+
+---
+
+<p align="center">
+  <kbd>🇵🇱 Polski</kbd> •
+  <a href="readme_i18n/README_EN.md">🇬🇧 English</a> •
+  <a href="readme_i18n/README_ES.md">🇪🇸 Español</a> •
+  <a href="readme_i18n/README_DE.md">🇩🇪 Deutsch</a> •
+  <a href="readme_i18n/README_PT_BR.md">🇧🇷 Português (Brasil)</a> •
+  <a href="readme_i18n/README_FR.md">🇫🇷 Français</a> •
+  <a href="readme_i18n/README_ZH.md">🇨🇳 简体中文</a>
+</p>
+
+---
+
+<div align="center">
 
 <br>
 
