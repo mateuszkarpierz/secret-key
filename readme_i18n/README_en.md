@@ -1,12 +1,29 @@
-<p align="center">
-  <a href="../README.md">Polski</a>
-</p>
-
 <div align="center">
 
 <img src="../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
 
-<br>
+</div>
+
+---
+
+<p align="center">
+  <a href="../README.md">🇵🇱 Polski</a> •
+  <kbd>🇬🇧 English</kbd> •
+  <a href="README_ES.md">🇪🇸 Español</a> •
+  <a href="README_DE.md">🇩🇪 Deutsch</a> •
+  <a href="README_PT_BR.md">🇧🇷 Português (Brasil)</a> •
+  <a href="README_FR.md">🇫🇷 Français</a> •
+  <a href="README_ZH.md">🇨🇳 简体中文</a> •
+  <a href="README_AR.md">🇸🇦 العربية</a> •
+  <a href="README_HI.md">🇮🇳 हिन्दी</a> •
+  <a href="README_JA.md">🇯🇵 日本語</a> •
+  <a href="README_RU.md">🇷🇺 Русский</a> •
+  <a href="README_UK.md">🇺🇦 Українська</a>
+</p>
+
+---
+
+<div align="center">
 
 ### A cryptographic emergency-access system for your password database
 

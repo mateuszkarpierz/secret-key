@@ -13,7 +13,12 @@
   <a href="readme_i18n/README_DE.md">🇩🇪 Deutsch</a> •
   <a href="readme_i18n/README_PT_BR.md">🇧🇷 Português (Brasil)</a> •
   <a href="readme_i18n/README_FR.md">🇫🇷 Français</a> •
-  <a href="readme_i18n/README_ZH.md">🇨🇳 简体中文</a>
+  <a href="readme_i18n/README_ZH.md">🇨🇳 简体中文</a> •
+  <a href="readme_i18n/README_AR.md">🇸🇦 العربية</a> •
+  <a href="readme_i18n/README_HI.md">🇮🇳 हिन्दी</a> •
+  <a href="readme_i18n/README_JA.md">🇯🇵 日本語</a> •
+  <a href="readme_i18n/README_RU.md">🇷🇺 Русский</a> •
+  <a href="readme_i18n/README_UK.md">🇺🇦 Українська</a>
 </p>
 
 ---
