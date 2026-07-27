@@ -8,14 +8,7 @@
 
 <p align="center">
   <kbd>🇵🇱 Polski</kbd> •
-  <a href="readme_i18n/README_EN.md">🇬🇧 English</a>
-</p>
-
-<div align="center">
-<details>
-<summary>🌐 Pozostałe języki</summary>
-<br>
-<p align="center">
+  <a href="readme_i18n/README_EN.md">🇬🇧 English</a> •
   <a href="readme_i18n/README_ES.md">🇪🇸 Español</a> •
   <a href="readme_i18n/README_DE.md">🇩🇪 Deutsch</a> •
   <a href="readme_i18n/README_PT_BR.md">🇧🇷 Português (Brasil)</a> •
@@ -27,8 +20,6 @@
   <a href="readme_i18n/README_RU.md">🇷🇺 Русский</a> •
   <a href="readme_i18n/README_UK.md">🇺🇦 Українська</a>
 </p>
-</details>
-</div>
 
 ---
 
