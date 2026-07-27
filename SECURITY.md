@@ -1,5 +1,22 @@
 # 🔐 Polityka bezpieczeństwa
 
+<p align="center">
+  <kbd>🇵🇱 Polski</kbd> •
+  <a href="security_i18n/SECURITY_EN.md">🇬🇧 English</a> •
+  <a href="security_i18n/SECURITY_ES.md">🇪🇸 Español</a> •
+  <a href="security_i18n/SECURITY_DE.md">🇩🇪 Deutsch</a> •
+  <a href="security_i18n/SECURITY_PT_BR.md">🇧🇷 Português (Brasil)</a> •
+  <a href="security_i18n/SECURITY_FR.md">🇫🇷 Français</a> •
+  <a href="security_i18n/SECURITY_ZH.md">🇨🇳 简体中文</a> •
+  <a href="security_i18n/SECURITY_AR.md">🇸🇦 العربية</a> •
+  <a href="security_i18n/SECURITY_HI.md">🇮🇳 हिन्दी</a> •
+  <a href="security_i18n/SECURITY_JA.md">🇯🇵 日本語</a> •
+  <a href="security_i18n/SECURITY_RU.md">🇷🇺 Русский</a> •
+  <a href="security_i18n/SECURITY_UK.md">🇺🇦 Українська</a>
+</p>
+
+---
+
 Zwykłe błędy, literówki w dokumentacji czy propozycje ulepszeń zgłaszaj normalnie jako [Issue na GitHubie](https://github.com/mateuszkarpierz/secret-key/issues) — to standardowa droga i nie ma w tym nic tajnego. Poniższa strona dotyczy wyłącznie **luk bezpieczeństwa** (patrz [zakres zgłoszeń](#-zakres-zgłoszeń) niżej) — tych proszę **nie** zgłaszać publicznie.
 
 ---
