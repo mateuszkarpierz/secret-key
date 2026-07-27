@@ -1,11 +1,13 @@
 # 🔐 Polityka bezpieczeństwa
 
+Zwykłe błędy, literówki w dokumentacji czy propozycje ulepszeń zgłaszaj normalnie jako [Issue na GitHubie](https://github.com/mateuszkarpierz/secret-key/issues) — to standardowa droga i nie ma w tym nic tajnego. Poniższa strona dotyczy wyłącznie **luk bezpieczeństwa** (patrz [zakres zgłoszeń](#-zakres-zgłoszeń) niżej) — tych proszę **nie** zgłaszać publicznie.
+
 ---
 
 ## 📬 Zgłaszanie luk bezpieczeństwa
 
 > [!CAUTION]
-> Nie twórz publicznego Issue na GitHubie — zgłoś lukę bezpośrednio na **dev@secretkey.website**
+> Luki bezpieczeństwa zgłaszaj wyłącznie prywatnie, na **dev@secretkey.website** — nigdy jako publiczne Issue na GitHubie. Publiczne zgłoszenie exploita przed wydaniem łatki naraża wszystkich, którzy mają wdrożony system.
 
 ### Jak zgłosić
 
