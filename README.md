@@ -8,7 +8,14 @@
 
 <p align="center">
   <kbd>🇵🇱 Polski</kbd> •
-  <a href="readme_i18n/README_EN.md">🇬🇧 English</a> •
+  <a href="readme_i18n/README_EN.md">🇬🇧 English</a>
+</p>
+
+<div align="center">
+<details>
+<summary>🌐 Pozostałe języki</summary>
+<br>
+<p align="center">
   <a href="readme_i18n/README_ES.md">🇪🇸 Español</a> •
   <a href="readme_i18n/README_DE.md">🇩🇪 Deutsch</a> •
   <a href="readme_i18n/README_PT_BR.md">🇧🇷 Português (Brasil)</a> •
@@ -20,6 +27,8 @@
   <a href="readme_i18n/README_RU.md">🇷🇺 Русский</a> •
   <a href="readme_i18n/README_UK.md">🇺🇦 Українська</a>
 </p>
+</details>
+</div>
 
 ---
 
@@ -59,13 +68,14 @@ Nikt nie zna go samodzielnie — dopiero razem, w uzgodnionym momencie, mogą je
 
 - 01 · 🔑 [Idea](#idea)
 - 02 · ⚙️ [Jak to działa](#jak-to-działa)
-- 03 · 💳 [Karta Secret Key](#karta-secret-key)
-- 04 · 🔐 [Algorytm Shamira](#algorytm-shamira)
-- 05 · 🏗️ [Architektura systemu](#architektura-systemu)
-- 06 · 🛡️ [Bezpieczeństwo](#bezpieczeństwo)
-- 07 · 🚀 [Instalacja](#instalacja)
-- 08 · 📁 [Struktura plików](#struktura-plików)
-- 09 · ❓ [FAQ](#faq)
+- 03 · 🎬 [Zobacz w akcji](#zobacz-w-akcji)
+- 04 · 💳 [Karta Secret Key](#karta-secret-key)
+- 05 · 🔐 [Algorytm Shamira](#algorytm-shamira)
+- 06 · 🏗️ [Architektura systemu](#architektura-systemu)
+- 07 · 🛡️ [Bezpieczeństwo](#bezpieczeństwo)
+- 08 · 🚀 [Instalacja](#instalacja)
+- 09 · 📁 [Struktura plików](#struktura-plików)
+- 10 · ❓ [FAQ](#faq)
 
 ---
 
@@ -117,6 +127,19 @@ W sytuacji kryzysowej wyznaczone osoby wykonują cztery kroki:
 
 **Bez telefonu przypisanego do konta — logowanie niemożliwe**, nawet przy znajomości danych z karty.  
 **Bez wymaganej liczby udziałów — odtworzenie hasła matematycznie niemożliwe**, nawet przy dostępie do serwera.
+
+---
+
+## Zobacz w akcji
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
+    <img src="img/video-player.webp" alt="Zobacz wideo prezentujące system Secret Key" width="640">
+  </a>
+</p>
+<p align="center">
+  <sub>🔊 Film dostępny w wielu językach — kliknij ⚙️ w odtwarzaczu YouTube → <strong>Napisy/Dźwięk (Audio track)</strong>, aby wybrać język dubbingu lub włączyć napisy.</sub>
+</p>
 
 ---
 
