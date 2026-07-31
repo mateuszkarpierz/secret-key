@@ -128,9 +128,9 @@ W sytuacji kryzysowej wyznaczone osoby wykonują cztery kroki:
     <img src="img/video-player.webp" alt="Zobacz wideo prezentujące system Secret Key" width="780">
   </a>
 </p>
-<p align="center">
-  <sub>🔊 Film dostępny w wielu językach — kliknij ⚙️ w odtwarzaczu YouTube → <strong>Napisy/Dźwięk (Audio track)</strong>, aby wybrać język dubbingu lub włączyć napisy.</sub>
-</p>
+
+> [!TIP]
+> 🔊 Film dostępny w wielu językach — kliknij ⚙️ w odtwarzaczu YouTube → **Napisy/Dźwięk (Audio track)**, aby wybrać język dubbingu lub włączyć napisy.
 
 ---
 
