@@ -49,7 +49,7 @@ Nikt nie zna go samodzielnie — dopiero razem, w uzgodnionym momencie, mogą je
 
 <br>
 
-[**→ Zobacz demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Prezentacja systemu**](https://secretkey.website) &nbsp;·&nbsp; [**Dokumentacja**](https://secretkey.website/docs)
+[**→ Zobacz demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Strona projektu**](https://secretkey.website) &nbsp;·&nbsp; [**Dokumentacja**](https://secretkey.website/docs)
 
 </div>
 
@@ -59,7 +59,7 @@ Nikt nie zna go samodzielnie — dopiero razem, w uzgodnionym momencie, mogą je
 
 - 01 · 🔑 [Idea](#idea)
 - 02 · ⚙️ [Jak to działa](#jak-to-działa)
-- 03 · 🎬 [Zobacz w akcji](#zobacz-w-akcji)
+- 03 · 🎬 [Prezentacja systemu](#prezentacja-systemu)
 - 04 · 💳 [Karta Secret Key](#karta-secret-key)
 - 05 · 🔐 [Algorytm Shamira](#algorytm-shamira)
 - 06 · 🏗️ [Architektura systemu](#architektura-systemu)
@@ -121,7 +121,7 @@ W sytuacji kryzysowej wyznaczone osoby wykonują cztery kroki:
 
 ---
 
-## Zobacz w akcji
+## Prezentacja systemu
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
