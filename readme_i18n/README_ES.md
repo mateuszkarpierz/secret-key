@@ -49,7 +49,7 @@ Nadie la conoce por sí sola — solo juntas, en un momento acordado, pueden rec
 
 <br>
 
-[**→ Ver la demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Presentación del sistema**](https://secretkey.website) &nbsp;·&nbsp; [**Documentación**](https://secretkey.website/docs)
+[**→ Ver la demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Sitio del proyecto**](https://secretkey.website) &nbsp;·&nbsp; [**Documentación**](https://secretkey.website/docs)
 
 </div>
 
@@ -59,13 +59,14 @@ Nadie la conoce por sí sola — solo juntas, en un momento acordado, pueden rec
 
 - 01 · 🔑 [Idea](#idea)
 - 02 · ⚙️ [Cómo funciona](#cómo-funciona)
-- 03 · 💳 [Tarjeta Secret Key](#tarjeta-secret-key)
-- 04 · 🔐 [Algoritmo de Shamir](#algoritmo-de-shamir)
-- 05 · 🏗️ [Arquitectura del sistema](#arquitectura-del-sistema)
-- 06 · 🛡️ [Seguridad](#seguridad)
-- 07 · 🚀 [Instalación](#instalación)
-- 08 · 📁 [Estructura de archivos](#estructura-de-archivos)
-- 09 · ❓ [Preguntas frecuentes](#faq)
+- 03 · 🎬 [Presentación del sistema](#presentación-del-sistema)
+- 04 · 💳 [Tarjeta Secret Key](#tarjeta-secret-key)
+- 05 · 🔐 [Algoritmo de Shamir](#algoritmo-de-shamir)
+- 06 · 🏗️ [Arquitectura del sistema](#arquitectura-del-sistema)
+- 07 · 🛡️ [Seguridad](#seguridad)
+- 08 · 🚀 [Instalación](#instalación)
+- 09 · 📁 [Estructura de archivos](#estructura-de-archivos)
+- 10 · ❓ [Preguntas frecuentes](#faq)
 
 ---
 
@@ -117,6 +118,19 @@ En una situación de crisis, las personas designadas realizan cuatro pasos:
 
 **Sin el teléfono asignado a la cuenta, iniciar sesión es imposible**, incluso conociendo los datos de la tarjeta.  
 **Sin el número requerido de fragmentos, reconstruir la contraseña es matemáticamente imposible**, incluso con acceso al servidor.
+
+---
+
+## Presentación del sistema
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
+    <img src="../img/video-player.webp" alt="Ver un vídeo de presentación del sistema Secret Key" width="780">
+  </a>
+</p>
+
+> [!TIP]
+> 🔊 El vídeo está disponible en varios idiomas — haz clic en ⚙️ en el reproductor de YouTube → **Subtítulos/Audio (pista de audio)**, para elegir el idioma del doblaje o activar los subtítulos.
 
 ---
 

@@ -49,7 +49,7 @@ Secret Key 通过加密方式将密码数据库的主密码拆分给可信任的
 
 <br>
 
-[**→ 查看演示**](https://app.secretkey.website) &nbsp;·&nbsp; [**系统介绍**](https://secretkey.website) &nbsp;·&nbsp; [**文档**](https://secretkey.website/docs)
+[**→ 查看演示**](https://app.secretkey.website) &nbsp;·&nbsp; [**项目官网**](https://secretkey.website) &nbsp;·&nbsp; [**文档**](https://secretkey.website/docs)
 
 </div>
 
@@ -59,13 +59,14 @@ Secret Key 通过加密方式将密码数据库的主密码拆分给可信任的
 
 - 01 · 🔑 [理念](#理念)
 - 02 · ⚙️ [工作原理](#工作原理)
-- 03 · 💳 [Secret Key 卡片](#secret-key-卡片)
-- 04 · 🔐 [Shamir 算法](#shamir-算法)
-- 05 · 🏗️ [系统架构](#系统架构)
-- 06 · 🛡️ [安全性](#安全性)
-- 07 · 🚀 [安装](#安装)
-- 08 · 📁 [文件结构](#文件结构)
-- 09 · ❓ [常见问题](#faq)
+- 03 · 🎬 [系统介绍](#系统介绍)
+- 04 · 💳 [Secret Key 卡片](#secret-key-卡片)
+- 05 · 🔐 [Shamir 算法](#shamir-算法)
+- 06 · 🏗️ [系统架构](#系统架构)
+- 07 · 🛡️ [安全性](#安全性)
+- 08 · 🚀 [安装](#安装)
+- 09 · 📁 [文件结构](#文件结构)
+- 10 · ❓ [常见问题](#faq)
 
 ---
 
@@ -117,6 +118,19 @@ Secret Key 用两项保证解决了这个问题，创建了一套安全的应急
 
 **没有账户绑定的手机——即使知道卡片上的信息，也无法登录。**  
 **没有足够数量的密钥份额——即使能访问服务器，也无法通过数学方法重新拼合出密码。**
+
+---
+
+## 系统介绍
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
+    <img src="../img/video-player.webp" alt="观看 Secret Key 系统介绍视频" width="780">
+  </a>
+</p>
+
+> [!TIP]
+> 🔊 该视频提供多种语言版本——点击 YouTube 播放器中的 ⚙️ → **字幕/音频（Audio track）**，即可选择配音语言或开启字幕。
 
 ---
 

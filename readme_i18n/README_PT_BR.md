@@ -49,7 +49,7 @@ Ninguém a conhece por conta própria — apenas juntas, em um momento acordado,
 
 <br>
 
-[**→ Ver a demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Apresentação do sistema**](https://secretkey.website) &nbsp;·&nbsp; [**Documentação**](https://secretkey.website/docs)
+[**→ Ver a demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Site do projeto**](https://secretkey.website) &nbsp;·&nbsp; [**Documentação**](https://secretkey.website/docs)
 
 </div>
 
@@ -59,13 +59,14 @@ Ninguém a conhece por conta própria — apenas juntas, em um momento acordado,
 
 - 01 · 🔑 [Ideia](#ideia)
 - 02 · ⚙️ [Como funciona](#como-funciona)
-- 03 · 💳 [Cartão Secret Key](#cartão-secret-key)
-- 04 · 🔐 [Algoritmo de Shamir](#algoritmo-de-shamir)
-- 05 · 🏗️ [Arquitetura do sistema](#arquitetura-do-sistema)
-- 06 · 🛡️ [Segurança](#segurança)
-- 07 · 🚀 [Instalação](#instalação)
-- 08 · 📁 [Estrutura de arquivos](#estrutura-de-arquivos)
-- 09 · ❓ [Perguntas frequentes](#faq)
+- 03 · 🎬 [Apresentação do sistema](#apresentação-do-sistema)
+- 04 · 💳 [Cartão Secret Key](#cartão-secret-key)
+- 05 · 🔐 [Algoritmo de Shamir](#algoritmo-de-shamir)
+- 06 · 🏗️ [Arquitetura do sistema](#arquitetura-do-sistema)
+- 07 · 🛡️ [Segurança](#segurança)
+- 08 · 🚀 [Instalação](#instalação)
+- 09 · 📁 [Estrutura de arquivos](#estrutura-de-arquivos)
+- 10 · ❓ [Perguntas frequentes](#faq)
 
 ---
 
@@ -117,6 +118,19 @@ Em uma situação de crise, as pessoas designadas executam quatro etapas:
 
 **Sem o telefone atribuído à conta, o login é impossível**, mesmo conhecendo os dados do cartão.  
 **Sem o número necessário de fragmentos, reconstruir a senha é matematicamente impossível**, mesmo com acesso ao servidor.
+
+---
+
+## Apresentação do sistema
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
+    <img src="../img/video-player.webp" alt="Assista a um vídeo de apresentação do sistema Secret Key" width="780">
+  </a>
+</p>
+
+> [!TIP]
+> 🔊 O vídeo está disponível em vários idiomas — clique em ⚙️ no player do YouTube → **Legendas/Áudio (faixa de áudio)**, para escolher o idioma da dublagem ou ativar as legendas.
 
 ---
 

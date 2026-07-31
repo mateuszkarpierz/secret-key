@@ -49,7 +49,7 @@ Personne ne le connaît seul — ce n'est qu'ensemble, à un moment convenu, qu'
 
 <br>
 
-[**→ Voir la démo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Présentation du système**](https://secretkey.website) &nbsp;·&nbsp; [**Documentation**](https://secretkey.website/docs)
+[**→ Voir la démo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Site du projet**](https://secretkey.website) &nbsp;·&nbsp; [**Documentation**](https://secretkey.website/docs)
 
 </div>
 
@@ -59,13 +59,14 @@ Personne ne le connaît seul — ce n'est qu'ensemble, à un moment convenu, qu'
 
 - 01 · 🔑 [Idée](#idée)
 - 02 · ⚙️ [Comment ça marche](#comment-ça-marche)
-- 03 · 💳 [Carte Secret Key](#carte-secret-key)
-- 04 · 🔐 [Algorithme de Shamir](#algorithme-de-shamir)
-- 05 · 🏗️ [Architecture du système](#architecture-du-système)
-- 06 · 🛡️ [Sécurité](#sécurité)
-- 07 · 🚀 [Installation](#installation)
-- 08 · 📁 [Structure des fichiers](#structure-des-fichiers)
-- 09 · ❓ [FAQ](#faq)
+- 03 · 🎬 [Présentation du système](#présentation-du-système)
+- 04 · 💳 [Carte Secret Key](#carte-secret-key)
+- 05 · 🔐 [Algorithme de Shamir](#algorithme-de-shamir)
+- 06 · 🏗️ [Architecture du système](#architecture-du-système)
+- 07 · 🛡️ [Sécurité](#sécurité)
+- 08 · 🚀 [Installation](#installation)
+- 09 · 📁 [Structure des fichiers](#structure-des-fichiers)
+- 10 · ❓ [FAQ](#faq)
 
 ---
 
@@ -117,6 +118,19 @@ En situation de crise, les personnes désignées effectuent quatre étapes :
 
 **Sans le téléphone associé au compte — la connexion est impossible**, même en connaissant les données de la carte.  
 **Sans le nombre requis de fragments — la reconstitution du mot de passe est mathématiquement impossible**, même avec un accès au serveur.
+
+---
+
+## Présentation du système
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
+    <img src="../img/video-player.webp" alt="Regarder une vidéo de présentation du système Secret Key" width="780">
+  </a>
+</p>
+
+> [!TIP]
+> 🔊 La vidéo est disponible en plusieurs langues — cliquez sur ⚙️ dans le lecteur YouTube → **Sous-titres/Audio (piste audio)**, pour choisir la langue du doublage ou activer les sous-titres.
 
 ---
 

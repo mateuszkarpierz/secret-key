@@ -49,7 +49,7 @@ Niemand kennt es allein — nur gemeinsam, zu einem vereinbarten Zeitpunkt, kön
 
 <br>
 
-[**→ Demo ansehen**](https://app.secretkey.website) &nbsp;·&nbsp; [**Systemübersicht**](https://secretkey.website) &nbsp;·&nbsp; [**Dokumentation**](https://secretkey.website/docs)
+[**→ Demo ansehen**](https://app.secretkey.website) &nbsp;·&nbsp; [**Projektwebsite**](https://secretkey.website) &nbsp;·&nbsp; [**Dokumentation**](https://secretkey.website/docs)
 
 </div>
 
@@ -59,13 +59,14 @@ Niemand kennt es allein — nur gemeinsam, zu einem vereinbarten Zeitpunkt, kön
 
 - 01 · 🔑 [Idee](#idee)
 - 02 · ⚙️ [So funktioniert es](#so-funktioniert-es)
-- 03 · 💳 [Secret Key-Karte](#secret-key-karte)
-- 04 · 🔐 [Shamir-Algorithmus](#shamir-algorithmus)
-- 05 · 🏗️ [Systemarchitektur](#systemarchitektur)
-- 06 · 🛡️ [Sicherheit](#sicherheit)
-- 07 · 🚀 [Installation](#installation)
-- 08 · 📁 [Dateistruktur](#dateistruktur)
-- 09 · ❓ [FAQ](#faq)
+- 03 · 🎬 [Systemübersicht](#systemübersicht)
+- 04 · 💳 [Secret Key-Karte](#secret-key-karte)
+- 05 · 🔐 [Shamir-Algorithmus](#shamir-algorithmus)
+- 06 · 🏗️ [Systemarchitektur](#systemarchitektur)
+- 07 · 🛡️ [Sicherheit](#sicherheit)
+- 08 · 🚀 [Installation](#installation)
+- 09 · 📁 [Dateistruktur](#dateistruktur)
+- 10 · ❓ [FAQ](#faq)
 
 ---
 
@@ -117,6 +118,19 @@ In einer Krisensituation führen die beauftragten Personen vier Schritte aus:
 
 **Ohne das der Karte zugeordnete Telefon ist eine Anmeldung unmöglich**, selbst mit Kenntnis der Kartendaten.  
 **Ohne die erforderliche Anzahl an Anteilen ist die Rekonstruktion des Passworts mathematisch unmöglich**, selbst mit Zugriff auf den Server.
+
+---
+
+## Systemübersicht
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
+    <img src="../img/video-player.webp" alt="Video zur Vorstellung des Secret-Key-Systems ansehen" width="780">
+  </a>
+</p>
+
+> [!TIP]
+> 🔊 Das Video ist in mehreren Sprachen verfügbar — klicken Sie im YouTube-Player auf ⚙️ → **Untertitel/Audio (Audiospur)**, um die Synchronisationssprache zu wählen oder Untertitel zu aktivieren.
 
 ---
 

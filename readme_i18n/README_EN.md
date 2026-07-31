@@ -49,7 +49,7 @@ No one knows it on their own — only together, at an agreed moment, can they re
 
 <br>
 
-[**→ See the demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**System overview**](https://secretkey.website) &nbsp;·&nbsp; [**Documentation**](https://secretkey.website/docs)
+[**→ See the demo**](https://app.secretkey.website) &nbsp;·&nbsp; [**Project website**](https://secretkey.website) &nbsp;·&nbsp; [**Documentation**](https://secretkey.website/docs)
 
 </div>
 
@@ -59,13 +59,14 @@ No one knows it on their own — only together, at an agreed moment, can they re
 
 - 01 · 🔑 [Idea](#idea)
 - 02 · ⚙️ [How it works](#how-it-works)
-- 03 · 💳 [Secret Key card](#secret-key-card)
-- 04 · 🔐 [Shamir's algorithm](#shamirs-algorithm)
-- 05 · 🏗️ [System architecture](#system-architecture)
-- 06 · 🛡️ [Security](#security)
-- 07 · 🚀 [Installation](#installation)
-- 08 · 📁 [File structure](#file-structure)
-- 09 · ❓ [FAQ](#faq)
+- 03 · 🎬 [System overview](#system-overview)
+- 04 · 💳 [Secret Key card](#secret-key-card)
+- 05 · 🔐 [Shamir's algorithm](#shamirs-algorithm)
+- 06 · 🏗️ [System architecture](#system-architecture)
+- 07 · 🛡️ [Security](#security)
+- 08 · 🚀 [Installation](#installation)
+- 09 · 📁 [File structure](#file-structure)
+- 10 · ❓ [FAQ](#faq)
 
 ---
 
@@ -117,6 +118,19 @@ In a crisis situation, the designated people carry out four steps:
 
 **Without the phone assigned to an account — logging in is impossible**, even knowing the data from the card.  
 **Without the required number of shares — reconstructing the password is mathematically impossible**, even with access to the server.
+
+---
+
+## System overview
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
+    <img src="../img/video-player.webp" alt="Watch a video presenting the Secret Key system" width="780">
+  </a>
+</p>
+
+> [!TIP]
+> 🔊 This video is available in multiple languages — click the ⚙️ icon in the YouTube player → **Subtitles/Audio (Audio track)**, to pick the dubbing language or turn on captions.
 
 ---
 
