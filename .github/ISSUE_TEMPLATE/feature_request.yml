@@ -1,0 +1,43 @@
+name: "💡 Feature request / Propozycja funkcji"
+description: "Zaproponuj nową funkcję lub ulepszenie. / Suggest a new feature or improvement."
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dzięki za propozycję! Opisz jak najdokładniej, o co chodzi.
+
+        Thanks for the suggestion! Please describe it as precisely as you can.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Jaki problem to rozwiązuje? / What problem does this solve?"
+      description: "Czy Twoja propozycja wiąże się z jakimś problemem? Opisz go. / Is your feature request related to a problem? Please describe."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proponowane rozwiązanie / Proposed solution"
+      description: "Jak wyobrażasz sobie działanie tej funkcji? / Describe the solution you'd like."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Rozważane alternatywy / Alternatives considered"
+      description: "Czy rozważałeś/aś inne podejścia? / Any alternative solutions you've considered?"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "Dodatkowy kontekst / Additional context"
+      description: "Zrzuty ekranu, przykłady z innych projektów itp. / Screenshots, examples from other projects, etc."
+    validations:
+      required: false

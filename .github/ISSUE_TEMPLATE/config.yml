@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "🔐 Zgłoszenie luki bezpieczeństwa / Security vulnerability"
+    url: https://github.com/mateuszkarpierz/secret-key/security/policy
+    about: "Luki bezpieczeństwa zgłaszaj wyłącznie prywatnie na dev@secretkey.website — nie tutaj. / Report security vulnerabilities privately to dev@secretkey.website — not here."
+  - name: "💬 Pytania ogólne / General questions"
+    url: https://github.com/mateuszkarpierz/secret-key/discussions
+    about: "Masz pytanie, a nie zgłoszenie błędu? Zajrzyj do Discussions. / Have a question rather than a bug report? Check out Discussions."
+  - name: "📖 Dokumentacja / Documentation"
+    url: https://secretkey.website/docs
+    about: "Pełna dokumentacja instalacji i konfiguracji. / Full installation and configuration docs."
