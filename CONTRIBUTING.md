@@ -1,6 +1,6 @@
 <p align="center">
   <kbd>🇵🇱 Polski</kbd> •
-  <a href="contributing_i18n/CONTRIBUTING_EN.md">🇬🇧 English</a>
+  <a href="i18n/contributing_i18n/CONTRIBUTING_EN.md">🇬🇧 English</a>
 </p>
 
 ---

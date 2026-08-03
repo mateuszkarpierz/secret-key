@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
+<img src="../../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
 
 </div>
 
 ---
 
 <p align="center">
-  <a href="../README.md">🇵🇱 Polski</a> •
+  <a href="../../README.md">🇵🇱 Polski</a> •
   <kbd>🇬🇧 English</kbd> •
   <a href="README_ES.md">🇪🇸 Español</a> •
   <a href="README_DE.md">🇩🇪 Deutsch</a> •
@@ -34,7 +34,7 @@
 [![Self-hosted](https://img.shields.io/badge/Hosting-Self--hosted-c084fc?style=flat-square)](#installation)
 [![2FA](https://img.shields.io/badge/2FA-SMS_·_SMSPlanet-38bdf8?style=flat-square)](#security)
 [![Shamir](https://img.shields.io/badge/Cryptography-Shamir_SSS-f472b6?style=flat-square)](#shamirs-algorithm)
-[![License](https://img.shields.io/badge/License-MIT-818cf8?style=flat-square)](../LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-818cf8?style=flat-square)](../../LICENSE)
 
 <br>
 
@@ -45,7 +45,7 @@ No one knows it on their own — only together, at an agreed moment, can they re
 
 <br>
 
-![Secret Key Demo](../img/SecretKeyGif.gif)
+![Secret Key Demo](../../img/SecretKeyGif.gif)
 
 <br>
 
@@ -125,7 +125,7 @@ In a crisis situation, the designated people carry out four steps:
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
-    <img src="../img/video-player.webp" alt="Watch a video presenting the Secret Key system" width="780">
+    <img src="../../img/video-player.webp" alt="Watch a video presenting the Secret Key system" width="780">
   </a>
 </p>
 

@@ -1,7 +1,7 @@
 # 🔐 Política de seguridad
 
 <p align="center">
-  <a href="../SECURITY.md">🇵🇱 Polski</a> •
+  <a href="../../SECURITY.md">🇵🇱 Polski</a> •
   <a href="SECURITY_EN.md">🇬🇧 English</a> •
   <kbd>🇪🇸 Español</kbd> •
   <a href="SECURITY_DE.md">🇩🇪 Deutsch</a> •

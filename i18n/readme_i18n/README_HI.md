@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
+<img src="../../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
 
 </div>
 
 ---
 
 <p align="center">
-  <a href="../README.md">🇵🇱 Polski</a> •
+  <a href="../../README.md">🇵🇱 Polski</a> •
   <a href="README_EN.md">🇬🇧 English</a> •
   <a href="README_ES.md">🇪🇸 Español</a> •
   <a href="README_DE.md">🇩🇪 Deutsch</a> •
@@ -34,7 +34,7 @@
 [![Self-hosted](https://img.shields.io/badge/%E0%A4%B9%E0%A5%8B%E0%A4%B8%E0%A5%8D%E0%A4%9F%E0%A4%BF%E0%A4%82%E0%A4%97-Self--hosted-c084fc?style=flat-square)](#इंस्टॉलेशन)
 [![2FA](https://img.shields.io/badge/2FA-SMS_·_SMSPlanet-38bdf8?style=flat-square)](#सुरक्षा)
 [![Shamir](https://img.shields.io/badge/%E0%A4%95%E0%A5%8D%E0%A4%B0%E0%A4%BF%E0%A4%AA%E0%A5%8D%E0%A4%9F%E0%A5%8B%E0%A4%97%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%AB%E0%A5%80-Shamir_SSS-f472b6?style=flat-square)](#शमीर-एल्गोरिथ्म)
-[![License](https://img.shields.io/badge/%E0%A4%B2%E0%A4%BE%E0%A4%87%E0%A4%B8%E0%A5%87%E0%A4%82%E0%A4%B8-MIT-818cf8?style=flat-square)](../LICENSE)
+[![License](https://img.shields.io/badge/%E0%A4%B2%E0%A4%BE%E0%A4%87%E0%A4%B8%E0%A5%87%E0%A4%82%E0%A4%B8-MIT-818cf8?style=flat-square)](../../LICENSE)
 
 <br>
 
@@ -45,7 +45,7 @@ Secret Key आपके पासवर्ड डेटाबेस के म�
 
 <br>
 
-![Secret Key Demo](../img/SecretKeyGif.gif)
+![Secret Key Demo](../../img/SecretKeyGif.gif)
 
 <br>
 
@@ -125,7 +125,7 @@ Secret Key दो गारंटी के साथ एक सुरक्ष�
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
-    <img src="../img/video-player.webp" alt="Secret Key सिस्टम प्रस्तुत करने वाला वीडियो देखें" width="780">
+    <img src="../../img/video-player.webp" alt="Secret Key सिस्टम प्रस्तुत करने वाला वीडियो देखें" width="780">
   </a>
 </p>
 

@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
+<img src="../../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
 
 </div>
 
 ---
 
 <p align="center">
-  <a href="../README.md">🇵🇱 Polski</a> •
+  <a href="../../README.md">🇵🇱 Polski</a> •
   <a href="README_EN.md">🇬🇧 English</a> •
   <a href="README_ES.md">🇪🇸 Español</a> •
   <a href="README_DE.md">🇩🇪 Deutsch</a> •
@@ -34,7 +34,7 @@
 [![Self-hosted](https://img.shields.io/badge/H%C3%A9bergement-Self--hosted-c084fc?style=flat-square)](#installation)
 [![2FA](https://img.shields.io/badge/2FA-SMS_·_SMSPlanet-38bdf8?style=flat-square)](#s%C3%A9curit%C3%A9)
 [![Shamir](https://img.shields.io/badge/Cryptographie-Shamir_SSS-f472b6?style=flat-square)](#algorithme-de-shamir)
-[![License](https://img.shields.io/badge/Licence-MIT-818cf8?style=flat-square)](../LICENSE)
+[![License](https://img.shields.io/badge/Licence-MIT-818cf8?style=flat-square)](../../LICENSE)
 
 <br>
 
@@ -45,7 +45,7 @@ Personne ne le connaît seul — ce n'est qu'ensemble, à un moment convenu, qu'
 
 <br>
 
-![Secret Key Demo](../img/SecretKeyGif.gif)
+![Secret Key Demo](../../img/SecretKeyGif.gif)
 
 <br>
 
@@ -125,7 +125,7 @@ En situation de crise, les personnes désignées effectuent quatre étapes :
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
-    <img src="../img/video-player.webp" alt="Regarder une vidéo de présentation du système Secret Key" width="780">
+    <img src="../../img/video-player.webp" alt="Regarder une vidéo de présentation du système Secret Key" width="780">
   </a>
 </p>
 

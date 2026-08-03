@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
+<img src="../../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
 
 </div>
 
 ---
 
 <p align="center">
-  <a href="../README.md">🇵🇱 Polski</a> •
+  <a href="../../README.md">🇵🇱 Polski</a> •
   <a href="README_EN.md">🇬🇧 English</a> •
   <a href="README_ES.md">🇪🇸 Español</a> •
   <a href="README_DE.md">🇩🇪 Deutsch</a> •
@@ -34,7 +34,7 @@
 [![Self-hosted](https://img.shields.io/badge/%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D8%B9%D8%A7%D9%86%D8%A9-Self--hosted-c084fc?style=flat-square)](#التثبيت)
 [![2FA](https://img.shields.io/badge/2FA-SMS_·_SMSPlanet-38bdf8?style=flat-square)](#الأمان)
 [![Shamir](https://img.shields.io/badge/%D8%A7%D9%84%D8%AA%D8%B4%D9%81%D9%8A%D8%B1-Shamir_SSS-f472b6?style=flat-square)](#خوارزمية-شامير)
-[![License](https://img.shields.io/badge/%D8%A7%D9%84%D8%B1%D8%AE%D8%B5%D8%A9-MIT-818cf8?style=flat-square)](../LICENSE)
+[![License](https://img.shields.io/badge/%D8%A7%D9%84%D8%B1%D8%AE%D8%B5%D8%A9-MIT-818cf8?style=flat-square)](../../LICENSE)
 
 <br>
 
@@ -45,7 +45,7 @@
 
 <br>
 
-![Secret Key Demo](../img/SecretKeyGif.gif)
+![Secret Key Demo](../../img/SecretKeyGif.gif)
 
 <br>
 
@@ -125,7 +125,7 @@
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
-    <img src="../img/video-player.webp" alt="شاهد فيديو يقدم نظام Secret Key" width="780">
+    <img src="../../img/video-player.webp" alt="شاهد فيديو يقدم نظام Secret Key" width="780">
   </a>
 </p>
 

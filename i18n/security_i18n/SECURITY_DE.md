@@ -1,7 +1,7 @@
 # 🔐 Sicherheitsrichtlinie
 
 <p align="center">
-  <a href="../SECURITY.md">🇵🇱 Polski</a> •
+  <a href="../../SECURITY.md">🇵🇱 Polski</a> •
   <a href="SECURITY_EN.md">🇬🇧 English</a> •
   <a href="SECURITY_ES.md">🇪🇸 Español</a> •
   <kbd>🇩🇪 Deutsch</kbd> •

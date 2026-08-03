@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="../CONTRIBUTING.md">🇵🇱 Polski</a> •
+  <a href="../../CONTRIBUTING.md">🇵🇱 Polski</a> •
   <kbd>🇬🇧 English</kbd>
 </p>
 
@@ -14,7 +14,7 @@ Thanks for wanting to help with Secret Key! This document describes the best way
 ## 🔐 Security vulnerabilities
 
 > [!CAUTION]
-> Report security vulnerabilities **privately only**, following the [Security policy](../SECURITY.md) — never as a public Issue or Pull Request.
+> Report security vulnerabilities **privately only**, following the [Security policy](../../SECURITY.md) — never as a public Issue or Pull Request.
 
 ---
 
@@ -72,7 +72,7 @@ A few conventions already present in the code that are worth following:
 
 ## 📜 License
 
-By submitting a Pull Request, you agree that your contribution will be licensed under the [MIT License](../LICENSE), same as the rest of the project.
+By submitting a Pull Request, you agree that your contribution will be licensed under the [MIT License](../../LICENSE), same as the rest of the project.
 
 ---
 

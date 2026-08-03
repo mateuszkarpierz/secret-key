@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
+<img src="../../img/secret-key-logo.svg" width="380" alt="Secret Key Logo">
 
 </div>
 
 ---
 
 <p align="center">
-  <a href="../README.md">🇵🇱 Polski</a> •
+  <a href="../../README.md">🇵🇱 Polski</a> •
   <a href="README_EN.md">🇬🇧 English</a> •
   <a href="README_ES.md">🇪🇸 Español</a> •
   <a href="README_DE.md">🇩🇪 Deutsch</a> •
@@ -34,7 +34,7 @@
 [![Self-hosted](https://img.shields.io/badge/%E9%83%A8%E7%BB%93%E6%9E%84-Self--hosted-c084fc?style=flat-square)](#安装)
 [![2FA](https://img.shields.io/badge/2FA-SMS_·_SMSPlanet-38bdf8?style=flat-square)](#安全性)
 [![Shamir](https://img.shields.io/badge/%E5%AF%86%E7%A0%81%E5%AD%A6-Shamir_SSS-f472b6?style=flat-square)](#shamir-算法)
-[![License](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT-818cf8?style=flat-square)](../LICENSE)
+[![License](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT-818cf8?style=flat-square)](../../LICENSE)
 
 <br>
 
@@ -45,7 +45,7 @@ Secret Key 通过加密方式将密码数据库的主密码拆分给可信任的
 
 <br>
 
-![Secret Key Demo](../img/SecretKeyGif.gif)
+![Secret Key Demo](../../img/SecretKeyGif.gif)
 
 <br>
 
@@ -125,7 +125,7 @@ Secret Key 用两项保证解决了这个问题，创建了一套安全的应急
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=omx7mpQD5-M" target="_blank">
-    <img src="../img/video-player.webp" alt="观看 Secret Key 系统介绍视频" width="780">
+    <img src="../../img/video-player.webp" alt="观看 Secret Key 系统介绍视频" width="780">
   </a>
 </p>
 
