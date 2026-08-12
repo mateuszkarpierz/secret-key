@@ -62,6 +62,11 @@ $lang = [
     // UWAGA: te dwa klucze też renderują się BEZ htmlspecialchars() (patrz wyżej).
     'twofa_sent_to'               => 'Wysłano kod weryfikacyjny na&nbsp;',
     'twofa_intro'                 => 'Wpisz <strong>6-cyfrowy kod</strong> z wiadomości SMS, aby potwierdzić swoją tożsamość.',
+    // UWAGA: treść wysyłanego SMS-a — celowo BEZ polskich znaków (ż/ą/ę/ć...).
+    // SMS z choćby jednym znakiem spoza GSM-7 jest liczony/rozliczany przez
+    // operatora jako dłuższy/droższy (mniejszy limit znaków w jednej wiadomości,
+    // czasem podział na kilka SMS-ów). %s = kod, %d = ważność w minutach.
+    'twofa_sms_body'              => 'Kod weryfikacyjny: %s. Wazny %d min. Nie udostepniaj go nikomu.',
     'twofa_remember_device'       => 'Zapamiętaj to urządzenie na 7 dni',
     'twofa_verify_btn'            => 'Weryfikuj',
     'twofa_verifying'             => 'Weryfikowanie…',

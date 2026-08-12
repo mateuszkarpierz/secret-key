@@ -324,7 +324,7 @@ function clearPending2FA(): void {
 
 function sendSmsCode(string $phone, string $code) {
     $ttlMin = TWO_FA_TTL / 60;
-    $msg    = "Kod weryfikacyjny: $code. Wazny $ttlMin min. Nie udostepniaj go nikomu.\n\n" . SMS_AUTOFILL_DOMAIN . " #$code";
+    $msg    = t('twofa_sms_body', $code, $ttlMin) . "\n\n" . SMS_AUTOFILL_DOMAIN . " #$code";
 
     $params = http_build_query([
         'from'          => SMS_SENDER,
