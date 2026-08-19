@@ -151,7 +151,7 @@ Jede beauftragte Person erhält einen personalisierten Träger mit vier Elemente
 
 ## Shamir-Algorithmus
 
-Secret Key verwendet die Bibliothek [`secrets.js`](https://github.com/amper5and/secrets.js), um das Geheimnis aufzuteilen und zu rekonstruieren.
+Secret Key verwendet die Bibliothek [`secrets.js`](https://github.com/grempe/secrets.js) (Fork von [amper5and/secrets.js](https://github.com/amper5and/secrets.js), gebündelt über [iancoleman.io/shamir](https://iancoleman.io/shamir/)), um das Geheimnis aufzuteilen und zu rekonstruieren.
 
 > [!NOTE]
 > Die verwendete Bibliothek ist **identisch mit der von [iancoleman.io/shamir](https://iancoleman.io/shamir/) verwendeten** — das Anteilsformat ist vollständig kompatibel, was eine unabhängige Überprüfung außerhalb des Systems ermöglicht.
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | Parameter | Wert |
 |---|---|
-| Bibliothek | secrets.js (amper5and) — kompatibel mit iancoleman.io |
+| Bibliothek | secrets.js (grempe-Fork, via iancoleman.io/shamir) |
 | Anteilsformat | `8` + 2-Hex-x-Koordinate + Daten |
 | minPad | 1024 Bit |
 | Kodierung | UTF-8 (str2hex) |
@@ -265,7 +265,7 @@ Das System kombiniert **acht unabhängige Schutzebenen** — die Kompromittierun
 | Ebene | Mechanismus | Details |
 |---|---|---|
 | 🔒 **Passwörter** | bcrypt | cost=10, Format `$2y$`, timing-attack-resistente Überprüfung |
-| 🛡️ **CSRF** | 64-Hex-Token | Kryptografisch generiert, überprüft bei jedem zustandsändernden Endpunkt (Anmeldung, 2FA-Verifizierung, erneuter SMS-Versand, Ereignisprotokoll) |
+| 🛡️ **CSRF** | 64-Hex-Token | Kryptografisch generiert, überprüft bei jedem zustandsändernden Endpunkt (Anmeldung, 2FA-Verifizierung, erneuter SMS-Versand, Abmeldung, Ereignisprotokoll) |
 | 🚫 **Brute-Force** | Rate Limiting | 3 Versuche/IP + 3 Versuche/Konto in einem 15-Minuten-Fenster; 3 falsche SMS-Codes/Stunde. Dauerhafte serverseitige Zähler (eine Datei, unabhängig von der Sitzung/den Cookies des Clients) |
 | 📱 **2FA per SMS** | 6-stelliger Code | Kryptografisch generiert, 10 Minuten gültig, 60 Sekunden Abkühlzeit zwischen den Versendungen |
 | 💻 **Vertrauenswürdige Geräte** | SHA-256, HttpOnly | Secure + SameSite=Strict, Datei außerhalb von `public_html`, TTL 7 Tage |

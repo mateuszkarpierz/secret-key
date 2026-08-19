@@ -151,7 +151,7 @@ Cada persona designada recibe un soporte personalizado con cuatro elementos:
 
 ## Algoritmo de Shamir
 
-Secret Key utiliza la biblioteca [`secrets.js`](https://github.com/amper5and/secrets.js) para dividir y reconstruir el secreto.
+Secret Key utiliza la biblioteca [`secrets.js`](https://github.com/grempe/secrets.js) (fork de [amper5and/secrets.js](https://github.com/amper5and/secrets.js), incluido a través de [iancoleman.io/shamir](https://iancoleman.io/shamir/)) para dividir y reconstruir el secreto.
 
 > [!NOTE]
 > La biblioteca utilizada es **idéntica a la empleada por [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — el formato de los fragmentos es totalmente compatible, lo que permite una verificación independiente fuera del sistema.
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | Parámetro | Valor |
 |---|---|
-| Biblioteca | secrets.js (amper5and) — compatible con iancoleman.io |
+| Biblioteca | secrets.js (fork de grempe, vía iancoleman.io/shamir) |
 | Formato de fragmento | `8` + coordenada x en 2 hex + datos |
 | minPad | 1024 bits |
 | Codificación | UTF-8 (str2hex) |
@@ -265,7 +265,7 @@ El sistema combina **ocho capas de protección independientes** — comprometer 
 | Capa | Mecanismo | Detalles |
 |---|---|---|
 | 🔒 **Contraseñas** | bcrypt | cost=10, formato `$2y$`, verificación resistente a ataques de temporización |
-| 🛡️ **CSRF** | Token de 64 hex | Generado criptográficamente, verificado en cada endpoint que cambia el estado (inicio de sesión, verificación 2FA, reenvío de SMS, registro de eventos) |
+| 🛡️ **CSRF** | Token de 64 hex | Generado criptográficamente, verificado en cada endpoint que cambia el estado (inicio de sesión, verificación 2FA, reenvío de SMS, cierre de sesión, registro de eventos) |
 | 🚫 **Fuerza bruta** | Rate limiting | 3 intentos/IP + 3 intentos/cuenta en una ventana de 15 min; 3 códigos SMS erróneos/hora. Contadores persistentes del lado del servidor (un archivo, independiente de la sesión/cookies del cliente) |
 | 📱 **2FA por SMS** | Código de 6 dígitos | Generado criptográficamente, válido durante 10 min, 60 s de espera entre envíos |
 | 💻 **Dispositivos de confianza** | SHA-256, HttpOnly | Secure + SameSite=Strict, archivo fuera de `public_html`, TTL de 7 días |

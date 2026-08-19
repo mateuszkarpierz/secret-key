@@ -151,7 +151,7 @@ Chaque personne désignée reçoit un support personnalisé avec quatre élémen
 
 ## Algorithme de Shamir
 
-Secret Key utilise la bibliothèque [`secrets.js`](https://github.com/amper5and/secrets.js) pour diviser et reconstituer le secret.
+Secret Key utilise la bibliothèque [`secrets.js`](https://github.com/grempe/secrets.js) (fork de [amper5and/secrets.js](https://github.com/amper5and/secrets.js), intégrée via [iancoleman.io/shamir](https://iancoleman.io/shamir/)) pour diviser et reconstituer le secret.
 
 > [!NOTE]
 > La bibliothèque utilisée est **identique à celle employée par [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — le format des fragments est entièrement compatible, ce qui permet une vérification indépendante en dehors du système.
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | Paramètre | Valeur |
 |---|---|
-| Bibliothèque | secrets.js (amper5and) — compatible avec iancoleman.io |
+| Bibliothèque | secrets.js (fork grempe, via iancoleman.io/shamir) |
 | Format des fragments | `8` + coordonnée x sur 2 hex + données |
 | minPad | 1024 bits |
 | Encodage | UTF-8 (str2hex) |
@@ -265,7 +265,7 @@ Le système combine **huit couches de protection indépendantes** — la comprom
 | Couche | Mécanisme | Détails |
 |---|---|---|
 | 🔒 **Mots de passe** | bcrypt | cost=10, format `$2y$`, vérification résistante aux attaques temporelles |
-| 🛡️ **CSRF** | Jeton 64 hex | Généré cryptographiquement, vérifié sur chaque point de terminaison modifiant l'état (connexion, vérification 2FA, renvoi de SMS, journal d'événements) |
+| 🛡️ **CSRF** | Jeton 64 hex | Généré cryptographiquement, vérifié sur chaque point de terminaison modifiant l'état (connexion, vérification 2FA, renvoi de SMS, déconnexion, journal d'événements) |
 | 🚫 **Brute-force** | Rate limiting | 3 tentatives/IP + 3 tentatives/compte sur une fenêtre de 15 min ; 3 codes SMS erronés/heure. Compteurs persistants côté serveur (un fichier, indépendant de la session/des cookies du client) |
 | 📱 **2FA par SMS** | Code à 6 chiffres | Généré cryptographiquement, valable 10 min, délai de 60 s entre les envois |
 | 💻 **Appareils de confiance** | SHA-256, HttpOnly | Secure + SameSite=Strict, fichier en dehors de `public_html`, TTL 7 jours |

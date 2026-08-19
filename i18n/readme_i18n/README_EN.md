@@ -151,7 +151,7 @@ Each designated person receives a personalized carrier with four elements:
 
 ## Shamir's algorithm
 
-Secret Key uses the [`secrets.js`](https://github.com/amper5and/secrets.js) library to split and reconstruct the secret.
+Secret Key uses the [`secrets.js`](https://github.com/grempe/secrets.js) library (fork of [amper5and/secrets.js](https://github.com/amper5and/secrets.js), vendored via [iancoleman.io/shamir](https://iancoleman.io/shamir/)) to split and reconstruct the secret.
 
 > [!NOTE]
 > The library used is **identical to the one used by [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — the share format is fully compatible, which allows independent verification outside the system.
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | Parameter | Value |
 |---|---|
-| Library | secrets.js (amper5and) — compatible with iancoleman.io |
+| Library | secrets.js (grempe fork, via iancoleman.io/shamir) |
 | Share format | `8` + 2-hex x-coord + data |
 | minPad | 1024 bits |
 | Encoding | UTF-8 (str2hex) |
@@ -265,7 +265,7 @@ The system combines **eight independent layers of protection** — compromising 
 | Layer | Mechanism | Details |
 |---|---|---|
 | 🔒 **Passwords** | bcrypt | cost=10, `$2y$` format, timing-attack-resistant verification |
-| 🛡️ **CSRF** | 64-hex token | Cryptographically generated, verified on every state-changing endpoint (login, 2FA verification, SMS resend, event log) |
+| 🛡️ **CSRF** | 64-hex token | Cryptographically generated, verified on every state-changing endpoint (login, 2FA verification, SMS resend, logout, event log) |
 | 🚫 **Brute-force** | Rate limiting | 3 attempts/IP + 3 attempts/account in a 15-min window; 3 wrong SMS codes/hour. Persistent server-side counters (a file, independent of the client's session/cookies) |
 | 📱 **SMS 2FA** | 6-digit code | Cryptographically generated, valid for 10 min, 60s cooldown between sends |
 | 💻 **Trusted devices** | SHA-256, HttpOnly | Secure + SameSite=Strict, file outside `public_html`, 7-day TTL |

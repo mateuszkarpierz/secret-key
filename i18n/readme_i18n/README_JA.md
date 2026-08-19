@@ -151,7 +151,7 @@ Secret Key は、2つの保証を備えた安全な緊急計画を作成する�
 
 ## Shamirのアルゴリズム
 
-Secret Keyは、秘密の分割と再構築のために [`secrets.js`](https://github.com/amper5and/secrets.js) ライブラリを使用しています。
+Secret Keyは、秘密の分割と再構築のために [`secrets.js`](https://github.com/grempe/secrets.js)（[amper5and/secrets.js](https://github.com/amper5and/secrets.js) のフォーク、[iancoleman.io/shamir](https://iancoleman.io/shamir/) 経由で組み込み）ライブラリを使用しています。
 
 > [!NOTE]
 > 使用されているライブラリは [iancoleman.io/shamir](https://iancoleman.io/shamir/) で使われているものと**同一**であり、断片の形式は完全に互換性があるため、システム外での独立した検証が可能です。
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | パラメータ | 値 |
 |---|---|
-| ライブラリ | secrets.js（amper5and） — iancoleman.ioと互換 |
+| ライブラリ | secrets.js（grempeフォーク、iancoleman.io/shamir経由） |
 | 断片の形式 | `8` + 2桁16進のx座標 + データ |
 | minPad | 1024ビット |
 | エンコーディング | UTF-8（str2hex） |
@@ -265,7 +265,7 @@ PHPシステム  →  コードを検証、セッションを作成、必要に�
 | 層 | 仕組み | 詳細 |
 |---|---|---|
 | 🔒 **パスワード** | bcrypt | cost=10、`$2y$`形式、タイミング攻撃に耐性のある検証 |
-| 🛡️ **CSRF** | 64桁16進のトークン | 暗号学的に生成され、状態を変更するすべてのエンドポイント（ログイン、2FA検証、SMS再送、イベントログ）で検証 |
+| 🛡️ **CSRF** | 64桁16進のトークン | 暗号学的に生成され、状態を変更するすべてのエンドポイント（ログイン、2FA検証、SMS再送、ログアウト、イベントログ）で検証 |
 | 🚫 **ブルートフォース** | レート制限 | 15分間の枠でIPごとに3回、アカウントごとに3回の試行；SMSコード誤りは1時間に3回まで。サーバー側の永続的なカウンター（クライアントのセッション／クッキーに依存しないファイル） |
 | 📱 **SMSによる2FA** | 6桁のコード | 暗号学的に生成、10分間有効、送信間に60秒のクールダウン |
 | 💻 **信頼済みデバイス** | SHA-256、HttpOnly | Secure + SameSite=Strict、`public_html`の外側のファイル、TTL 7日 |

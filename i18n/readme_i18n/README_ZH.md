@@ -151,7 +151,7 @@ Secret Key 用两项保证解决了这个问题，创建了一套安全的应急
 
 ## Shamir 算法
 
-Secret Key 使用 [`secrets.js`](https://github.com/amper5and/secrets.js) 库来拆分和重新拼合秘密。
+Secret Key 使用 [`secrets.js`](https://github.com/grempe/secrets.js) 库（[amper5and/secrets.js](https://github.com/amper5and/secrets.js) 的分支，通过 [iancoleman.io/shamir](https://iancoleman.io/shamir/) 引入）来拆分和重新拼合秘密。
 
 > [!NOTE]
 > 所使用的库与 [iancoleman.io/shamir](https://iancoleman.io/shamir/) 所使用的**完全相同**——密钥份额格式完全兼容,可在系统外部进行独立验证。
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | 参数 | 值 |
 |---|---|
-| 库 | secrets.js（amper5and）——与 iancoleman.io 兼容 |
+| 库 | secrets.js（grempe 分支，通过 iancoleman.io/shamir）|
 | 份额格式 | `8` + 2 位十六进制 x 坐标 + 数据 |
 | minPad | 1024 位 |
 | 编码 | UTF-8（str2hex） |
@@ -265,7 +265,7 @@ PHP 系统     →  验证验证码，创建会话，可选择记住设备
 | 层级 | 机制 | 详情 |
 |---|---|---|
 | 🔒 **密码** | bcrypt | cost=10，`$2y$` 格式，可抵御时序攻击的验证方式 |
-| 🛡️ **CSRF** | 64 位十六进制令牌 | 加密方式生成，在所有会改变状态的端点（登录、双因素验证、重新发送短信、事件日志）都会进行校验 |
+| 🛡️ **CSRF** | 64 位十六进制令牌 | 加密方式生成，在所有会改变状态的端点（登录、双因素验证、重新发送短信、登出、事件日志）都会进行校验 |
 | 🚫 **防暴力破解** | 速率限制 | 15 分钟窗口内每 IP 3 次尝试 + 每账户 3 次尝试；每小时最多 3 次错误短信验证码。持久化的服务器端计数器（文件形式，独立于客户端的会话/Cookie） |
 | 📱 **短信双因素认证** | 6 位数字验证码 | 加密方式生成，有效期 10 分钟，两次发送之间冷却 60 秒 |
 | 💻 **受信任设备** | SHA-256、HttpOnly | Secure + SameSite=Strict，文件存放在 `public_html` 之外，有效期 7 天 |

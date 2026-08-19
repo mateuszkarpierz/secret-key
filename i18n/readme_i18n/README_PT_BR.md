@@ -151,7 +151,7 @@ Cada pessoa designada recebe um suporte personalizado com quatro elementos:
 
 ## Algoritmo de Shamir
 
-O Secret Key usa a biblioteca [`secrets.js`](https://github.com/amper5and/secrets.js) para dividir e reconstruir o segredo.
+O Secret Key usa a biblioteca [`secrets.js`](https://github.com/grempe/secrets.js) (fork de [amper5and/secrets.js](https://github.com/amper5and/secrets.js), incorporado via [iancoleman.io/shamir](https://iancoleman.io/shamir/)) para dividir e reconstruir o segredo.
 
 > [!NOTE]
 > A biblioteca utilizada é **idêntica à usada por [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — o formato dos fragmentos é totalmente compatível, o que permite verificação independente fora do sistema.
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | Parâmetro | Valor |
 |---|---|
-| Biblioteca | secrets.js (amper5and) — compatível com iancoleman.io |
+| Biblioteca | secrets.js (fork grempe, via iancoleman.io/shamir) |
 | Formato do fragmento | `8` + coordenada x em 2 hex + dados |
 | minPad | 1024 bits |
 | Codificação | UTF-8 (str2hex) |
@@ -265,7 +265,7 @@ O sistema combina **oito camadas independentes de proteção** — comprometer u
 | Camada | Mecanismo | Detalhes |
 |---|---|---|
 | 🔒 **Senhas** | bcrypt | cost=10, formato `$2y$`, verificação resistente a ataques de temporização |
-| 🛡️ **CSRF** | Token de 64 hex | Gerado criptograficamente, verificado em todo endpoint que altera o estado (login, verificação 2FA, reenvio de SMS, log de eventos) |
+| 🛡️ **CSRF** | Token de 64 hex | Gerado criptograficamente, verificado em todo endpoint que altera o estado (login, verificação 2FA, reenvio de SMS, logout, log de eventos) |
 | 🚫 **Força bruta** | Rate limiting | 3 tentativas/IP + 3 tentativas/conta em uma janela de 15 min; 3 códigos SMS incorretos/hora. Contadores persistentes no lado do servidor (um arquivo, independente da sessão/cookies do cliente) |
 | 📱 **2FA via SMS** | Código de 6 dígitos | Gerado criptograficamente, válido por 10 min, 60s de espera entre envios |
 | 💻 **Dispositivos confiáveis** | SHA-256, HttpOnly | Secure + SameSite=Strict, arquivo fora de `public_html`, TTL de 7 dias |
