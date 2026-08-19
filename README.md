@@ -151,7 +151,7 @@ Każda wyznaczona osoba otrzymuje spersonalizowany nośnik z czterema elementami
 
 ## Algorytm Shamira
 
-Secret Key używa biblioteki [`secrets.js`](https://github.com/amper5and/secrets.js) do podziału i rekonstrukcji sekretu.
+Secret Key używa biblioteki [`secrets.js`](https://github.com/grempe/secrets.js) (fork [amper5and/secrets.js](https://github.com/amper5and/secrets.js), zwendorowany przez [iancoleman.io/shamir](https://iancoleman.io/shamir/)) do podziału i rekonstrukcji sekretu.
 
 > [!NOTE]
 > Użyta biblioteka jest **identyczna z tą stosowaną przez [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — format udziałów jest w pełni kompatybilny, co umożliwia niezależną weryfikację poza systemem.
@@ -195,7 +195,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 
 | Parametr | Wartość |
 |---|---|
-| Biblioteka | secrets.js (amper5and) — kompatybilna z iancoleman.io |
+| Biblioteka | secrets.js (fork grempe, via iancoleman.io/shamir) |
 | Format udziałów | `8` + 2-hex x-coord + data |
 | minPad | 1024 bitów |
 | Kodowanie | UTF-8 (str2hex) |
@@ -265,7 +265,7 @@ System łączy **osiem niezależnych warstw ochrony** — kompromitacja jednej n
 | Warstwa | Mechanizm | Szczegóły |
 |---|---|---|
 | 🔒 **Hasła** | bcrypt | cost=10, format `$2y$`, weryfikacja odporna na ataki czasowe |
-| 🛡️ **CSRF** | Token 64 hex | Generowany kryptograficznie, weryfikowany na wszystkich endpointach zmieniających stan (logowanie, weryfikacja 2FA, ponowna wysyłka SMS, log zdarzeń) |
+| 🛡️ **CSRF** | Token 64 hex | Generowany kryptograficznie, weryfikowany na wszystkich endpointach zmieniających stan (logowanie, weryfikacja 2FA, ponowna wysyłka SMS, wylogowanie, log zdarzeń) |
 | 🚫 **Brute-force** | Rate limiting | 3 próby/IP + 3 próby/konto w oknie 15 min; 3 błędne kody SMS/h. Liczniki trwałe po stronie serwera (plik, niezależny od sesji/cookies klienta) |
 | 📱 **2FA SMS** | Kod 6-cyfrowy | Generowany kryptograficznie, ważny 10 min, cooldown 60s między wysyłkami |
 | 💻 **Trusted devices** | SHA-256, HttpOnly | Secure + SameSite=Strict, plik poza `public_html`, TTL 7 dni |
