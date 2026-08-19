@@ -1,5 +1,13 @@
 # ===================================================================
 # home/private/.htaccess
 # ===================================================================
-Order deny,allow
-Deny from all
+# Dwie składnie naraz dla pewności działania niezależnie od wersji Apache:
+# - Apache 2.4+ (mod_authz_core)   -> Require all denied
+# - Apache 2.2 / mod_access_compat -> Order deny,allow / Deny from all
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>

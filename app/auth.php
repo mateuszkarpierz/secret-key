@@ -130,7 +130,13 @@ function t(string $key, ...$args): string {
 function sk_log(string $message): void {
     $tz   = new DateTimeZone('Europe/Warsaw');
     $dt   = new DateTime('now', $tz);
-    $line = '[' . $dt->format('d-M-Y H:i:s') . ' Europe/Warsaw] ' . $message . "\n";
+
+    // Usuń znaki kontrolne (w tym CR/LF) z treści komunikatu — zapobiega
+    // "log injection" / "log forging", gdyby ktoś wpisał np. login zawierający
+    // znaki nowej linii, próbując wstrzyknąć sfałszowany wpis do pliku logu.
+    $safeMessage = preg_replace('/[\x00-\x1F\x7F]+/', ' ', $message);
+
+    $line = '[' . $dt->format('d-M-Y H:i:s') . ' Europe/Warsaw] ' . $safeMessage . "\n";
     @file_put_contents(LOG_FILE, $line, FILE_APPEND | LOCK_EX);
 }
 
@@ -182,7 +188,18 @@ function attemptLogin(string $username, string $password): array {
 
     $person = findPersonByLogin($username);
 
-    if ($person === null || !password_verify($password, $person['password'])) {
+    // Atrapowy hash bcrypt używany, gdy login nie istnieje — dzięki temu
+    // password_verify() ZAWSZE wykonuje pełne, kosztowne obliczenie (nawet
+    // dla nieistniejącego loginu), a czas odpowiedzi nie zdradza atakującemu,
+    // czy dany login w ogóle jest zarejestrowany w systemie (timing attack /
+    // user enumeration). Sam hash nie ma znaczenia — nigdy nie pasuje do
+    // żadnego realnego hasła, jego jedyną rolą jest "kosztować tyle samo".
+    static $dummyHash = '$2b$10$DQfEHvfmYXXMiJKRhqz2c.WyiArnxq1qrtUwPzvT2IQU8dbl/dDvC';
+
+    $hashToCheck = $person['password'] ?? $dummyHash;
+    $passwordOk  = password_verify($password, $hashToCheck);
+
+    if ($person === null || !$passwordOk) {
         sk_log("LOGIN FAILED: invalid credentials for '$username' IP: $ip");
         return ['status' => 'invalid', 'message' => t('auth_invalid_credentials')];
     }
@@ -201,7 +218,7 @@ function attemptLogin(string $username, string $password): array {
         $_SESSION['last_activity'] = time();
         session_regenerate_id(true);
         sk_log("LOGIN SUCCESS (trusted device): $displayName ('$username') IP: $ip");
-        return ['status' => 'trusted', 'redirect' => PROTECTED_PAGE];
+        return ['status' => 'trusted', 'redirect' => PROTECTED_PAGE, 'display_name' => $displayName];
     }
 
     // Urządzenie niezaufane — generuj i wyślij kod 2FA

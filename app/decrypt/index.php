@@ -405,35 +405,48 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             50% { opacity: 0.9; }
         }
 
-        /* Revealed block: appears below the top line */
+        /* Revealed block: dwie kolumny obok siebie (imię | telefon).
+           Na wąskich ekranach (container query, patrz niżej) telefon
+           przechodzi pod imię, na pełną szerokość. */
         .person-revealed {
             display: flex;
-            align-items: baseline;
-            gap: 6px;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
             margin-top: 8px;
             padding-top: 8px;
             border-top: 1px solid var(--border);
-            flex-wrap: wrap;
             animation: decryptReveal 0.4s ease forwards;
         }
-        .person-name {
+        .field-b2 {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+        .field-b2.tel-col {
+            align-items: flex-end;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .field-label {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .person-name, .person-tel {
             font-family: var(--mono);
             font-size: 0.82rem;
-            color: var(--text);
             font-weight: 700;
+            color: var(--text);
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .person-tel {
-            font-family: var(--mono);
-            font-size: 0.82rem;
-            color: var(--accent);
-            white-space: nowrap;
-        }
-        /* On wider screens: show name — tel on one line */
-        @media (min-width: 480px) {
-            .person-revealed { flex-wrap: nowrap; }
-            .person-name::after { content: ' —'; color: var(--text-muted); margin-right: 4px; }
-        }
+        .person-tel { color: var(--accent); font-weight: 400; }
+
         @keyframes decryptReveal {
             from { opacity: 0; transform: translateY(-4px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -984,7 +997,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             <span class="welcome-text">
                 <?= htmlspecialchars(t('panel_welcome')) ?><?= htmlspecialchars($_SESSION['display_name'] ?? t('panel_welcome_fallback_name')) ?>
             </span>
-            <a href="../logout.php" class="logout-btn">
+            <a href="../logout.php" id="logout-btn" class="logout-btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                     <polyline points="16 17 21 12 16 7"/>
@@ -1112,7 +1125,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v2.0.0</div>
+        <div class="footer-version">WERSJA SYSTEMU: v2.1.0</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
@@ -1257,10 +1270,34 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <!-- ═══════════════════════════════════════ -->
     <script>
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
+
+    // ─── Wylogowanie — POST + CSRF zamiast zwykłej nawigacji GET ───
+    // (logout.php wymaga teraz POST-a z poprawnym tokenem, żeby zapobiec
+    // "logout CSRF" — wymuszeniu wylogowania przez zewnętrzny link/obrazek)
+    function doLogout(reason) {
+        var body = 'csrf_token=' + encodeURIComponent(CSRF_TOKEN);
+        if (reason === 'timeout') body += '&timeout=1';
+        fetch('../logout.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: body
+        }).finally(function() {
+            window.location.href = '../login.php?' + (reason === 'timeout' ? 'timeout' : 'wylogowano');
+        });
+    }
+
+    var logoutLink = document.getElementById('logout-btn');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            doLogout('wylogowano');
+        });
+    }
     // ─── Teksty UI wstrzykiwane z private/lang.php (patrz t() w auth.php) ───
     var I18N_JS = {
         personRevealBtn:   '<?= addslashes(t('panel_person_reveal_btn')) ?>',
-        personPhonePrefix: '<?= addslashes(t('panel_person_phone_prefix')) ?>',
+        personNameLabel:   '<?= addslashes(t('panel_person_name_label')) ?>',
+        personPhoneLabel:  '<?= addslashes(t('panel_person_phone_label')) ?>',
         errorPrefix:       '<?= addslashes(t('panel_decrypt_error_prefix')) ?>',
         jokescreenRefPrefix: '<?= addslashes(t('jokescreen_ref_prefix')) ?>'
     };
@@ -1333,25 +1370,27 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                 btnEl.textContent = '···';
                 infoEl.classList.remove('person-locked');
 
-                // Build revealed structure: name on one line, tel on second
+                // Build revealed structure: dwie kolumny (imię | telefon),
+                // container query w CSS przełamuje je na wąskich ekranach
                 var revealedWrap = document.createElement('div');
                 revealedWrap.className = 'person-revealed';
-
-                var nameEl = document.createElement('span');
-                nameEl.className = 'person-name';
-                nameEl.textContent = '';
-
-                var telEl = document.createElement('span');
-                telEl.className = 'person-tel';
-                telEl.textContent = '';
-
-                revealedWrap.appendChild(nameEl);
-                revealedWrap.appendChild(telEl);
+                revealedWrap.innerHTML =
+                    '<div class="field-b2">' +
+                        '<span class="field-label">' + I18N_JS.personNameLabel + '</span>' +
+                        '<span class="person-name"></span>' +
+                    '</div>' +
+                    '<div class="field-b2 tel-col">' +
+                        '<span class="field-label">' + I18N_JS.personPhoneLabel + '</span>' +
+                        '<span class="person-tel"></span>' +
+                    '</div>';
                 rowEl.appendChild(revealedWrap);
+
+                var nameEl = revealedWrap.querySelector('.person-name');
+                var telEl  = revealedWrap.querySelector('.person-tel');
 
                 // Animate name first, then tel
                 scrambleAnimate(nameEl, personData.name, 500, function() {
-                    scrambleAnimate(telEl, I18N_JS.personPhonePrefix + personData.tel, 400, null);
+                    scrambleAnimate(telEl, personData.tel, 400, null);
                 });
 
                 // Update original info to hide it cleanly
@@ -1760,7 +1799,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         function resetTimer() {
             clearTimeout(timer);
             timer = setTimeout(function() {
-                window.location.href = '../logout.php?timeout';
+                doLogout('timeout');
             }, TIMEOUT_MS);
         }
 

@@ -55,7 +55,7 @@ $lang = [
     'login_show_password'         => 'Pokaż hasło',
     'login_submit_btn'            => 'Zaloguj się',
     'login_empty_fields'          => 'Wpisz login i hasło.',
-    'login_welcome_back'          => 'Witaj ponownie…',
+    'login_welcome_back'          => 'Witaj ponownie, {name}…',
     'login_footer_restricted'     => 'obszar zastrzeżony &nbsp;·&nbsp; autoryzacja wymagana',
 
     // ── LOGIN.PHP — krok 2 (weryfikacja SMS) ──
@@ -113,7 +113,8 @@ $lang = [
     'panel_instructions_title'    => 'Instrukcja dostępu do bazy haseł',
     'panel_persons_title'         => 'Lista posiadaczy Secret key',
     'panel_person_reveal_btn'     => 'odszyfruj',
-    'panel_person_phone_prefix'   => 'Telefon: ',
+    'panel_person_name_label'     => 'Imię i nazwisko',
+    'panel_person_phone_label'    => 'Telefon',
 
     // ── DECRYPT/INDEX.PHP — panel odszyfrowywania ──
     'panel_decrypt_title'         => 'Odszyfrowywanie',

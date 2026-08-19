@@ -31,4 +31,13 @@ RewriteRule ^index\.html?$ login.php [R=301,L]
 
     # CSP z obsługą Google Fonts
     Header always set Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'"
+
+    # Wymusza brak cache'owania dla panelu logowania — może zawierać dane
+    # osobowe i sesyjne, więc nie powinien być przechowywany przez żadnego
+    # pośrednika (przeglądarkę, CDN, proxy). Jeśli masz też ogólną regułę
+    # Cache-Control w nadrzędnym .htaccess (np. "public, max-age=..."), ta
+    # reguła ją nadpisuje dla tego katalogu, bo jest bliżej "liścia" w
+    # hierarchii katalogów Apache.
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+    Header set Pragma "no-cache"
 </IfModule>

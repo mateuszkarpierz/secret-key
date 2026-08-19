@@ -47,8 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         case 'trusted':
             echo json_encode([
-                'status'   => 'trusted',
-                'redirect' => $result['redirect'],
+                'status'       => 'trusted',
+                'redirect'     => $result['redirect'],
+                'display_name' => $result['display_name'],
             ]);
             break;
         case 'blocked':
@@ -1052,7 +1053,7 @@ $timedOut  = isset($_GET['timeout']);
             .then(function(data) {
                 if (data.status === 'trusted') {
                     // Zaufane urządzenie — overlay zostaje z nowym tekstem, redirect
-                    text.textContent = I18N.welcomeBack;
+                    text.textContent = I18N.welcomeBack.replace('{name}', data.display_name || '');
                     setTimeout(function() {
                         window.location.href = data.redirect;
                     }, 800);
