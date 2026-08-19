@@ -3036,8 +3036,8 @@ function makeBinaryBg() {
 // ══════════════════════════════════════════════
 //  BUDUJ KARTY HTML
 // ══════════════════════════════════════════════
-function buildFront() {
-    var owner = (document.getElementById('global-owner').value || '').trim().toUpperCase();
+function buildFront(owner) {
+    owner = (owner !== undefined ? owner : (document.getElementById('global-owner').value || '')).trim().toUpperCase();
     var svg = CARD_FRONT_TPL.replace('{{OWNER}}', esc(owner));
     return '<div class="sk-card"><div class="sk-front">' + svg + '</div></div>';
 }
