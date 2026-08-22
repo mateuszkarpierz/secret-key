@@ -83,19 +83,36 @@ function findPersonByLogin(string $login): ?array {
     return null;
 }
 
-// Do listy posiadaczy w panelu (osoby już zalogowane, widzą się nawzajem w pełni)
-function formatPhoneDisplay(string $raw): string {
-    // +48123456789 → 123-456-789
-    $digits = preg_replace('/^\+48/', '', $raw);
-    return substr($digits, 0, 3) . '-' . substr($digits, 3, 3) . '-' . substr($digits, 6, 3);
+// Do listy posiadaczy w panelu (osoby już zalogowane, widzą się nawzajem w pełni).
+// $localNumber to SAM numer lokalny, bez kierunkowego (ten jest osobno w $phone_cc —
+// świadomie tu pomijany, lista posiadaczy nigdy nie pokazywała kierunkowego, tylko
+// pogrupowane cyfry, np. "512-345-678").
+// Grupowanie po 3 cyfry działa dla numerów dowolnej długości, nie tylko 9-cyfrowych
+// polskich — zagraniczne numery lokalne bywają krótsze lub dłuższe.
+function formatPhoneDisplay(string $localNumber): string {
+    $digits = preg_replace('/\D/', '', $localNumber);
+    $groups = [];
+    for ($i = 0; $i < strlen($digits); $i += 3) {
+        $groups[] = substr($digits, $i, 3);
+    }
+    return implode('-', $groups);
 }
 
 // Do ekranu logowania/2FA (przed uwierzytelnieniem — celowo częściowo zamaskowany,
-// żeby nie ujawniać pełnego numeru np. komuś patrzącemu przez ramię)
-function formatPhoneMasked(string $raw): string {
-    // +48123456789 → +48 *** *** 789
-    $digits = preg_replace('/^\+48/', '', $raw);
-    return '+48 *** *** ' . substr($digits, 6, 3);
+// żeby nie ujawniać pełnego numeru np. komuś patrzącemu przez ramię).
+// Kierunkowy ($cc, np. "+48", "+49", "+31") jest teraz osobnym polem w configu
+// ($people[...]['phone_cc']) i wyświetlany PRAWDZIWY — bez tego, dla numerów
+// zagranicznych ekran logowania pokazywałby fałszywe "+48" niezależnie od kraju.
+function formatPhoneMasked(string $cc, string $localNumber): string {
+    $digits    = preg_replace('/\D/', '', $localNumber);
+    $lastGroup = substr($digits, -3);
+    $maskedLen = max(0, strlen($digits) - strlen($lastGroup));
+    $maskGroups = [];
+    for ($i = 0; $i < $maskedLen; $i += 3) {
+        $maskGroups[] = '***';
+    }
+    $masked = trim(implode(' ', $maskGroups) . ' ' . $lastGroup);
+    return trim($cc . ' ' . $masked);
 }
 
 // ── TREŚĆ WŁASNA (instrukcje) — markdown-lite ────────────
@@ -222,18 +239,20 @@ function attemptLogin(string $username, string $password): array {
     }
 
     // Urządzenie niezaufane — generuj i wyślij kod 2FA
-    $code   = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-    $phone  = $person['phone'];
-    $masked = formatPhoneMasked($phone);
+    $code     = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $phoneCc  = $person['phone_cc'];   // np. '+48', '+49', '+31'
+    $phone    = $person['phone'];      // sam numer lokalny, bez kierunkowego
+    $phoneFull = $phoneCc . $phone;    // pełny numer E.164 do wysyłki SMS
+    $masked   = formatPhoneMasked($phoneCc, $phone);
 
     // ── TRYB TESTOWY — usuń przed wdrożeniem na produkcję! ──
     // $smsResult = true; $code = '123456';
     // ────────────────────────────────────────────────────────
 
-    $smsResult = sendSmsCode($phone, $code);
+    $smsResult = sendSmsCode($phoneFull, $code);
 
     if ($smsResult !== true) {
-        sk_log("2FA SMS ERROR: '$username' ($phone) — $smsResult");
+        sk_log("2FA SMS ERROR: '$username' ($phoneFull) — $smsResult");
         return ['status' => 'sms_error', 'message' => t('auth_sms_send_failed')];
     }
 
@@ -254,7 +273,7 @@ function attemptLogin(string $username, string $password): array {
     $_SESSION['pending_username']     = $username;
     $_SESSION['pending_display_name'] = $displayName;
     $_SESSION['pending_phone_masked'] = $masked;
-    $_SESSION['2fa_phone']            = $phone;
+    $_SESSION['2fa_phone']            = $phoneFull;
     $_SESSION['2fa_code']             = $code;
     $_SESSION['2fa_expires']          = time() + TWO_FA_TTL;
     $_SESSION['sms_sent_at']          = time();

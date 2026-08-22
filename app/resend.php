@@ -49,18 +49,20 @@ $username = $_SESSION['pending_username'];
 $ip       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
 $person = findPersonByLogin($username);
-$phone  = $person['phone'] ?? null;
-if (!$phone) {
+$phoneCc = $person['phone_cc'] ?? null;
+$phone   = $person['phone'] ?? null;
+if (!$phone || !$phoneCc) {
     echo json_encode(['status' => 'error', 'message' => t('resend_config_error')]);
     exit;
 }
+$phoneFull = $phoneCc . $phone;
 
 // Wygeneruj nowy kod i wyślij
 $code      = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-$smsResult = sendSmsCode($phone, $code);
+$smsResult = sendSmsCode($phoneFull, $code);
 
 if ($smsResult !== true) {
-    sk_log("2FA RESEND ERROR: '$username' ($phone) — $smsResult");
+    sk_log("2FA RESEND ERROR: '$username' ($phoneFull) — $smsResult");
     echo json_encode(['status' => 'error', 'message' => t('resend_sms_failed')]);
     exit;
 }

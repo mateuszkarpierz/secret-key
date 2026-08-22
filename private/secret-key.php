@@ -19,7 +19,8 @@ $people = [
     'password'      => '$2y$10$t4qj7ionahDnPRX0rI2CBOxE27Sk/6qOdfbvuGW/B2be19n5/XAn2',
     'first_name'    => 'VISITOR',
     'last_name'     => '',
-    'phone'         => '+48123456789',
+    'phone_cc'      => '+48',
+    'phone'         => '123456789',
     'show_in_panel' => false, // konto demonstracyjne
   ],
   [
@@ -27,7 +28,8 @@ $people = [
     'password'      => '$2y$10$t4qj7ionahDnPRX0rI2CBOxE27Sk/6qOdfbvuGW/B2be19n5/XAn2',
     'first_name'    => 'Jan',
     'last_name'     => 'Kowalski',
-    'phone'         => '+48123456789',
+    'phone_cc'      => '+48',
+    'phone'         => '123456789',
     'show_in_panel' => true,
   ],
   [
@@ -35,7 +37,8 @@ $people = [
     'password'      => '$2y$10$t4qj7ionahDnPRX0rI2CBOxE27Sk/6qOdfbvuGW/B2be19n5/XAn2',
     'first_name'    => 'Anna',
     'last_name'     => 'Kowalska',
-    'phone'         => '+48123456789',
+    'phone_cc'      => '+48',
+    'phone'         => '123456789',
     'show_in_panel' => true,
   ],
   [
@@ -43,7 +46,8 @@ $people = [
     'password'      => '$2y$10$t4qj7ionahDnPRX0rI2CBOxE27Sk/6qOdfbvuGW/B2be19n5/XAn2',
     'first_name'    => 'Piort',
     'last_name'     => 'Kowalski',
-    'phone'         => '+48123456789',
+    'phone_cc'      => '+48',
+    'phone'         => '123456789',
     'show_in_panel' => true,
   ],
   [
@@ -51,7 +55,8 @@ $people = [
     'password'      => '$2y$10$t4qj7ionahDnPRX0rI2CBOxE27Sk/6qOdfbvuGW/B2be19n5/XAn2',
     'first_name'    => 'Maria',
     'last_name'     => 'Kowalska',
-    'phone'         => '+48123456789',
+    'phone_cc'      => '+48',
+    'phone'         => '123456789',
     'show_in_panel' => true,
   ],
   [
@@ -59,7 +64,8 @@ $people = [
     'password'      => '$2y$10$t4qj7ionahDnPRX0rI2CBOxE27Sk/6qOdfbvuGW/B2be19n5/XAn2',
     'first_name'    => 'Andrzej',
     'last_name'     => 'Kowalski',
-    'phone'         => '+48123456789',
+    'phone_cc'      => '+48',
+    'phone'         => '123456789',
     'show_in_panel' => true,
   ],
 ];
