@@ -1151,7 +1151,7 @@
         }
         .secret-wrapper:focus-within { border-color: rgba(192,132,252,0.5); box-shadow: 0 0 0 3px rgba(192,132,252,0.07); }
         .secret-wrapper textarea {
-            width: 100%; min-height: 90px; resize: vertical;
+            width: 100%; min-height: 90px; resize: none;
             background: transparent; border: none; outline: none;
             color: var(--text); font-family: var(--mono); font-size: 0.82rem;
             padding: 14px 16px; line-height: 1.65;
@@ -1764,6 +1764,7 @@ function resetAll() {
     lastShares = [];
     N = 5; K = 3;
     updateParams();
+    secretInput.focus();
 }
 
 // ═══════════════════════════════════════════════
@@ -1930,6 +1931,9 @@ if (window.matchMedia('(pointer: fine)').matches) {
     document.addEventListener('mouseenter', function() { arrow.style.opacity='1'; ring.style.opacity=isMorphed?'1':'0.75'; });
 })();
 }
+
+// Pole na sekret gotowe do wpisywania od razu po wejściu na stronę
+document.getElementById('secret-input').focus();
 </script>
 
 </body>

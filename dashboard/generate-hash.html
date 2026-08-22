@@ -2607,6 +2607,13 @@ function resetAll() {
     var ilist = document.getElementById('instruction-list');
     while (ilist.firstChild) ilist.removeChild(ilist.firstChild);
     addInstruction();
+
+    // addUser/addDownload/addInstruction każde na końcu robią focus() na swoim
+    // nowym polu — wygrywa ostatnie (instrukcje), przez co przeglądarka
+    // automatycznie przewija stronę w dół. Wracamy fokus na pierwsze pole
+    // i przewijamy z powrotem na samą górę.
+    document.getElementById('sms_token').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // collectFormData — zastąpione logiką JS-only

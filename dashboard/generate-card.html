@@ -3554,6 +3554,10 @@ function resetAll() {
     document.getElementById('global-owner').value = '';
     N = 5; K = 3;
     addUser();
+
+    // addUser() na końcu robi focus() na polu loginu nowej karty —
+    // wracamy fokus na pierwsze pole formularza.
+    document.getElementById('global-url').focus();
 }
 
 // ══════════════════════════════════════════════
@@ -3576,6 +3580,10 @@ function registerInputCursor(parent) {
 document.addEventListener('DOMContentLoaded', function() {
     addUser();
     registerInputCursor(document.getElementById('main-card'));
+
+    // addUser() na końcu robi focus() na polu loginu pierwszej karty —
+    // wracamy fokus na pierwsze pole formularza (Adres instancji).
+    document.getElementById('global-url').focus();
 });
 
 // ══════════════════════════════════════════════
