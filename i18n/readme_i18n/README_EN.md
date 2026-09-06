@@ -273,6 +273,9 @@ The system combines **eight independent layers of protection** — compromising 
 | 🖥️ **Interface protection** | DevTools detection | Detects developer tools, physically removes the DOM, logs the incident with IP, REF#, and duration |
 | 📥 **Gated downloads** | `download.php` + whitelist | Downloadable files live outside `public_html`; an active session is required, no direct URL, always logged server-side |
 
+> [!TIP]
+> **Protection against trustee collusion during your lifetime.** Shamir's algorithm mathematically allows designated trustees to reconstruct the master password itself if they collude to do so — this is an unavoidable property of any threshold secret-sharing scheme, not just this one. If you don't additionally protect your password database with a hardware key (e.g. YubiKey/FIDO2), a reconstructed password is enough for them to fully open the database. Secret Key limits this risk with email notification probes on login and file-download attempts, but for maximum protection it's recommended to use a hardware key as a second factor for the password database itself — that way, knowing the master password alone gives no one anything without the key physically present with you.
+
 ---
 
 ## Installation
@@ -458,6 +461,14 @@ The higher the threshold, the greater the security — but also the harder it is
 Indefinitely — as long as the owner doesn't generate a new configuration and replace the `secret-key.php` file on the server. After that operation, the old cards stop working, and new ones need to be distributed to all the designated people.
 
 </details>
+
+---
+
+<div align="center">
+
+If this project has been useful to you, leave a ⭐ — it helps others who might need it find it.
+
+</div>
 
 ---
 

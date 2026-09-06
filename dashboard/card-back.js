@@ -621,7 +621,7 @@ var CARD_BACK_TPL = `<svg
       <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;box-sizing:border-box;padding:3px 5px;font-family:'Space Mono',monospace;font-size:7px;line-height:1.5;color:#585c5e;word-break:break-all;overflow:hidden;text-align:center;">{{SHARE}}</div>
     </foreignObject>
     <foreignObject x="10" y="108.5" width="210" height="14">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;box-sizing:border-box;padding:0 5px;display:flex;align-items:center;justify-content:space-between;font-family:'Space Mono',monospace;font-size:6.5px;color:#fff;overflow:hidden;white-space:nowrap;"><span>Login: <strong>{{LOGIN}}</strong></span><span>Hasło: <strong>{{PASS}}</strong></span></div>
+      <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;box-sizing:border-box;padding:0 5px;display:flex;align-items:center;justify-content:space-between;font-family:'Space Mono',monospace;font-size:6.5px;color:#fff;overflow:hidden;white-space:nowrap;"><span>Login: <strong>{{LOGIN}}</strong></span><span>{{PASS_LABEL}} <strong>{{PASS}}</strong></span></div>
     </foreignObject>
 
         <foreignObject x="228" y="107" width="90" height="90"><div xmlns="http://www.w3.org/1999/xhtml" style="width:90px;height:90px;background:#fff;border-radius:2px;overflow:hidden;display:flex;align-items:center;justify-content:center;">{{QR}}</div></foreignObject>
@@ -634,7 +634,7 @@ var CARD_BACK_TPL = `<svg
        transform="matrix(1.3333333,0,0,1.3333333,10.059493,22.914027)"
        clip-path="url(#bk-clipPath17)" />
     <foreignObject x="10" y="30" width="222" height="75">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;box-sizing:border-box;font-family:'Syne',sans-serif;font-size:7.2px;font-weight:600;line-height:10px;color:#fff;overflow:hidden;word-wrap:break-word;"><span style="display:block;margin-bottom:6px;">Jesteś posiadaczem 1 z 5 części kodu Secret key.<br/>W przypadku mojej śmierci skontaktuj się z osobami, które<br/>posiadają dostęp do pozostałych 4 części kodu Secret key.</span><span style="display:block;margin-bottom:6px;">Spotykając się tylko razem, jesteście w stanie odszyfrować główne hasło dostępu do mojej bazy haseł.</span><span style="display:block;">Więcej informacji na stronie: <strong>{{URL}}</strong></span></div>
+      <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;box-sizing:border-box;font-family:'Syne',sans-serif;font-size:7.2px;font-weight:600;line-height:10px;color:#fff;overflow:hidden;word-wrap:break-word;">{{MESSAGE}}</div>
     </foreignObject>
 
     <path

@@ -273,6 +273,9 @@ El sistema combina **ocho capas de protección independientes** — comprometer 
 | 🖥️ **Protección de la interfaz** | Detección de DevTools | Detecta las herramientas de desarrollo, elimina físicamente el DOM, registra el incidente con IP, REF# y duración |
 | 📥 **Descargas controladas** | `download.php` + lista blanca | Los archivos descargables están fuera de `public_html`; se requiere una sesión activa, sin URL directa, siempre registrado del lado del servidor |
 
+> [!TIP]
+> **Protección contra la connivencia de los fiduciarios en vida.** El algoritmo de Shamir permite matemáticamente que las personas designadas reconstruyan la contraseña maestra si se coluden para ello — es una propiedad inevitable de cualquier esquema de reparto de secretos por umbral, no solo de este. Si no proteges además tu base de contraseñas con una llave de seguridad física (p. ej. YubiKey/FIDO2), la contraseña reconstruida les basta para abrir la base por completo. Secret Key limita este riesgo con sondas de notificación por correo al iniciar sesión y al intentar descargar archivos, pero para la máxima protección se recomienda usar una llave física como segundo factor de la propia base de contraseñas — así, conocer solo la contraseña maestra no le sirve a nadie sin la presencia física de la llave contigo.
+
 ---
 
 ## Instalación
@@ -458,6 +461,14 @@ Cuanto mayor sea el umbral, mayor será la seguridad — pero también más dif�
 Indefinidamente — mientras el propietario no genere una nueva configuración ni reemplace el archivo `secret-key.php` en el servidor. Tras esa operación, las tarjetas antiguas dejan de funcionar y es necesario distribuir otras nuevas a todas las personas designadas.
 
 </details>
+
+---
+
+<div align="center">
+
+Si este proyecto te ha resultado útil, deja una ⭐ — ayuda a que otras personas que puedan necesitarlo lo encuentren.
+
+</div>
 
 ---
 

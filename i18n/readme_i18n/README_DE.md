@@ -273,6 +273,9 @@ Das System kombiniert **acht unabhängige Schutzebenen** — die Kompromittierun
 | 🖥️ **Oberflächenschutz** | DevTools-Erkennung | Erkennt Entwicklertools, entfernt das DOM physisch, protokolliert den Vorfall mit IP, REF# und Dauer |
 | 📥 **Geschützte Downloads** | `download.php` + Whitelist | Herunterladbare Dateien liegen außerhalb von `public_html`; eine aktive Sitzung ist erforderlich, keine direkte URL, immer serverseitig protokolliert |
 
+> [!TIP]
+> **Schutz vor Absprachen der Vertrauenspersonen zu Lebzeiten.** Der Shamir-Algorithmus erlaubt es den benannten Vertrauenspersonen mathematisch, das Master-Passwort selbst zu rekonstruieren, wenn sie sich dazu absprechen — das ist eine unvermeidliche Eigenschaft jedes Schwellenwert-Secret-Sharing-Verfahrens, nicht nur dieses. Wenn du deine Passwortdatenbank nicht zusätzlich mit einem Hardware-Schlüssel (z. B. YubiKey/FIDO2) schützt, reicht das rekonstruierte Passwort aus, um die Datenbank vollständig zu öffnen. Secret Key begrenzt dieses Risiko durch E-Mail-Benachrichtigungssonden bei Anmelde- und Download-Versuchen, aber für maximalen Schutz wird empfohlen, einen Hardware-Schlüssel als zweiten Faktor für die Passwortdatenbank selbst zu verwenden — dann nützt die bloße Kenntnis des Master-Passworts niemandem etwas ohne die physische Anwesenheit des Schlüssels bei dir.
+
 ---
 
 ## Installation
@@ -458,6 +461,14 @@ Je höher der Schwellenwert, desto größer die Sicherheit — aber auch desto s
 Unbegrenzt — solange der Besitzer keine neue Konfiguration generiert und die Datei `secret-key.php` auf dem Server ersetzt. Nach diesem Vorgang funktionieren die alten Karten nicht mehr, und es müssen neue an alle beauftragten Personen verteilt werden.
 
 </details>
+
+---
+
+<div align="center">
+
+Wenn dir dieses Projekt geholfen hat, hinterlasse einen ⭐ — das hilft anderen, die es vielleicht brauchen, es zu finden.
+
+</div>
 
 ---
 

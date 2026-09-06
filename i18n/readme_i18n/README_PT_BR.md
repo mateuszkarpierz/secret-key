@@ -273,6 +273,9 @@ O sistema combina **oito camadas independentes de proteção** — comprometer u
 | 🖥️ **Proteção da interface** | Detecção de DevTools | Detecta ferramentas de desenvolvedor, remove fisicamente o DOM, registra o incidente com IP, REF# e duração |
 | 📥 **Downloads controlados** | `download.php` + lista branca | Arquivos para download ficam fora de `public_html`; sessão ativa exigida, sem URL direta, sempre registrado no lado do servidor |
 
+> [!TIP]
+> **Proteção contra conluio dos fiduciários em vida.** O algoritmo de Shamir permite, matematicamente, que as pessoas designadas reconstruam a própria senha mestra caso se conluiem para isso — essa é uma propriedade inevitável de qualquer esquema de compartilhamento de segredo por limiar, não só deste. Se você não proteger adicionalmente seu banco de senhas com uma chave de segurança física (ex.: YubiKey/FIDO2), a senha reconstruída é suficiente para abrirem o banco por completo. O Secret Key reduz esse risco com sondas de notificação por e-mail em tentativas de login e download de arquivos, mas para o máximo de proteção recomenda-se usar uma chave física como segundo fator do próprio banco de senhas — assim, apenas conhecer a senha mestra não adianta nada sem a presença física da chave com você.
+
 ---
 
 ## Instalação
@@ -458,6 +461,14 @@ Quanto maior o limite, maior a segurança — mas também mais difícil reunir t
 Indefinidamente — desde que o proprietário não gere uma nova configuração e substitua o arquivo `secret-key.php` no servidor. Após essa operação, os cartões antigos deixam de funcionar e é necessário distribuir novos para todas as pessoas designadas.
 
 </details>
+
+---
+
+<div align="center">
+
+Se este projeto foi útil para você, deixe uma ⭐ — isso ajuda outras pessoas que possam precisar dele a encontrá-lo.
+
+</div>
 
 ---
 

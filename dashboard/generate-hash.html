@@ -126,6 +126,27 @@
             font-family: var(--mono); font-size: 0.6rem;
             letter-spacing: 0.22em; color: var(--text-muted); text-transform: uppercase;
         }
+        .lang-switch {
+            position: relative;
+            display: inline-flex; gap: 2px; margin-top: 22px;
+            background: var(--surface2); border: 1px solid var(--border-glow);
+            border-radius: 20px; padding: 3px;
+        }
+        .lang-switch-indicator {
+            position: absolute; top: 3px; left: 3px;
+            width: calc(50% - 3px); height: calc(100% - 6px);
+            background: var(--accent-dim); border-radius: 16px;
+            transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        .lang-switch[data-active="en"] .lang-switch-indicator { transform: translateX(100%); }
+        .lang-btn {
+            position: relative; z-index: 1;
+            font-family: var(--mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+            padding: 5px 12px; border-radius: 16px; border: none; background: none;
+            color: var(--text-muted); cursor: pointer; transition: color 0.2s;
+        }
+        .lang-btn.active { color: var(--accent); }
 
         /* ─── CARD ─── */
         .card {
@@ -322,16 +343,58 @@
             font-family: var(--mono); color: var(--accent);
         }
 
-        /* ─── PASSWORD TOGGLE ─── */
+        /* ─── FIELD ACTIONS (generuj / kopiuj) — login i hasło ─── */
         .field-password { position: relative; }
-        .field-password .user-field-inner input { padding-right: 36px; }
-        .toggle-password {
+        .field-password .user-field-inner input { padding-right: 60px; }
+        .field-login { position: relative; }
+        .field-login .user-field-inner input { padding-right: 60px; }
+        .field-actions {
             position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; color: var(--text-muted);
-            padding: 4px; display: flex; align-items: center;
-            transition: color 0.2s; outline: none;
+            display: flex; gap: 1px;
         }
-        .toggle-password:hover { color: var(--accent); }
+        .field-action-btn {
+            position: relative;
+            background: none; border: none; color: var(--text-muted);
+            padding: 4px; display: flex; align-items: center; border-radius: 5px;
+            transition: color 0.2s, background 0.2s; outline: none; cursor: pointer;
+        }
+        /* Dymek dla przycisków akcji pola (login/hasło) — niezależna od .info-tip
+           implementacja (żeby nie dziedziczyć jej pointer-events/opacity/cursor),
+           otwierana w dół, bo pole jest u góry karty, a karta ma overflow:hidden. */
+        .field-action-btn[data-tip]::after {
+            content: attr(data-tip);
+            position: absolute; top: calc(100% + 10px); right: -6px;
+            background: var(--surface3); border: 1px solid var(--border-glow);
+            color: var(--text-dim);
+            font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.01em; font-weight: 400;
+            padding: 8px 12px; border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+            white-space: nowrap; text-align: left; line-height: 1.45;
+            opacity: 0; pointer-events: none;
+            transform: translateY(-4px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            z-index: 9999;
+        }
+        .field-action-btn[data-tip]::before {
+            content: '';
+            position: absolute; top: calc(100% + 2px); right: 8px;
+            border: 5px solid transparent; border-top-color: var(--border-glow);
+            opacity: 0; pointer-events: none;
+            transform: translateY(-4px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            z-index: 10001;
+        }
+        .field-action-btn[data-tip]:hover::after,
+        .field-action-btn[data-tip]:hover::before {
+            opacity: 1; transform: translateY(0);
+            transition: opacity 0.18s ease 1.5s, transform 0.18s ease 1.5s;
+        }
+        .field-action-btn:hover { color: var(--accent); background: rgba(255,255,255,0.05); }
+        .field-action-btn.copied { color: var(--success); }
+        .field-action-btn.generate-btn.generating { color: var(--accent); pointer-events: none; }
+        .field-action-btn.generate-btn.generating svg { animation: pw-spin 0.5s linear infinite; }
+        @keyframes pw-spin { to { transform: rotate(360deg); } }
+        .u-pw.pw-scrambling, .u-login.pw-scrambling { color: var(--accent); letter-spacing: 0.06em; }
 
         /* ─── SHOW-IN-PANEL TOGGLE / PROGRAM TOGGLE ─── */
         .user-field-toggle, .download-field-toggle {
@@ -1858,14 +1921,19 @@
 <div class="header">
     <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJXYXJzdHdhXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAyMDEuODcgOTMuMTEiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDIwMS44NyA5My4xMTsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOnVybCgjU1ZHSURfMV8pO30KCS5zdDF7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDQ0MTM5MjA2OTk1NTUwNjE2MTkwMDAwMDAxMDU1OTM3NjgzMzYzMzE5NDQxXyk7fQoJLnN0MntmaWxsOnVybCgjU1ZHSURfMDAwMDAwMDAyMDgwMTA1NjEyOTUzNDYyNzAwMDAwMTE2NDk0NjY1MjQxNzk4NDA0MjJfKTt9Cgkuc3Qze2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3OTQ2ODgxNDcyMjU5MTM4NTAzMDAwMDAwNjQ1MTAxOTYzMjkzNTc0MzY2Ml8pO30KCS5zdDR7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTA1NDIxNzgzNDcyMjI1MjE3MzAwMDAwMDAxMjM2NzExODg5MDI0NTE5MzEwXyk7fQoJLnN0NXtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNzQ0MzQwNjMyNjkxMzE3OTU2OTAwMDAwMTYyMDE5NDMzODUwNzU0NzMwMzZfKTt9Cgkuc3Q2e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDExNzY0OTM5MzA2NTQxMzI2NjU2MDAwMDAwNTgyNDM0MjU1MTcxNjI5MDQ5Ml8pO30KCS5zdDd7ZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTc4ODkwMDY0MTUwNTg0NDA0MzgwMDAwMDE1NTcxNDAxOTUzNTEyODk5NDYzXyk7fQoJLnN0OHtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjE0NjczOTQ1NzQ2NDM0NjUxMDAwMDAwMDYyNzIxNjQyODk3NDcxNDI1MzhfKTt9Cgkuc3Q5e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3MDExNjAyNDU1MjIxOTQ3ODcxMDAwMDAwNjY5NzE5MjIyNDcyNjkzODI2OV8pO30KCS5zdDEwe2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDAwMzA5ODk4NTUyNDA5OTE2NDA1MDAwMDAxMzEzOTcxNjU3OTgzMzI2MDQ0Nl8pO30KCS5zdDExe2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDAxNDYzNTU5NTM4ODE2MzYwODYyMDAwMDAxMjYzMTQ3Mzc3OTM5Mjk0MDIwM18pO30KCS5zdDEye2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE1MzcwMjAwNDA5OTI5OTUxMDU2MDAwMDAwMzEzOTg4OTYwMTEyMDA1MDgxNl8pO30KCS5zdDEze2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA3NDQyMDg0MDQzMTk3NTA4OTMzMDAwMDAwMDkyMDI3NzIxNDk1NTg1Njc2OF8pO30KCS5zdDE0e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDExMjYxNDQyNjQ4MTQ1OTg3MzcyMDAwMDAwMzk0ODAyMjIzMjIzMDk3MjU5M18pO30KCS5zdDE1e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDEzMzUyOTYyNTM1NDUwMDc4NzI5MDAwMDAxNDYxNjM0NjI3NzEzMDU0NDU2MV8pO30KCS5zdDE2e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDA2NDM0NjQzMjI3MzA1MzczODk5MDAwMDAwMTEzNjc2Mzk5MjA4NTg2MzA4M18pO30KCS5zdDE3e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE0MTQzMzA1MjMzODc5MjMxNjg0MDAwMDAxMzMxMTk5NDgxMzczODE2Mjg0MV8pO30KCS5zdDE4e2ZpbGw6dXJsKCNTVkdJRF8wMDAwMDE2OTUyNTg3NzAwNjc3NTQ5MTMxMDAwMDAwMzc2NjUzNTM1ODI1Nzk4MDU4MV8pO30KCS5zdDE5e29wYWNpdHk6MC40Njt9Cgkuc3QyMHtmaWxsOnVybCgjU1ZHSURfMDAwMDAxODM5NTc0NzcxMjM0NDYxMTc0OTAwMDAwMDIwODA5MDc0Njk3NTM4OTAyMjVfKTt9Cgkuc3QyMXtmaWxsOnVybCgjU1ZHSURfMDAwMDAwMjk3MjYwODE3NTI0ODAwMDIyOTAwMDAwMTE2NjIwNjIzNDcyNDE2NDE2MjdfKTt9Cgkuc3QyMntmaWxsOnVybCgjU1ZHSURfMDAwMDAwNTU2OTgyMDc4MDAzOTUzMDgzNjAwMDAwMDc0NDA5MTE0NzIzMTI3MjYxNTRfKTt9Cgkuc3QyM3tmaWxsOnVybCgjU1ZHSURfMDAwMDAwMzkwOTYyMDYwNTY5NDkwNDQxMzAwMDAwMTA3NTYyODgyODg5MDcwMzYwNjBfKTt9Cgkuc3QyNHtmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjgwOTk0MzM3NDkwOTQ4MzAyOTAwMDAwMDEwNDU0NTgxODE5MjkwODYxMjJfKTt9Cgkuc3QyNXtmaWxsOnVybCgjU1ZHSURfMDAwMDAxNDY1MDAzMTcxNzgzNzA0NjU5MzAwMDAwMDY3MDkxNjczODIwMTk1OTkyNjVfKTt9Cgkuc3QyNntmaWxsOnVybCgjU1ZHSURfMDAwMDAxMDMyMzc3NzA3NTQ4NzE3ODgwMTAwMDAwMDcwNDExOTAxMTA4NTI3ODYwNzdfKTt9Cgkuc3QyN3tmaWxsOnVybCgjU1ZHSURfMDAwMDAwMzI2MTQ5MDA1NjYxNTkwNjc0NDAwMDAwMTUwODIzMjUxMzgwMzExNTIwNTRfKTt9Cgkuc3QyOHtmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjIxNjg4MzY3NzkxMzUyMjg5NDAwMDAwMTY5NTI2ODk5NjExOTUxOTYyOThfKTt9Cjwvc3R5bGU+CjxnPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8xXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDcxLjE3NSIgeTE9Ii0xOTY3LjAxNiIgeDI9IjIwNzEuMTc1IiB5Mj0iLTE3OTUuMjQ3NiIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTc4LjA3LDc3LjQ2YzAtMC41MS0wLjE5LTEuMDMtMC41OC0xLjQyYy0wLjc4LTAuOC0yLjA3LTAuODEtMi44Ni0wLjAyYy00LjM5LDQuMzItOS43Nyw3LjY1LTE1LjU2LDkuNjRjLTEuMDYsMC4zNi0xLjYyLDEuNTEtMS4yNiwyLjU3YzAuMzYsMS4wNiwxLjUyLDEuNjIsMi41NywxLjI2YzYuMzYtMi4xOCwxMi4yNi01Ljg1LDE3LjA4LTEwLjU5Qzc3Ljg3LDc4LjUxLDc4LjA3LDc3Ljk5LDc4LjA3LDc3LjQ2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDE2ODA4NDk0MjA4NzY3Nzg0NzMxMDAwMDAwMjU4NjM0MTkwMTE1MDY2NzQyM18iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny4zNjMzIiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwNDcuMzYzMyIgeTI9Ii0xNzk1LjI0ODUiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjgwODQ5NDIwODc2Nzc4NDczMTAwMDAwMDI1ODYzNDE5MDExNTA2Njc0MjNfKTsiIGQ9Ik05MS4wMSw0Ni41NmMwLTEuMTItMC45MS0yLjAzLTIuMDMtMi4wM3MtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDguMzEtMi40NSwxNi4zMi03LjEsMjMuMTdjLTAuNjMsMC45My0wLjM5LDIuMTksMC41NCwyLjgxYzAuOTMsMC42MywyLjE5LDAuMzksMi44MS0wLjU0Qzg4LjMyLDY0LjQ4LDkxLjAxLDU1LjY4LDkxLjAxLDQ2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEzNTY4MzUxMzc5MDY1OTUwMDI3MDAwMDAxMDAxMTkyODUxMzI1NDc2MjQwM18iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxMi4xNDI1IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwMTIuMTQyNSIgeTI9Ii0xNzk1LjI0ODUiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMzU2ODM1MTM3OTA2NTk1MDAyNzAwMDAwMTAwMTE5Mjg1MTMyNTQ3NjI0MDNfKTsiIGQ9Ik01Ni4wNCwzLjk5YzAtMC45NS0wLjY3LTEuOC0xLjY0LTEuOTljLTIuODctMC41Ni01LjgzLTAuODUtOC43OC0wLjg1Yy0xOS4yNiwwLTM2LjQ4LDEyLjItNDIuODUsMzAuMzZjLTEuMSwzLjE0LTAuNjksNi41NiwxLjEzLDkuMzdjMS44NCwyLjg0LDQuODIsNC42Myw4LjE5LDQuOTJjMS4xMSwwLjA5LDIuMS0wLjczLDIuMTktMS44NWMwLjEtMS4xMS0wLjczLTIuMS0xLjg1LTIuMTljLTIuMTEtMC4xOC0zLjk4LTEuMy01LjEzLTMuMDljLTEuMTMtMS43NS0xLjM5LTMuODctMC43LTUuODNjNS44LTE2LjU0LDIxLjQ5LTI3LjY1LDM5LjAzLTI3LjY1YzIuNjksMCw1LjM4LDAuMjYsOCwwLjc3YzEuMSwwLjIyLDIuMTYtMC41LDIuMzgtMS42QzU2LjAyLDQuMjUsNTYuMDQsNC4xMiw1Ni4wNCwzLjk5eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDE0MTQyMTQzOTQ2NjAyOTY2NzEzMDAwMDAxNTkyNjY5Mjg0NjA5Mjg4MjMxNV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA1Ni40NTM5IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwNTYuNDUzOSIgeTI9Ii0xNzk1LjI0NzgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNDE0MjE0Mzk0NjYwMjk2NjcxMzAwMDAwMTU5MjY2OTI4NDYwOTI4ODIzMTVfKTsiIGQ9Ik0yNy45OCw4NS4yMmMwLTAuNzQtMC40LTEuNDUtMS4xMS0xLjgxYy0xMi44LTYuNTItMjEuMTktMTguOTMtMjIuNDQtMzMuMmMtMC4xLTEuMTEtMS4wOC0xLjk0LTIuMTktMS44NGMtMS4xMSwwLjEtMS45MywxLjA4LTEuODQsMi4xOWMxLjM3LDE1LjY3LDEwLjU5LDI5LjMsMjQuNjQsMzYuNDZjMSwwLjUxLDIuMjIsMC4xMSwyLjcyLTAuODlDMjcuOTEsODUuODQsMjcuOTgsODUuNTMsMjcuOTgsODUuMjJ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMTAzOTQzMzI4NTk5OTI1NTMxMTMwMDAwMDA2NTgxODc4MDI1MTI4NTkyNTU0XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDE1LjE0OTciIHkxPSItMTk2Ny4wMTYiIHgyPSIyMDE1LjE0OTciIHkyPSItMTc5NS4yNDY3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTAzOTQzMzI4NTk5OTI1NTMxMTMwMDAwMDA2NTgxODc4MDI1MTI4NTkyNTU0Xyk7IiBkPSJNNDEuMDksMjMuODhjMC0wLjE5LTAuMDMtMC4zNy0wLjA4LTAuNTZjLTAuMzEtMS4wNy0xLjQzLTEuNjktMi41MS0xLjM5Yy0zLjc1LDEuMDgtNy4yNiwzLjA0LTEwLjEzLDUuNjhjLTAuODIsMC43NS0wLjg4LDIuMDQtMC4xMywyLjg2YzAuNzYsMC44MiwyLjA0LDAuODgsMi44NiwwLjEzYzIuNDItMi4yMSw1LjM2LTMuODYsOC41Mi00Ljc3QzQwLjUyLDI1LjU3LDQxLjA5LDI0Ljc2LDQxLjA5LDIzLjg4eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA2MDAxNjkzNzg5NjcyNTc4MDM1MDAwMDAwMzI1MzU3OTI0OTQ2MDI0Njk2MV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxNC4xNjgyIiB5MT0iLTE5NjcuMDE2MSIgeDI9IjIwMTQuMTY4MiIgeTI9Ii0xNzk1LjI0NzciIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjAwMTY5Mzc4OTY3MjU3ODAzNTAwMDAwMDMyNTM1NzkyNDk0NjAyNDY5NjFfKTsiIGQ9Ik02Mi4yOSwyOC4wNmMwLTAuNi0wLjI2LTEuMTktMC43Ny0xLjU5Yy00LjQtMy40OS05LjctNS40LTE1LjMyLTUuNTNjLTEuMTItMC4wMy0yLjA1LDAuODYtMi4wNywxLjk4Yy0wLjA0LDEuMTUsMC44NiwyLjA1LDEuOTgsMi4wN2M0LjczLDAuMTEsOS4xOSwxLjcyLDEyLjksNC42NWMwLjg4LDAuNywyLjE1LDAuNTUsMi44NS0wLjMzQzYyLjE1LDI4Ljk1LDYyLjI5LDI4LjUsNjIuMjksMjguMDZ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDI2ODY1ODEyODA1OTM5NTkzMTAwMDAwMDA4OTUxMDc5NzYzNzc0OTQ3NDY4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQyLjA0MzkiIHkxPSItMTk2Ny4wMTYiIHgyPSIyMDQyLjA0MzkiIHkyPSItMTc5NS4yNDgzIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDI2ODY1ODEyODA1OTM5NTkzMTAwMDAwMDA4OTUxMDc5NzYzNzc0OTQ3NDY4Xyk7IiBkPSJNODEuMDEsNDYuNTZjMC01LjYtMS4zNC0xMS4xOC0zLjg4LTE2LjEyYy0wLjk2LTEuODYtMi43LTMuMTYtNC43OC0zLjU1Yy0yLjEzLTAuNC00LjI4LDAuMTktNS45LDEuNjJjLTIuMzcsMi4wOS0zLjA0LDUuNDgtMS42Myw4LjIzYzEuNTcsMy4wNiwyLjM3LDYuMzYsMi4zNyw5LjgyYzAsMy43Ni0wLjk5LDcuNDctMi44NiwxMC43NGMtMC41NiwwLjk3LTAuMjIsMi4yMSwwLjc1LDIuNzZjMC45NywwLjU2LDIuMjEsMC4yMiwyLjc2LTAuNzVjMi4yMi0zLjg4LDMuNC04LjI5LDMuNC0xMi43NWMwLTQuMDYtMC45Ny04LjA5LTIuODEtMTEuNjhjLTAuNTYtMS4wOC0wLjI2LTIuNDksMC43MS0zLjM0YzAuNjgtMC42LDEuNTgtMC44NSwyLjQ3LTAuNjhjMC40OSwwLjA5LDEuNCwwLjQsMS45MiwxLjQyYzIuMjUsNC4zOCwzLjQzLDkuMzEsMy40MywxNC4yOGMwLDEzLjIzLTguMzUsMjUuMDgtMjAuNzksMjkuNTJjLTAuODEsMC4yNi0xLjQsMS4wMy0xLjQsMS45M2MwLDEuMTIsMC45LDIuMDMsMi4wMiwyLjAzYzAuMjMsMCwwLjQ3LTAuMDQsMC42OS0wLjEyQzcxLjU1LDc0LjkxLDgxLjAxLDYxLjUxLDgxLjAxLDQ2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDExNjIxNjM5ODE0ODI4Njk5MzIxMDAwMDAwNDYyMjg0MTU5Nzc2MjM1OTE4Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAxMC4yNjIiIHkxPSItMTk2Ny4wMTcyIiB4Mj0iMjAxMC4yNjIiIHkyPSItMTc5NS4yNDgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMTYyMTYzOTgxNDgyODY5OTMyMTAwMDAwMDQ2MjI4NDE1OTc3NjIzNTkxODZfKTsiIGQ9Ik04Ny45OCwzOS4wNWgzNi4yN2MxLjEyLDAsMi4wMy0wLjkxLDIuMDMtMi4wM2MwLTEuMTItMC45LTIuMDMtMi4wMy0yLjAzSDg5LjUzQzg1Ljg2LDIxLjA1LDc1Ljc1LDkuNjIsNjIuMjUsNC4zMWMtMS4wMy0wLjQyLTIuMjIsMC4xLTIuNjIsMS4xM2MtMC40MiwxLjA0LDAuMSwyLjIyLDEuMTQsMi42M2MxMi42NSw0Ljk4LDIyLjAzLDE1Ljg1LDI1LjExLDI5LjA2YzAuMDIsMC4wNiwwLjAzLDAuMTIsMC4wNSwwLjE5bDAuMTIsMC4zNEM4Ni4zMywzOC40OSw4Ny4xMSwzOS4wNSw4Ny45OCwzOS4wNXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTgxOTA2ODgwMTE3NjYyNzQxNDAwMDAwMTA4MzAwNTIyODEwNjczNDE1MDFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzUuMjA5NiIgeTE9Ii0xOTY3LjAxNTUiIHgyPSIyMDM1LjIwOTYiIHkyPSItMTc5NS4yNDc3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDk4MTkwNjg4MDExNzY2Mjc0MTQwMDAwMDEwODMwMDUyMjgxMDY3MzQxNTAxXyk7IiBkPSJNMjAxLjQ4LDQ2LjU1YzAtNi4zNy01LjE4LTExLjU2LTExLjU2LTExLjU2aC01Ny4yNmMtMS4xMiwwLTIuMDMsMC45MS0yLjAzLDIuMDNjMCwxLjEyLDAuOTEsMi4wMywyLjAzLDIuMDNoNTcuMjZjNC4xNCwwLDcuNSwzLjM3LDcuNSw3LjVjMCw0LjE0LTMuMzcsNy41LTcuNSw3LjVoLTczLjc2Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45MSwyLjAzLDIuMDMsMi4wM2g3My43NkMxOTYuMyw1OC4xMSwyMDEuNDgsNTIuOTMsMjAxLjQ4LDQ2LjU1eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA2MzYxMjYzNDUyOTg1MTQ5Mjk1MDAwMDAwMjgyMDczODM5NjUyOTg0MjM2Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0NC43Mzc5IiB5MT0iLTE5NjYuOTk3OCIgeDI9IjIwNDQuNzM3OSIgeTI9Ii0xNzk1LjI2NTkiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjM2MTI2MzQ1Mjk4NTE0OTI5NTAwMDAwMDI4MjA3MzgzOTY1Mjk4NDIzNjZfKTsiIGQ9Ik04OC45OSw1OC4xMWgxOS4zMmMxLjExLDAsMi4wMy0wLjksMi4wMy0yLjAzYzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzSDg4Ljk5Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM0M4Ni45Nyw1Ny4yMSw4Ny44Nyw1OC4xMSw4OC45OSw1OC4xMXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTM4Njc2MDQ1MjA0NjY4NTA4OTAwMDAwMTczMjU1MDg5MzA0OTQxNTA3OTZfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzkuMTk4OSIgeTE9Ii0xOTY3LjAwODMiIHgyPSIyMDM5LjE5ODkiIHkyPSItMTc5NS4yNDgzIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDkzODY3NjA0NTIwNDY2ODUwODkwMDAwMDE3MzI1NTA4OTMwNDk0MTUwNzk2Xyk7IiBkPSJNMTYzLjc3LDU2LjU2YzEuMTEsMCwyLjAzLTAuOTEsMi4wMy0yLjAzYzAtNS41Mi00LjQ5LTEwLTEwLTEwSDg4Ljk5Yy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45LDIuMDMsMi4wMywyLjAzaDY2Ljc5YzMuMjgsMCw1Ljk1LDIuNjcsNS45NSw1Ljk1QzE2MS43NCw1NS42NSwxNjIuNjQsNTYuNTYsMTYzLjc3LDU2LjU2eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEwNTM5ODcyNjQzMzk3MDEzNTI2MDAwMDAwMDA3OTUxMjAzOTEwNjY2NzM5Nl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAzNS4yMDk2IiB5MT0iLTE5NjcuMDE0OSIgeDI9IjIwMzUuMjA5NiIgeTI9Ii0xNzk1LjI0ODIiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMDUzOTg3MjY0MzM5NzAxMzUyNjAwMDAwMDAwNzk1MTIwMzkxMDY2NjczOTZfKTsiIGQ9Ik0xOTAuNjMsNDYuNTVjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNoLTE3LjQzYy0xLjEyLDAtMi4wMywwLjkxLTIuMDMsMi4wM2MwLDEuMTIsMC45MSwyLjAzLDIuMDMsMi4wM2gxNy40M0MxODkuNzIsNDguNTgsMTkwLjYzLDQ3LjY3LDE5MC42Myw0Ni41NXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNjIxNjQxNjgxNzQxNDY0NDExMTAwMDAwMTYxMjU3NzQyMjA3MzYxMjc2NzBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTkuMTk4MiIgeTE9Ii0xOTY3LjAxODMiIHgyPSIyMDU5LjE5ODIiIHkyPSItMTc5NS4yNDEiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJPHN0b3AgIG9mZnNldD0iNC4zMzQ4ODRlLTA5IiBzdHlsZT0ic3RvcC1jb2xvcjojRDEzQzhFIi8+CgkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzREN0FCRCIvPgoJPC9saW5lYXJHcmFkaWVudD4KCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNjIxNjQxNjgxNzQxNDY0NDExMTAwMDAwMTYxMjU3NzQyMjA3MzYxMjc2NzBfKTsiIGQ9Ik0xMzIuNiw4Ny4wM2M2LjIyLDAsMTEuMjgtNS4wNSwxMS4yOC0xMS4yOFY1Ni4wOGMwLTEuMTEtMC45MS0yLjAzLTIuMDMtMi4wM2gtMTguNTFjLTEuMTIsMC0yLjAzLDAuOTEtMi4wMywyLjAzdjE5LjY3QzEyMS4zMiw4MS45OCwxMjYuMzcsODcuMDMsMTMyLjYsODcuMDN6IE0xMzIuNiw4Mi45OGMtMy45OSwwLTcuMjMtMy4yNC03LjIzLTcuMjNWNTguMTFoMTQuNDZ2MTcuNjRDMTM5LjgzLDc5Ljc0LDEzNi41OCw4Mi45OCwxMzIuNiw4Mi45OHoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMzI3ODcyMjgyMDI2MzQwMDQ4NTAwMDAwMTMxMTE3MDIzMjU4MzI2NjMyMTRfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTguMjQ2MyIgeTE9Ii0xOTY3LjAxNTEiIHgyPSIyMDU4LjI0NjMiIHkyPSItMTc5NS4yNDI4IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTMyNzg3MjI4MjAyNjM0MDA0ODUwMDAwMDEzMTExNzAyMzI1ODMyNjYzMjE0Xyk7IiBkPSJNMTMyLjYsNzcuNzVjMS4xMSwwLDIuMDMtMC45MSwyLjAzLTIuMDNWNjMuNDZjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNjLTEuMTIsMC0yLjAzLDAuOS0yLjAzLDIuMDN2MTIuMjdDMTMwLjU3LDc2Ljg0LDEzMS40Nyw3Ny43NSwxMzIuNiw3Ny43NXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMDI1MTE1NTY2NDkyMDg3MDkxNjAwMDAwMTAxNDAyNTU0MjgwODE1MTMzODJfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTkuMTk4MiIgeTE9Ii0xOTY3LjAyNTYiIHgyPSIyMDU5LjE5ODIiIHkyPSItMTc5NS4yNDQ0IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTAyNTExNTU2NjQ5MjA4NzA5MTYwMDAwMDEwMTQwMjU1NDI4MDgxNTEzMzgyXyk7IiBkPSJNMTYzLjc3LDg3LjAzYzYuMjIsMCwxMS4yOC01LjA1LDExLjI4LTExLjI4VjU2LjA4YzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzaC0xOC41MWMtMS4xMSwwLTIuMDMsMC45MS0yLjAzLDIuMDN2MTEuNTdjMCwwLjkxLDAuNiwxLjY4LDEuNDMsMS45M2MwLjE4LDAuMDYsMC4zOCwwLjA5LDAuNiwwLjA5YzAuMjEsMCwwLjQyLTAuMDMsMC42LTAuMDljMC44My0wLjI1LDEuNDMtMS4wMiwxLjQzLTEuOTN2LTkuNTVIMTcxdjE3LjY0YzAsMy45OS0zLjI0LDcuMjMtNy4yMyw3LjIzcy03LjIzLTMuMjQtNy4yMy03LjIzYzAtMS4xMS0wLjkxLTIuMDMtMi4wMy0yLjAzYy0xLjExLDAtMi4wMywwLjkxLTIuMDMsMi4wM0MxNTIuNDksODEuOTgsMTU3LjU1LDg3LjAzLDE2My43Nyw4Ny4wM3oiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNjkzNjI0MDM4ODQyMjM3ODk5MjAwMDAwMTY1MjE2NTM3MTE2OTg0MDE5MzBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNTQuNzgzMiIgeTE9Ii0xOTY3LjAxMjUiIHgyPSIyMDU0Ljc4MzIiIHkyPSItMTc5NS4yNDc3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDY5MzYyNDAzODg0MjIzNzg5OTIwMDAwMDE2NTIxNjUzNzExNjk4NDAxOTMwXyk7IiBkPSJNMTYzLjc3LDc4LjJjMS4xMSwwLDIuMDMtMC45LDIuMDMtMi4wM1Y1Ni4wOGMwLTEuMTEtMC45MS0yLjAzLTIuMDMtMi4wM2MtMS4xMiwwLTIuMDMsMC45MS0yLjAzLDIuMDN2MjAuMDlDMTYxLjc0LDc3LjMsMTYyLjY0LDc4LjIsMTYzLjc3LDc4LjJ6Ii8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDg2Njg4MTY0MzMyOTEwODA3MDcwMDAwMDE1OTQ0MjYwMjAwOTk3Mzk3NjY4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDcwLjM3MDgiIHkxPSItMTk2Ny4wMTU5IiB4Mj0iMjA3MC4zNzA4IiB5Mj0iLTE3OTUuMjQ4NCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA4NjY4ODE2NDMzMjkxMDgwNzA3MDAwMDAxNTk0NDI2MDIwMDk5NzM5NzY2OF8pOyIgZD0iTTUxLjMzLDg0Ljg5YzAtMC43MS0wLjExLTEuNDMtMC4zMy0yLjEyYy0wLjg5LTIuODEtMy40Ny00Ljc5LTYuNDMtNC45MmMtMS43Mi0wLjA4LTMuNTItMC4yOC01LjM1LTAuNmMtNC4xMy0wLjcyLTguMi0yLjUzLTEyLjA4LTUuMzdjLTAuOS0wLjY2LTIuMTctMC40Ni0yLjgzLDAuNDRjLTAuNjYsMC45LTAuNDYsMi4xNywwLjQ0LDIuODNjNC40LDMuMjEsOS4wMyw1LjI2LDEzLjc4LDYuMDljMiwwLjM1LDMuOTcsMC41Nyw1Ljg3LDAuNjVjMS4yNiwwLjA2LDIuMzcsMC45LDIuNzQsMi4wOWMwLjMsMC45NCwwLjEzLDEuOTQtMC40NywyLjcyYy0wLjYsMC43OS0xLjUyLDEuMjItMi41MiwxLjE5Yy0wLjUyLTAuMDItMS4wNS0wLjA1LTEuNTctMC4xYy0zLjM0LTAuMzEtNi4yNS0wLjg0LTguODgtMS42NGMtMS4wNy0wLjMyLTIuMiwwLjI4LTIuNTIsMS4zNWMtMC4zMiwxLjA3LDAuMjgsMi4yLDEuMzUsMi41MmMyLjg5LDAuODcsNi4wNiwxLjQ2LDkuNjgsMS43OWMwLjYsMC4wNSwxLjIsMC4wOSwxLjc5LDAuMTJjMi4zLDAuMDksNC41MS0wLjk1LDUuOS0yLjc4QzUwLjg0LDg3LjkyLDUxLjMzLDg2LjQxLDUxLjMzLDg0Ljg5eiIvPgoJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDAyOTc2NzczOTEzOTIzNTQxNzY3MDAwMDAwOTA0MTA5MDA1NjQxODI3OTg0MV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjAwNi43MyIgeTE9Ii0xOTY3LjAxNiIgeDI9IjIwMDYuNzMiIHkyPSItMTc5NS4yNDc5IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCTxzdG9wICBvZmZzZXQ9IjQuMzM0ODg0ZS0wOSIgc3R5bGU9InN0b3AtY29sb3I6I0QxM0M4RSIvPgoJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiM0RDdBQkQiLz4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDI5NzY3NzM5MTM5MjM1NDE3NjcwMDAwMDA5MDQxMDkwMDU2NDE4Mjc5ODQxXyk7IiBkPSJNNjkuOTEsMjEuNzFjMC0wLjU1LTAuMjMtMS4xMS0wLjY3LTEuNTFjLTYuNDktNS44My0xNC44OC05LjA0LTIzLjYyLTkuMDRjLTkuNDYsMC0xOC4zNSwzLjY4LTI1LjAyLDEwLjM3Yy0wLjc5LDAuNzktMC43OSwyLjA3LDAsMi44NmMwLjc5LDAuNzksMi4wNywwLjc5LDIuODYsMGM1LjkxLTUuOTIsMTMuNzgtOS4xOCwyMi4xNi05LjE4YzcuNzUsMCwxNS4xNywyLjg0LDIwLjkyLDhjMC44MywwLjc1LDIuMTEsMC42OCwyLjg2LTAuMTVDNjkuNzQsMjIuNjgsNjkuOTEsMjIuMiw2OS45MSwyMS43MXoiLz4KCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwOTM4ODI5OTM5MzU0Njc2MDI4MzAwMDAwMDEwNzk3MzU1NTE4Nzk4MDkxNjhfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzguODk1IiB5MT0iLTE5NjcuMDE1OSIgeDI9IjIwMzguODk1IiB5Mj0iLTE3OTUuMjQ4NCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQk8c3RvcCAgb2Zmc2V0PSI0LjMzNDg4NGUtMDkiIHN0eWxlPSJzdG9wLWNvbG9yOiNEMTNDOEUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojNEQ3QUJEIi8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA5Mzg4Mjk5MzkzNTQ2NzYwMjgzMDAwMDAwMTA3OTczNTU1MTg3OTgwOTE2OF8pOyIgZD0iTTQzLjIyLDcyLjA3Yy0zLjM3LTAuMzEtNi42NC0xLjMtOS43LTIuOTVjMCwwLDAsMCwwLDBjLTcuNDgtNC4wNC0xMi40OC0xMS40Mi0xMy4zNi0xOS43NWMtMC40OC00LjUxLDAuMjEtOS4wNCwyLjAxLTEzLjFjMC40OS0xLjEyLDAuMTMtMi40Ni0wLjg3LTMuMjdjLTAuNy0wLjU3LTEuNjEtMC43Ny0yLjQ4LTAuNTVjLTAuODcsMC4yMi0xLjU4LDAuODEtMS45NCwxLjYzYy0xLjcxLDMuOTQtMi41OCw4LjE0LTIuNTgsMTIuNDhjMCw3LjYyLDIuNzYsMTQuOTYsNy43OCwyMC42N2MwLjc0LDAuODQsMC42NiwyLjEyLTAuMTgsMi44NmMtMC44NCwwLjc0LTIuMTIsMC42Ni0yLjg2LTAuMThjLTUuNjctNi40NS04Ljc5LTE0Ljc0LTguNzktMjMuMzRjMC00LjksMC45OC05LjY0LDIuOTItMTQuMDljMC44Ny0xLjk5LDIuNTctMy40Myw0LjY4LTMuOTVjMi4xMS0wLjUyLDQuMy0wLjA0LDUuOTksMS4zM2MyLjQzLDEuOTYsMy4yNyw1LjI3LDIuMDQsOC4wNmMtMS41MSwzLjQyLTIuMDksNy4yNC0xLjY5LDExLjA0YzAuNzQsNyw0Ljk1LDEzLjIsMTEuMjYsMTYuNjFjMCwwLDAsMCwwLDBjMi41OCwxLjM5LDUuMzIsMi4yMyw4LjE1LDIuNDljNS42LDAuNTEsMTEuMDctMS4xMSwxNS40My00LjU3YzAuODgtMC43LDIuMTUtMC41NSwyLjg1LDAuMzNjMC4zLDAuMzcsMC40NCwwLjgyLDAuNDQsMS4yNmMwLDAuNi0wLjI2LDEuMTktMC43NywxLjU5QzU2LjM2LDcwLjc0LDQ5Ljg2LDcyLjY3LDQzLjIyLDcyLjA3eiIvPgoJPGcgY2xhc3M9InN0MTkiPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxNjU5MjYyODAwNTEzMTA0NDAzMjAwMDAwMTQ4MDg3NTY2ODYzMTI1MjIxNjBfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMjUuNjgwMiIgeTE9Ii0xODk4LjQ4MzIiIHgyPSIyMDI1LjY4MDIiIHkyPSItMTg4OC41MTg5IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNjU5MjYyODAwNTEzMTA0NDAzMjAwMDAwMTQ4MDg3NTY2ODYzMTI1MjIxNjBfKTsiIGQ9Ik05MC41MywzOS4wNWg4Ljk2Yy0wLjI5LTEuMzItMC42NS0yLjY3LTEuMS00LjA1aC04Ljg2Qzg5LjUzLDM1LDkwLjA3LDM2LjQ4LDkwLjUzLDM5LjA1eiIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNTQ5ODA4MTk0NDEyOTU1MjU4ODAwMDAwMDM0MjAxMDE1ODAwNTA5NDgyODdfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwMzUuMjA5MiIgeTE9Ii0xODk4LjQ4MyIgeDI9IjIwMzUuMjA5MiIgeTI9Ii0xODg4LjUxOTgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNjtzdG9wLW9wYWNpdHk6MCIvPgoJCTwvbGluZWFyR3JhZGllbnQ+CgkJPHBhdGggc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDA1NDk4MDgxOTQ0MTI5NTUyNTg4MDAwMDAwMzQyMDEwMTU4MDA1MDk0ODI4N18pOyIgZD0iTTkxLjE0LDQ4LjU4aDkuMzVjMC4wMS0xLjI4LTAuMDQtMi42My0wLjE2LTQuMDVoLTkuMThDOTEuMiw0NS43OCw5MS4yMSw0Ny4xNCw5MS4xNCw0OC41OHoiLz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMDE4OTU4NDM3NjQ5ODMxOTU3MzQwMDAwMDAwNTExMDg1NjE2NjYxNzg1NzM4XyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQ0LjczNzkiIHkxPSItMTg5OC40ODMzIiB4Mj0iMjA0NC43Mzc5IiB5Mj0iLTE4ODguNTE5OCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDE4OTU4NDM3NjQ5ODMxOTU3MzQwMDAwMDAwNTExMDg1NjE2NjYxNzg1NzM4Xyk7IiBkPSJNODkuNjgsNTguMTFoOS42NGMwLjI4LTEuMTQsMC41Ni0yLjUsMC43Ny00LjA1aC05LjUzQzkwLjM1LDU1LjM2LDkwLjA2LDU2LjcyLDg5LjY4LDU4LjExeiIvPgoJPC9nPgoJPGcgY2xhc3M9InN0MTkiPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxNzAyNDIzNDMxNjM5ODcyMTA1MTAwMDAwMDgyODI0ODg5MDMyNjI0ODgyMTNfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDcuNjQyNSIgeTE9Ii0xODY1LjQwMDkiIHgyPSIyMDU2LjkwMjgiIHkyPSItMTg2NS4yMzI1IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxyZWN0IHg9IjEyMS4zMiIgeT0iNTguMTEiIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxNzAyNDIzNDMxNjM5ODcyMTA1MTAwMDAwMDgyODI0ODg5MDMyNjI0ODgyMTNfKTsiIHdpZHRoPSI0LjA1IiBoZWlnaHQ9IjExLjQ4Ii8+CgkJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDA3MzY4NzQzODY4NjMzMDI3MzAxMDAwMDAwODA2MTQyNzE4NTM3MDQ2NDkzNV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny40NzUyIiB5MT0iLTE4NTYuMTk3IiB4Mj0iMjA1Ni43MzU0IiB5Mj0iLTE4NTYuMDI4NyIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cGF0aCBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMDczNjg3NDM4Njg2MzMwMjczMDEwMDAwMDA4MDYxNDI3MTg1MzcwNDY0OTM1Xyk7IiBkPSJNMTMwLjU3LDY5LjU5aDQuMDV2LTYuMTRjMC0xLjEyLTAuOTEtMi4wMy0yLjAzLTIuMDNjLTEuMTIsMC0yLjAzLDAuOS0yLjAzLDIuMDNWNjkuNTl6Ii8+CgkJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8wMDAwMDEyNzAzMzU4NDA4MDg0NTk2NzUyMDAwMDAxMDE3OTgyMTAxMjgyOTMxNjc1MF8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMjA0Ny4zMDYiIHkxPSItMTg0Ni44OTYyIiB4Mj0iMjA1Ni41NjY0IiB5Mj0iLTE4NDYuNzI3OSIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgtNC40ODk3MDBlLTExIDEgMSA0LjQ4OTcwMGUtMTEgMTk4OC42NTQ1IC0xOTg4LjY1NDUpIj4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2O3N0b3Atb3BhY2l0eTowIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cmVjdCB4PSIxMzkuODMiIHk9IjU4LjExIiBzdHlsZT0iZmlsbDp1cmwoI1NWR0lEXzAwMDAwMTI3MDMzNTg0MDgwODQ1OTY3NTIwMDAwMDEwMTc5ODIxMDEyODI5MzE2NzUwXyk7IiB3aWR0aD0iNC4wNSIgaGVpZ2h0PSIxMS40OCIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAwNTY0MTMwOTM4OTg1OTY3Mjk0NzAwMDAwMDI3MzEyNzg1MjA3NTMxNzE2MzFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDcuMDc1NyIgeTE9Ii0xODM0LjIyNTIiIHgyPSIyMDU2LjMzNTkiIHkyPSItMTgzNC4wNTY4IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAwNTY0MTMwOTM4OTg1OTY3Mjk0NzAwMDAwMDI3MzEyNzg1MjA3NTMxNzE2MzFfKTsiIGQ9Ik0xNTMuOTEsNjkuNTloMS4xOWMwLjgzLTAuMjUsMS40My0xLjAyLDEuNDMtMS45M3YtOS41NWgtNC4wNXY5LjU1QzE1Mi40OSw2OC41NywxNTMuMDgsNjkuMzQsMTUzLjkxLDY5LjU5eiIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMDAwMDAxMzYzOTcwODMxOTY1OTUxMjY0NjAwMDAwMDQ0MzgzNjg2NjA4MTU1MTY4MDNfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjIwNDYuOTA3NyIgeTE9Ii0xODI0Ljk5MDEiIHgyPSIyMDU2LjE2OCIgeTI9Ii0xODI0LjgyMTgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoLTQuNDg5NzAwZS0xMSAxIDEgNC40ODk3MDBlLTExIDE5ODguNjU0NSAtMTk4OC42NTQ1KSI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMSIgc3R5bGU9InN0b3AtY29sb3I6IzE5MUEzNjtzdG9wLW9wYWNpdHk6MCIvPgoJCTwvbGluZWFyR3JhZGllbnQ+CgkJPHJlY3QgeD0iMTYxLjc0IiB5PSI1OC4xMSIgc3R5bGU9ImZpbGw6dXJsKCNTVkdJRF8wMDAwMDEzNjM5NzA4MzE5NjU5NTEyNjQ2MDAwMDAwNDQzODM2ODY2MDgxNTUxNjgwM18pOyIgd2lkdGg9IjQuMDUiIGhlaWdodD0iMTEuNDgiLz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzAwMDAwMTM1NjUyMzI2NzcxMDQwMDc5ODYwMDAwMDE1MTQ5Njg3MzUxNTA2MjE5MTUzXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDQ2LjcyODMiIHkxPSItMTgxNS43MzgiIHgyPSIyMDU1Ljk4ODUiIHkyPSItMTgxNS41Njk3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC00LjQ4OTcwMGUtMTEgMSAxIDQuNDg5NzAwZS0xMSAxOTg4LjY1NDUgLTE5ODguNjU0NSkiPgoJCQk8c3RvcCAgb2Zmc2V0PSIwIiBzdHlsZT0ic3RvcC1jb2xvcjojMTkxQTM2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxOTFBMzY7c3RvcC1vcGFjaXR5OjAiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxyZWN0IHg9IjE3MSIgeT0iNTguMTEiIHN0eWxlPSJmaWxsOnVybCgjU1ZHSURfMDAwMDAxMzU2NTIzMjY3NzEwNDAwNzk4NjAwMDAwMTUxNDk2ODczNTE1MDYyMTkxNTNfKTsiIHdpZHRoPSI0LjA1IiBoZWlnaHQ9IjExLjQ4Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" class="card-logo" alt="Secret Key">
     <h1>Secret Key</h1>
-    <div class="header-sub">Generator konfiguracji</div>
+    <div class="header-sub" data-i18n="headerSub">Generator konfiguracji</div>
+    <div class="lang-switch" id="lang-switch">
+        <div class="lang-switch-indicator"></div>
+        <button type="button" class="lang-btn" data-lang="pl">PL</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+    </div>
 </div>
 
 <div class="card" id="main-card">
 
     <div class="warning">
-        <strong>⚠ Używaj tylko lokalnie! Nie otwieraj tego pliku przez internet.</strong>
-        Pobierz wygenerowany <code>secret-key.php</code> i wgraj ręcznie na serwer do folderu <code>/private/</code>.
+        <strong data-i18n="mainWarningTitle">⚠ Używaj tylko lokalnie! Nie otwieraj tego pliku przez internet.</strong>
+        <span data-i18n="mainWarningBody">Pobierz wygenerowany <code>secret-key.php</code> i wgraj ręcznie na serwer do folderu <code>/private/</code>.</span>
     </div>
 
     <!-- Alert inline — jak w login.php -->
@@ -1878,26 +1946,26 @@
         <span id="alert-error-msg"></span>
     </div>
 
-    <div class="section-label" style="margin-top:0">Konfiguracja SMS</div>
+    <div class="section-label" style="margin-top:0" data-i18n="smsConfigLabel">Konfiguracja SMS</div>
     <div class="sms-grid">
         <div class="field-group">
-            <div class="field-group-label">Token API</div>
-            <input type="text" id="sms_token" placeholder="wprowadź token API SMSPlanet" autocomplete="off">
+            <div class="field-group-label" data-i18n="tokenLabel">Token API</div>
+            <input type="text" id="sms_token" placeholder="wprowadź token API SMSPlanet" data-i18n-placeholder="tokenPlaceholder" autocomplete="off">
         </div>
         <div class="field-group">
-            <div class="field-group-label">Nazwa nadawcy SMS</div>
-            <input type="text" id="sms_sender" placeholder="np. Secret Key" autocomplete="off">
+            <div class="field-group-label" data-i18n="senderNameLabel">Nazwa nadawcy SMS</div>
+            <input type="text" id="sms_sender" placeholder="np. Secret Key" data-i18n-placeholder="senderNamePlaceholder" autocomplete="off">
         </div>
         <div class="field-group" style="grid-column: 1 / -1;">
-            <div class="field-group-label">Domena do autouzupełniania SMS (Android/iOS)</div>
-            <input type="text" id="sms_autofill_domain" placeholder="np. twoja-domena.pl" autocomplete="off">
+            <div class="field-group-label" data-i18n="autofillDomainLabel">Domena do autouzupełniania SMS (Android/iOS)</div>
+            <input type="text" id="sms_autofill_domain" placeholder="np. twoja-domena.pl" data-i18n-placeholder="autofillDomainPlaceholder" autocomplete="off">
         </div>
     </div>
 
-    <div class="section-label">Powiadomienie e-mail o logowaniu</div>
+    <div class="section-label" data-i18n="emailNotifyLabel">Powiadomienie e-mail o logowaniu</div>
     <div class="instruction-card" style="margin-bottom:14px;">
         <div class="instruction-card-header">
-            <div class="instruction-num">Ustawienia powiadomień</div>
+            <div class="instruction-num" data-i18n="notifySettingsLabel">Ustawienia powiadomień</div>
             <label class="toggle-switch">
                 <input type="checkbox" id="email-notify-enabled" onchange="toggleEmailNotifyBody(this)">
                 <span class="toggle-switch-track"></span>
@@ -1906,57 +1974,57 @@
         <div class="collapsible-body" id="email-notify-body">
             <div class="user-fields">
                 <div class="download-field">
-                    <div class="download-field-label">Adres, na który przychodzi powiadomienie</div>
-                    <div class="download-field-inner"><input type="text" id="email-notify-to" placeholder="np. jan@twoja-domena.pl" autocomplete="off"></div>
+                    <div class="download-field-label" data-i18n="notifyToLabel">Adres, na który przychodzi powiadomienie</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-to" placeholder="np. jan@twoja-domena.pl" data-i18n-placeholder="notifyToPlaceholder" autocomplete="off"></div>
                 </div>
                 <div class="download-field">
-                    <div class="download-field-label">Adres nadawcy (from_email)</div>
-                    <div class="download-field-inner"><input type="text" id="email-notify-from-email" placeholder="np. no-reply@twoja-domena.pl" autocomplete="off"></div>
+                    <div class="download-field-label" data-i18n="notifyFromEmailLabel">Adres nadawcy (from_email)</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-from-email" placeholder="np. no-reply@twoja-domena.pl" data-i18n-placeholder="notifyFromEmailPlaceholder" autocomplete="off"></div>
                 </div>
                 <div class="download-field">
-                    <div class="download-field-label">Nazwa nadawcy</div>
-                    <div class="download-field-inner"><input type="text" id="email-notify-from-name" placeholder="np. Secret Key" autocomplete="off"></div>
+                    <div class="download-field-label" data-i18n="notifyFromNameLabel">Nazwa nadawcy</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-from-name" placeholder="np. Secret Key" data-i18n-placeholder="senderNamePlaceholder" autocomplete="off"></div>
                 </div>
                 <div class="download-field">
-                    <div class="download-field-label">Link do panelu (wklejany w treści wiadomości)</div>
-                    <div class="download-field-inner"><input type="text" id="email-notify-panel-url" placeholder="np. https://twoja-domena.pl" autocomplete="off"></div>
+                    <div class="download-field-label" data-i18n="notifyPanelUrlLabel">Link do panelu (wklejany w treści wiadomości)</div>
+                    <div class="download-field-inner"><input type="text" id="email-notify-panel-url" placeholder="np. https://twoja-domena.pl" data-i18n-placeholder="notifyPanelUrlPlaceholder" autocomplete="off"></div>
                 </div>
             </div>
-            <div class="instruction-field-hint" style="padding:10px 14px 12px;">Wyłącznik u góry całkowicie wyłącza wysyłkę maila po zalogowaniu — bez usuwania danych z pól poniżej.</div>
+            <div class="instruction-field-hint" style="padding:10px 14px 12px;" data-i18n="notifyHint">Wyłącznik u góry całkowicie wyłącza wysyłkę maila po zalogowaniu — bez usuwania danych z pól poniżej.</div>
         </div>
     </div>
 
     <div class="divider"></div>
 
-    <div class="section-label">Użytkownicy systemu</div>
+    <div class="section-label" data-i18n="usersLabel">Użytkownicy systemu</div>
     <div class="user-list" id="user-list"></div>
 
     <button type="button" class="add-user-btn" id="add-btn" onclick="addUser()">
         <span style="font-size:1.2rem;line-height:1;margin-top:-1px">+</span>
-        Dodaj kolejnego użytkownika
+        <span data-i18n="addUserBtn">Dodaj kolejnego użytkownika</span>
     </button>
 
     <div class="divider"></div>
 
-    <div class="section-label" style="margin-top:0">Pliki do pobrania</div>
+    <div class="section-label" style="margin-top:0" data-i18n="downloadsLabel">Pliki do pobrania</div>
     <div class="warning" style="margin-bottom:16px">
-        <strong>⚠ Wybór pliku tutaj tylko pobiera jego nazwę.</strong>
-        Ten formularz nie wysyła nigdzie zawartości pliku (generator konfiguracji działa w pełni offline). Samą bazę haseł, bazę 2FA czy instalator programu musisz osobno wgrać na serwer do folderu <code>/private/</code>.
+        <strong data-i18n="downloadsWarningTitle">⚠ Wybór pliku tutaj tylko pobiera jego nazwę.</strong>
+        <span data-i18n="downloadsWarningBody">Ten formularz nie wysyła nigdzie zawartości pliku (generator konfiguracji działa w pełni offline). Samą bazę haseł, bazę 2FA czy instalator programu musisz osobno wgrać na serwer do folderu <code>/private/</code>.</span>
     </div>
 
-    <div class="section-label" style="margin-top:0">Teksty w tej sekcji panelu</div>
+    <div class="section-label" style="margin-top:0" data-i18n="downloadTextsLabel">Teksty w tej sekcji panelu</div>
     <div class="sms-grid" style="grid-template-columns: 1fr; margin-bottom: 14px;">
         <div class="field-group">
-            <div class="field-group-label">Nagłówek sekcji</div>
-            <input type="text" id="download-heading-text" placeholder="np. Plik i program do odzyskania dostępu" autocomplete="off">
+            <div class="field-group-label" data-i18n="downloadHeadingLabel">Nagłówek sekcji</div>
+            <input type="text" id="download-heading-text" placeholder="np. Plik i program do odzyskania dostępu" data-i18n-placeholder="downloadHeadingPlaceholder" autocomplete="off">
         </div>
         <div class="field-group">
-            <div class="field-group-label">Tekst wprowadzający (nad przyciskami)</div>
-            <input type="text" id="download-intro-text" placeholder="np. Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku." autocomplete="off">
+            <div class="field-group-label" data-i18n="downloadIntroLabel">Tekst wprowadzający (nad przyciskami)</div>
+            <input type="text" id="download-intro-text" placeholder="np. Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku." data-i18n-placeholder="downloadIntroPlaceholder" autocomplete="off">
         </div>
         <div class="field-group">
-            <div class="field-group-label">Tekst ostrzeżenia (niebieski box z ikoną)</div>
-            <input type="text" id="alert-box-text" placeholder="np. Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB." autocomplete="off">
+            <div class="field-group-label" data-i18n="alertBoxLabel">Tekst ostrzeżenia (niebieski box z ikoną)</div>
+            <input type="text" id="alert-box-text" placeholder="np. Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB." data-i18n-placeholder="alertBoxPlaceholder" autocomplete="off">
         </div>
     </div>
 
@@ -1964,22 +2032,22 @@
 
     <button type="button" class="add-user-btn" id="add-download-btn" onclick="addDownload()">
         <span style="font-size:1.2rem;line-height:1;margin-top:-1px">+</span>
-        Dodaj plik do pobrania
+        <span data-i18n="addDownloadBtn">Dodaj plik do pobrania</span>
     </button>
 
     <div class="divider"></div>
 
-    <div class="section-label" style="margin-top:0">Instrukcja</div>
+    <div class="section-label" style="margin-top:0" data-i18n="instructionsLabel">Instrukcja</div>
     <div class="user-list" id="instruction-list"></div>
 
     <button type="button" class="add-user-btn" id="add-instruction-btn" onclick="addInstruction()">
         <span style="font-size:1.2rem;line-height:1;margin-top:-1px">+</span>
-        Dodaj kolejny krok
+        <span data-i18n="addStepBtn">Dodaj kolejny krok</span>
     </button>
 
     <div class="action-row">
-        <button type="button" class="btn btn-primary" id="btn-generate" onclick="doGenerate()">Generuj konfigurację</button>
-        <button type="button" class="btn btn-ghost"   id="btn-reset"    onclick="resetAll()">Wyczyść</button>
+        <button type="button" class="btn btn-primary" id="btn-generate" onclick="doGenerate()" data-i18n="generateConfigBtn">Generuj konfigurację</button>
+        <button type="button" class="btn btn-ghost"   id="btn-reset"    onclick="resetAll()" data-i18n="resetBtn">Wyczyść</button>
     </div>
 
     <!-- Wyniki wstrzykiwane przez JS -->
@@ -1996,6 +2064,320 @@
 <div id="cur-ring"></div>
 
 <script>
+// ══════════════════════════════════════════════
+//  I18N — PL / EN
+// ══════════════════════════════════════════════
+var I18N = {
+    pl: {
+        headerSub: 'Generator konfiguracji',
+        loadingText: 'Generowanie…',
+        copiedShort: 'Skopiowano',
+        copiedShortCheck: '✓ Skopiowano',
+
+        mainWarningTitle: '⚠ Używaj tylko lokalnie! Nie otwieraj tego pliku przez internet.',
+        mainWarningBody: 'Pobierz wygenerowany <code>secret-key.php</code> i wgraj ręcznie na serwer do folderu <code>/private/</code>.',
+
+        smsConfigLabel: 'Konfiguracja SMS',
+        tokenLabel: 'Token API',
+        tokenPlaceholder: 'wprowadź token API SMSPlanet',
+        senderNameLabel: 'Nazwa nadawcy SMS',
+        senderNamePlaceholder: 'np. Secret Key',
+        autofillDomainLabel: 'Domena do autouzupełniania SMS (Android/iOS)',
+        autofillDomainPlaceholder: 'np. twoja-domena.pl',
+
+        emailNotifyLabel: 'Powiadomienie e-mail o logowaniu',
+        notifySettingsLabel: 'Ustawienia powiadomień',
+        notifyToLabel: 'Adres, na który przychodzi powiadomienie',
+        notifyToPlaceholder: 'np. jan@twoja-domena.pl',
+        notifyFromEmailLabel: 'Adres nadawcy (from_email)',
+        notifyFromEmailPlaceholder: 'np. no-reply@twoja-domena.pl',
+        notifyFromNameLabel: 'Nazwa nadawcy',
+        notifyPanelUrlLabel: 'Link do panelu (wklejany w treści wiadomości)',
+        notifyPanelUrlPlaceholder: 'np. https://twoja-domena.pl',
+        notifyHint: 'Wyłącznik u góry całkowicie wyłącza wysyłkę maila po zalogowaniu — bez usuwania danych z pól poniżej.',
+
+        usersLabel: 'Użytkownicy systemu',
+        addUserBtn: 'Dodaj kolejnego użytkownika',
+        userCardTitle: 'Użytkownik',
+        removeBtn: '✕ Usuń',
+        loginLabel: 'Login',
+        loginPlaceholder: 'wprowadź login',
+        generateLoginTitle: 'Generuj login',
+        copyLoginTitle: 'Kopiuj login',
+        passwordLabel: 'Hasło',
+        passwordPlaceholder: 'wprowadź hasło',
+        generatePwTitle: 'Generuj hasło',
+        copyPwTitle: 'Kopiuj hasło',
+        firstNameLabel: 'Imię',
+        firstNamePlaceholder: 'np. Mateusz',
+        lastNameLabel: 'Nazwisko',
+        lastNamePlaceholder: 'np. Karpierz',
+        phone2faLabel: 'Telefon do weryfikacji 2FA',
+        phonePlaceholder: 'np. 123456789',
+        ccSearchPlaceholder: 'Szukaj kraju lub numeru…',
+        ccEmptyResults: 'Brak wyników',
+        visibleInPanelLabel: 'Widoczny w panelu',
+        visibleInPanelHint: 'Lista posiadaczy Secret Key. Wyłącz dla kont bez fizycznej karty (np. serwisowych) — logowanie działa tak samo.',
+
+        downloadsLabel: 'Pliki do pobrania',
+        downloadsWarningTitle: '⚠ Wybór pliku tutaj tylko pobiera jego nazwę.',
+        downloadsWarningBody: 'Ten formularz nie wysyła nigdzie zawartości pliku (generator konfiguracji działa w pełni offline). Samą bazę haseł, bazę 2FA czy instalator programu musisz osobno wgrać na serwer do folderu <code>/private/</code>.',
+        downloadTextsLabel: 'Teksty w tej sekcji panelu',
+        downloadHeadingLabel: 'Nagłówek sekcji',
+        downloadHeadingPlaceholder: 'np. Plik i program do odzyskania dostępu',
+        downloadIntroLabel: 'Tekst wprowadzający (nad przyciskami)',
+        downloadIntroPlaceholder: 'np. Pobierz program i plik z hasłami. Będą Ci potrzebne w następnym kroku.',
+        alertBoxLabel: 'Tekst ostrzeżenia (niebieski box z ikoną)',
+        alertBoxPlaceholder: 'np. Ważne: oprócz hasła będzie potrzebne fizyczne urządzenie USB.',
+        addDownloadBtn: 'Dodaj plik do pobrania',
+        downloadCardTitle: 'Plik',
+        downloadKeyLabel: 'Klucz (identyfikator w adresie)',
+        downloadKeyPlaceholder: 'np. baza-hasel',
+        downloadLabelLabel: 'Etykieta przycisku',
+        downloadLabelPlaceholder: 'np. Pobierz bazę haseł',
+        downloadFileLabel: 'Plik — wskaż lokalnie tylko po to, by wpisać nazwę',
+        downloadFileTip: 'Wybór pliku tutaj tylko pobiera jego nazwę — nic nie jest wysyłane. Sam plik wgrywasz osobno na serwer do folderu /private/.',
+        downloadFilenamePlaceholder: 'nazwa-pliku.rozszerzenie (uzupełni się automatycznie)',
+        downloadIsProgramHint: 'To instalator programu do odszyfrowywania — doda nagłówek „Hasło do bazy X" w panelu.',
+        downloadProgramNameLabel: 'Nazwa programu (tylko do nagłówka w panelu)',
+        downloadProgramNamePlaceholder: 'np. KeePassXC — krótka nazwa',
+
+        instructionsLabel: 'Instrukcja',
+        addStepBtn: 'Dodaj kolejny krok',
+        instructionStepTitle: 'Krok',
+        instructionPlaceholder: '**Zbierzcie się razem.** Skontaktuj się z osobami z listy po prawej stronie…',
+        instructionHint: 'Formatowanie: <code>**pogrubienie**</code> (np. na tytuł kroku na początku) i <code>*kursywa*</code> (np. na przykładowy kod czy nazwę pliku). Reszta to zwykły tekst.',
+
+        generateConfigBtn: 'Generuj konfigurację',
+        resetBtn: 'Wyczyść',
+
+        errNoUsers: 'Podaj dane co najmniej jednego użytkownika (login + hasło).',
+        errPhoneInvalid: 'podaj poprawny kierunkowy (np. +48) i numer telefonu (4–15 cyfr).',
+        errDuplicateKeyPrefix: 'Klucz „',
+        errDuplicateKeySuffix: '" jest użyty więcej niż raz w sekcji „Pliki do pobrania" — klucze muszą być unikalne (to one trafiają do adresu pobierania).',
+        errDuplicateLoginPrefix: 'Login „',
+        errDuplicateLoginSuffix: '" jest już użyty w innej karcie na liście — loginy muszą być unikalne, bo system rozpoznaje osobę właśnie po loginie (druga osoba o tym loginie byłaby niedostępna).',
+        errDuplicatePassword: 'Dwie osoby na liście mają identyczne hasło — każda osoba powinna mieć inne hasło.',
+        errDuplicatePhone: 'Dwie osoby na liście mają identyczny numer telefonu — każda osoba potrzebuje własnego numeru do weryfikacji SMS.',
+        errInstructionFormatting: 'niesparowane ** (pogrubienie) lub * (kursywa) w tekście — sprawdź formatowanie.',
+        errNoPreview: 'Najpierw wygeneruj podgląd.',
+
+        resultsBcryptTitle: 'Wygenerowane hasze bcrypt',
+        resultFirstNameLabel: 'Imię:',
+        resultLastNameLabel: 'Nazwisko:',
+        resultVisibleLabel: 'Widoczny w panelu:',
+        resultYes: 'tak',
+        resultNo: 'nie',
+        resultPasswordLabel: 'Hasło:',
+        resultPasswordChars: 'znaków',
+        copyHashBtn: 'Kopiuj hash',
+        hashCopiedOverlay: '✓ Skopiowano do schowka',
+        hashHint: 'Kliknij hash aby skopiować do schowka.',
+        previewLabel: 'Podgląd',
+        downloadConfigBtn: '↓ Pobierz secret-key.php',
+        copyBtn: 'Kopiuj',
+        downloadedShort: '✓ Pobrano',
+
+        phpFileHeader1: 'secret-key.php — wrażliwe dane systemu Secret Key',
+        phpFileHeader2: 'Plik poza public_html: /private/secret-key.php',
+        phpTokenComment: 'Token API SMSPlanet',
+        phpDomainComment1: 'Domena widoczna w treści SMS-a (autouzupełnianie kodu na Android/iOS) —',
+        phpDomainComment2: 'musi zaczynać się od "@" i być domeną, na której faktycznie działa panel.',
+        phpPeopleComment: 'Osoby systemu — jedno źródło prawdy (login, hasło, dane 2FA, widoczność w panelu)',
+        phpDownloadsComment1: 'Pliki do pobrania — jedno źródło dla przycisków w panelu (index.php)',
+        phpDownloadsComment2: 'i białej listy pobierania (download.php). Same pliki wgrywane są',
+        phpDownloadsComment3: 'ręcznie na serwer do /private/ — ten config trzyma tylko metadane.',
+        phpTextsComment1: 'Teksty w sekcji „Pliki do pobrania" panelu — zwykły tekst, BEZ markdown-lite',
+        phpTextsComment2: '(formatowanie ** / * działa tylko w $instructions poniżej).',
+        phpEmailComment1: 'Powiadomienie e-mail o logowaniu — jedno źródło prawdy dla adresu/domeny/URL.',
+        phpEmailComment2: 'enabled => false wyłącza wysyłkę całkowicie, bez ruszania kodu.',
+        phpInstructionsComment1: 'Kroki instrukcji — markdown-lite: **pogrubienie** i *kursywa*,',
+        phpInstructionsComment2: 'renderowane przez md_lite() w decrypt/index.php.'
+    },
+    en: {
+        headerSub: 'Configuration generator',
+        loadingText: 'Generating…',
+        copiedShort: 'Copied',
+        copiedShortCheck: '✓ Copied',
+
+        mainWarningTitle: '⚠ Local use only! Do not open this file over the internet.',
+        mainWarningBody: 'Download the generated <code>secret-key.php</code> and upload it manually to the server, into the <code>/private/</code> folder.',
+
+        smsConfigLabel: 'SMS configuration',
+        tokenLabel: 'API token',
+        tokenPlaceholder: 'enter SMSPlanet API token',
+        senderNameLabel: 'SMS sender name',
+        senderNamePlaceholder: 'e.g. Secret Key',
+        autofillDomainLabel: 'SMS autofill domain (Android/iOS)',
+        autofillDomainPlaceholder: 'e.g. your-domain.com',
+
+        emailNotifyLabel: 'Login e-mail notification',
+        notifySettingsLabel: 'Notification settings',
+        notifyToLabel: 'Address the notification is sent to',
+        notifyToPlaceholder: 'e.g. john@your-domain.com',
+        notifyFromEmailLabel: 'Sender address (from_email)',
+        notifyFromEmailPlaceholder: 'e.g. no-reply@your-domain.com',
+        notifyFromNameLabel: 'Sender name',
+        notifyPanelUrlLabel: 'Panel link (pasted into the message body)',
+        notifyPanelUrlPlaceholder: 'e.g. https://your-domain.com',
+        notifyHint: 'The switch above completely disables the login e-mail — without clearing the fields below.',
+
+        usersLabel: 'System users',
+        addUserBtn: 'Add another user',
+        userCardTitle: 'User',
+        removeBtn: '✕ Remove',
+        loginLabel: 'Login',
+        loginPlaceholder: 'enter login',
+        generateLoginTitle: 'Generate login',
+        copyLoginTitle: 'Copy login',
+        passwordLabel: 'Password',
+        passwordPlaceholder: 'enter password',
+        generatePwTitle: 'Generate password',
+        copyPwTitle: 'Copy password',
+        firstNameLabel: 'First name',
+        firstNamePlaceholder: 'e.g. John',
+        lastNameLabel: 'Last name',
+        lastNamePlaceholder: 'e.g. Smith',
+        phone2faLabel: '2FA verification phone',
+        phonePlaceholder: 'e.g. 123456789',
+        ccSearchPlaceholder: 'Search country or number…',
+        ccEmptyResults: 'No results',
+        visibleInPanelLabel: 'Visible in panel',
+        visibleInPanelHint: 'Secret Key holder list. Turn off for accounts without a physical card (e.g. service accounts) — login still works the same way.',
+
+        downloadsLabel: 'Downloadable files',
+        downloadsWarningTitle: '⚠ Selecting a file here only picks up its name.',
+        downloadsWarningBody: 'This form does not send the file\'s contents anywhere (the config generator works fully offline). You upload the password database, 2FA database, or program installer separately to the server, into the <code>/private/</code> folder.',
+        downloadTextsLabel: 'Texts in this panel section',
+        downloadHeadingLabel: 'Section heading',
+        downloadHeadingPlaceholder: 'e.g. File and program to recover access',
+        downloadIntroLabel: 'Intro text (above the buttons)',
+        downloadIntroPlaceholder: 'e.g. Download the program and password file. You will need them in the next step.',
+        alertBoxLabel: 'Warning text (blue box with icon)',
+        alertBoxPlaceholder: 'e.g. Important: besides the password, you will also need a physical USB device.',
+        addDownloadBtn: 'Add a downloadable file',
+        downloadCardTitle: 'File',
+        downloadKeyLabel: 'Key (identifier in the URL)',
+        downloadKeyPlaceholder: 'e.g. password-db',
+        downloadLabelLabel: 'Button label',
+        downloadLabelPlaceholder: 'e.g. Download password database',
+        downloadFileLabel: 'File — select locally just to fill in the name',
+        downloadFileTip: 'Selecting a file here only picks up its name — nothing is uploaded. You upload the actual file separately to the server, into the /private/ folder.',
+        downloadFilenamePlaceholder: 'file-name.extension (fills in automatically)',
+        downloadIsProgramHint: 'This is the decryption program installer — it adds a "Password for database X" heading in the panel.',
+        downloadProgramNameLabel: 'Program name (used only in the panel heading)',
+        downloadProgramNamePlaceholder: 'e.g. KeePassXC — short name',
+
+        instructionsLabel: 'Instructions',
+        addStepBtn: 'Add another step',
+        instructionStepTitle: 'Step',
+        instructionPlaceholder: '**Gather everyone together.** Contact the people from the list on the right…',
+        instructionHint: 'Formatting: <code>**bold**</code> (e.g. for a step title at the start) and <code>*italic*</code> (e.g. for sample code or a filename). Everything else is plain text.',
+
+        generateConfigBtn: 'Generate configuration',
+        resetBtn: 'Clear',
+
+        errNoUsers: 'Enter details for at least one user (login + password).',
+        errPhoneInvalid: 'enter a valid country code (e.g. +48) and phone number (4–15 digits).',
+        errDuplicateKeyPrefix: 'Key "',
+        errDuplicateKeySuffix: '" is used more than once in the "Downloadable files" section — keys must be unique (they end up in the download URL).',
+        errDuplicateLoginPrefix: 'Login "',
+        errDuplicateLoginSuffix: '" is already used by another card on the list — logins must be unique, since the system identifies the person by login (the second person with this login would be unreachable).',
+        errDuplicatePassword: 'Two people on the list have an identical password — each person should have a different password.',
+        errDuplicatePhone: 'Two people on the list have an identical phone number — each person needs their own number for SMS verification.',
+        errInstructionFormatting: 'unmatched ** (bold) or * (italic) in the text — check the formatting.',
+        errNoPreview: 'Generate a preview first.',
+
+        resultsBcryptTitle: 'Generated bcrypt hashes',
+        resultFirstNameLabel: 'First name:',
+        resultLastNameLabel: 'Last name:',
+        resultVisibleLabel: 'Visible in panel:',
+        resultYes: 'yes',
+        resultNo: 'no',
+        resultPasswordLabel: 'Password:',
+        resultPasswordChars: 'characters',
+        copyHashBtn: 'Copy hash',
+        hashCopiedOverlay: '✓ Copied to clipboard',
+        hashHint: 'Click the hash to copy it to the clipboard.',
+        previewLabel: 'Preview',
+        downloadConfigBtn: '↓ Download secret-key.php',
+        copyBtn: 'Copy',
+        downloadedShort: '✓ Downloaded',
+
+        phpFileHeader1: 'secret-key.php — sensitive Secret Key system data',
+        phpFileHeader2: 'File outside public_html: /private/secret-key.php',
+        phpTokenComment: 'SMSPlanet API token',
+        phpDomainComment1: 'Domain shown in the SMS text (autofill code on Android/iOS) —',
+        phpDomainComment2: 'must start with "@" and be a domain the panel actually runs on.',
+        phpPeopleComment: 'System users — single source of truth (login, password, 2FA data, panel visibility)',
+        phpDownloadsComment1: 'Downloadable files — single source for both the panel buttons (index.php)',
+        phpDownloadsComment2: 'and the download whitelist (download.php). The files themselves are uploaded',
+        phpDownloadsComment3: 'manually to /private/ — this config only holds the metadata.',
+        phpTextsComment1: 'Texts for the "Downloadable files" panel section — plain text, NO markdown-lite',
+        phpTextsComment2: '(the ** / * formatting only works in $instructions below).',
+        phpEmailComment1: 'Login e-mail notification — single source of truth for the address/domain/URL.',
+        phpEmailComment2: 'enabled => false disables sending entirely, without touching the code.',
+        phpInstructionsComment1: 'Instruction steps — markdown-lite: **bold** and *italic*,',
+        phpInstructionsComment2: 'rendered by md_lite() in decrypt/index.php.'
+    }
+};
+
+function getSavedLang() {
+    try { return localStorage.getItem('sk_lang'); } catch (e) { return null; }
+}
+function saveLang(lang) {
+    try { localStorage.setItem('sk_lang', lang); } catch (e) { /* brak dostępu — język nie zostanie zapamiętany */ }
+}
+
+var currentLang = getSavedLang() || 'pl';
+if (I18N[currentLang] === undefined) currentLang = 'pl';
+
+function t(key, vars) {
+    var str = (I18N[currentLang] && I18N[currentLang][key]) || I18N.pl[key] || key;
+    if (vars) {
+        Object.keys(vars).forEach(function(k) {
+            str = str.split('{' + k + '}').join(vars[k]);
+        });
+    }
+    return str;
+}
+
+function applyLang() {
+    document.documentElement.lang = currentLang;
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        el.innerHTML = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        el.title = t(el.getAttribute('data-i18n-title'));
+    });
+    document.querySelectorAll('#lang-switch .lang-btn').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+    });
+    var langSwitchEl = document.getElementById('lang-switch');
+    if (langSwitchEl) langSwitchEl.setAttribute('data-active', currentLang);
+    // Odśwież już istniejące karty (etykiety statyczne wewnątrz nich nie mają data-i18n,
+    // bo są tworzone przez JS — trzeba je przebudować w nowym języku)
+    if (typeof relabelExistingCards === 'function') relabelExistingCards();
+    // Jeśli wyniki są już wygenerowane, przebuduj je w nowym języku (bez ponownego hashowania)
+    if (window._lastGenerateData && typeof rebuildResultsView === 'function') rebuildResultsView(true);
+}
+
+function setLang(lang) {
+    if (I18N[lang] === undefined) return;
+    currentLang = lang;
+    saveLang(lang);
+    applyLang();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#lang-switch .lang-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() { setLang(btn.getAttribute('data-lang')); });
+    });
+});
+
 // ══════════════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════════════
@@ -2014,7 +2396,7 @@ var loadingShowAt = 0;
 var LOADING_MIN   = 1000; // ms — minimum czas wyświetlania
 
 function showLoading(text) {
-    loadingText.textContent = text || 'Generowanie…';
+    loadingText.textContent = text || t('loadingText');
     loadingShowAt = Date.now();
     loadingScreen.classList.add('show');
     // reset ring — zdejmij morph żeby ring nie zostawał na przycisku
@@ -2058,7 +2440,7 @@ function copyText(text, btn, label) {
     navigator.clipboard.writeText(text).then(function() {
         if (btn) {
             var o = btn.textContent;
-            btn.textContent = '✓ ' + (label || 'Skopiowano');
+            btn.textContent = '✓ ' + (label || t('copiedShort'));
             setTimeout(function(){ btn.textContent = o; }, 2000);
         }
     }).catch(function() {
@@ -2068,7 +2450,7 @@ function copyText(text, btn, label) {
         document.execCommand('copy'); document.body.removeChild(ta);
         if (btn) {
             var o = btn.textContent;
-            btn.textContent = '✓ Skopiowano';
+            btn.textContent = t('copiedShortCheck');
             setTimeout(function(){ btn.textContent = o; }, 2000);
         }
     });
@@ -2082,101 +2464,101 @@ function copyText(text, btn, label) {
 //  (ISO 3166-1 alpha-2, polska nazwa, kod E.164)
 // ══════════════════════════════════════════════
 var PHONE_COUNTRIES = [
-    {cc:'AF',name:'Afganistan',dial:'+93'}, {cc:'AL',name:'Albania',dial:'+355'},
-    {cc:'DZ',name:'Algieria',dial:'+213'}, {cc:'AD',name:'Andora',dial:'+376'},
-    {cc:'AO',name:'Angola',dial:'+244'}, {cc:'AR',name:'Argentyna',dial:'+54'},
-    {cc:'AM',name:'Armenia',dial:'+374'}, {cc:'AU',name:'Australia',dial:'+61'},
-    {cc:'AT',name:'Austria',dial:'+43'}, {cc:'AZ',name:'Azerbejdżan',dial:'+994'},
-    {cc:'BS',name:'Bahamy',dial:'+1'}, {cc:'BH',name:'Bahrajn',dial:'+973'},
-    {cc:'BD',name:'Bangladesz',dial:'+880'}, {cc:'BE',name:'Belgia',dial:'+32'},
-    {cc:'BZ',name:'Belize',dial:'+501'}, {cc:'BJ',name:'Benin',dial:'+229'},
-    {cc:'BT',name:'Bhutan',dial:'+975'}, {cc:'BY',name:'Białoruś',dial:'+375'},
-    {cc:'BO',name:'Boliwia',dial:'+591'}, {cc:'BA',name:'Bośnia i Hercegowina',dial:'+387'},
-    {cc:'BW',name:'Botswana',dial:'+267'}, {cc:'BR',name:'Brazylia',dial:'+55'},
-    {cc:'BN',name:'Brunei',dial:'+673'}, {cc:'BG',name:'Bułgaria',dial:'+359'},
-    {cc:'BF',name:'Burkina Faso',dial:'+226'}, {cc:'BI',name:'Burundi',dial:'+257'},
-    {cc:'CL',name:'Chile',dial:'+56'}, {cc:'CN',name:'Chiny',dial:'+86'},
-    {cc:'HR',name:'Chorwacja',dial:'+385'}, {cc:'CY',name:'Cypr',dial:'+357'},
-    {cc:'TD',name:'Czad',dial:'+235'}, {cc:'ME',name:'Czarnogóra',dial:'+382'},
-    {cc:'CZ',name:'Czechy',dial:'+420'}, {cc:'DK',name:'Dania',dial:'+45'},
-    {cc:'CD',name:'DR Konga',dial:'+243'}, {cc:'DM',name:'Dominika',dial:'+1'},
-    {cc:'DO',name:'Dominikana',dial:'+1'}, {cc:'DJ',name:'Dżibuti',dial:'+253'},
-    {cc:'EG',name:'Egipt',dial:'+20'}, {cc:'EC',name:'Ekwador',dial:'+593'},
-    {cc:'ER',name:'Erytrea',dial:'+291'}, {cc:'EE',name:'Estonia',dial:'+372'},
-    {cc:'ET',name:'Etiopia',dial:'+251'}, {cc:'FJ',name:'Fidżi',dial:'+679'},
-    {cc:'PH',name:'Filipiny',dial:'+63'}, {cc:'FI',name:'Finlandia',dial:'+358'},
-    {cc:'FR',name:'Francja',dial:'+33'}, {cc:'GA',name:'Gabon',dial:'+241'},
-    {cc:'GM',name:'Gambia',dial:'+220'}, {cc:'GH',name:'Ghana',dial:'+233'},
-    {cc:'GR',name:'Grecja',dial:'+30'}, {cc:'GE',name:'Gruzja',dial:'+995'},
-    {cc:'GD',name:'Grenada',dial:'+1'}, {cc:'GT',name:'Gwatemala',dial:'+502'},
-    {cc:'GN',name:'Gwinea',dial:'+224'}, {cc:'GW',name:'Gwinea Bissau',dial:'+245'},
-    {cc:'GQ',name:'Gwinea Równikowa',dial:'+240'}, {cc:'GY',name:'Gujana',dial:'+592'},
-    {cc:'HT',name:'Haiti',dial:'+509'}, {cc:'ES',name:'Hiszpania',dial:'+34'},
-    {cc:'NL',name:'Holandia',dial:'+31'}, {cc:'HN',name:'Honduras',dial:'+504'},
-    {cc:'IN',name:'Indie',dial:'+91'}, {cc:'ID',name:'Indonezja',dial:'+62'},
-    {cc:'IQ',name:'Irak',dial:'+964'}, {cc:'IR',name:'Iran',dial:'+98'},
-    {cc:'IE',name:'Irlandia',dial:'+353'}, {cc:'IS',name:'Islandia',dial:'+354'},
-    {cc:'IL',name:'Izrael',dial:'+972'}, {cc:'JM',name:'Jamajka',dial:'+1'},
-    {cc:'JP',name:'Japonia',dial:'+81'}, {cc:'YE',name:'Jemen',dial:'+967'},
-    {cc:'JO',name:'Jordania',dial:'+962'}, {cc:'KY',name:'Kajmany',dial:'+1'},
-    {cc:'KH',name:'Kambodża',dial:'+855'}, {cc:'CM',name:'Kamerun',dial:'+237'},
-    {cc:'CA',name:'Kanada',dial:'+1'}, {cc:'QA',name:'Katar',dial:'+974'},
-    {cc:'KZ',name:'Kazachstan',dial:'+7'}, {cc:'KE',name:'Kenia',dial:'+254'},
-    {cc:'KG',name:'Kirgistan',dial:'+996'}, {cc:'KI',name:'Kiribati',dial:'+686'},
-    {cc:'CO',name:'Kolumbia',dial:'+57'}, {cc:'KM',name:'Komory',dial:'+269'},
-    {cc:'CG',name:'Kongo',dial:'+242'}, {cc:'KR',name:'Korea Południowa',dial:'+82'},
-    {cc:'KP',name:'Korea Północna',dial:'+850'}, {cc:'CR',name:'Kostaryka',dial:'+506'},
-    {cc:'CU',name:'Kuba',dial:'+53'}, {cc:'KW',name:'Kuwejt',dial:'+965'},
-    {cc:'LA',name:'Laos',dial:'+856'}, {cc:'LS',name:'Lesotho',dial:'+266'},
-    {cc:'LB',name:'Liban',dial:'+961'}, {cc:'LR',name:'Liberia',dial:'+231'},
-    {cc:'LY',name:'Libia',dial:'+218'}, {cc:'LI',name:'Liechtenstein',dial:'+423'},
-    {cc:'LT',name:'Litwa',dial:'+370'}, {cc:'LU',name:'Luksemburg',dial:'+352'},
-    {cc:'LV',name:'Łotwa',dial:'+371'}, {cc:'MK',name:'Macedonia Północna',dial:'+389'},
-    {cc:'MG',name:'Madagaskar',dial:'+261'}, {cc:'MW',name:'Malawi',dial:'+265'},
-    {cc:'MV',name:'Malediwy',dial:'+960'}, {cc:'MY',name:'Malezja',dial:'+60'},
-    {cc:'ML',name:'Mali',dial:'+223'}, {cc:'MT',name:'Malta',dial:'+356'},
-    {cc:'MA',name:'Maroko',dial:'+212'}, {cc:'MR',name:'Mauretania',dial:'+222'},
-    {cc:'MU',name:'Mauritius',dial:'+230'}, {cc:'MX',name:'Meksyk',dial:'+52'},
-    {cc:'FM',name:'Mikronezja',dial:'+691'}, {cc:'MM',name:'Mjanma',dial:'+95'},
-    {cc:'MD',name:'Mołdawia',dial:'+373'}, {cc:'MC',name:'Monako',dial:'+377'},
-    {cc:'MN',name:'Mongolia',dial:'+976'}, {cc:'MZ',name:'Mozambik',dial:'+258'},
-    {cc:'NA',name:'Namibia',dial:'+264'}, {cc:'NR',name:'Nauru',dial:'+674'},
-    {cc:'NP',name:'Nepal',dial:'+977'}, {cc:'DE',name:'Niemcy',dial:'+49'},
-    {cc:'NE',name:'Niger',dial:'+227'}, {cc:'NG',name:'Nigeria',dial:'+234'},
-    {cc:'NI',name:'Nikaragua',dial:'+505'}, {cc:'NO',name:'Norwegia',dial:'+47'},
-    {cc:'NZ',name:'Nowa Zelandia',dial:'+64'}, {cc:'OM',name:'Oman',dial:'+968'},
-    {cc:'PK',name:'Pakistan',dial:'+92'}, {cc:'PW',name:'Palau',dial:'+680'},
-    {cc:'PA',name:'Panama',dial:'+507'}, {cc:'PG',name:'Papua-Nowa Gwinea',dial:'+675'},
-    {cc:'PY',name:'Paragwaj',dial:'+595'}, {cc:'PE',name:'Peru',dial:'+51'},
-    {cc:'PL',name:'Polska',dial:'+48'}, {cc:'PR',name:'Portoryko',dial:'+1'},
-    {cc:'PT',name:'Portugalia',dial:'+351'}, {cc:'ZA',name:'RPA',dial:'+27'},
-    {cc:'CF',name:'Republika Środkowoafrykańska',dial:'+236'},
-    {cc:'RU',name:'Rosja',dial:'+7'}, {cc:'RO',name:'Rumunia',dial:'+40'},
-    {cc:'RW',name:'Rwanda',dial:'+250'}, {cc:'SV',name:'Salwador',dial:'+503'},
-    {cc:'WS',name:'Samoa',dial:'+685'}, {cc:'SM',name:'San Marino',dial:'+378'},
-    {cc:'SN',name:'Senegal',dial:'+221'}, {cc:'RS',name:'Serbia',dial:'+381'},
-    {cc:'SC',name:'Seszele',dial:'+248'}, {cc:'SL',name:'Sierra Leone',dial:'+232'},
-    {cc:'SG',name:'Singapur',dial:'+65'}, {cc:'SK',name:'Słowacja',dial:'+421'},
-    {cc:'SI',name:'Słowenia',dial:'+386'}, {cc:'SO',name:'Somalia',dial:'+252'},
-    {cc:'LK',name:'Sri Lanka',dial:'+94'}, {cc:'US',name:'Stany Zjednoczone',dial:'+1'},
-    {cc:'SZ',name:'Suazi (Eswatini)',dial:'+268'}, {cc:'SD',name:'Sudan',dial:'+249'},
-    {cc:'SS',name:'Sudan Południowy',dial:'+211'}, {cc:'SR',name:'Surinam',dial:'+597'},
-    {cc:'SY',name:'Syria',dial:'+963'}, {cc:'CH',name:'Szwajcaria',dial:'+41'},
-    {cc:'SE',name:'Szwecja',dial:'+46'}, {cc:'TJ',name:'Tadżykistan',dial:'+992'},
-    {cc:'TH',name:'Tajlandia',dial:'+66'}, {cc:'TW',name:'Tajwan',dial:'+886'},
-    {cc:'TZ',name:'Tanzania',dial:'+255'}, {cc:'TG',name:'Togo',dial:'+228'},
-    {cc:'TO',name:'Tonga',dial:'+676'}, {cc:'TT',name:'Trynidad i Tobago',dial:'+1'},
-    {cc:'TN',name:'Tunezja',dial:'+216'}, {cc:'TR',name:'Turcja',dial:'+90'},
-    {cc:'TM',name:'Turkmenistan',dial:'+993'}, {cc:'TV',name:'Tuvalu',dial:'+688'},
-    {cc:'UG',name:'Uganda',dial:'+256'}, {cc:'UA',name:'Ukraina',dial:'+380'},
-    {cc:'UY',name:'Urugwaj',dial:'+598'}, {cc:'UZ',name:'Uzbekistan',dial:'+998'},
-    {cc:'VU',name:'Vanuatu',dial:'+678'}, {cc:'VA',name:'Watykan',dial:'+379'},
-    {cc:'VE',name:'Wenezuela',dial:'+58'}, {cc:'HU',name:'Węgry',dial:'+36'},
-    {cc:'GB',name:'Wielka Brytania',dial:'+44'}, {cc:'VN',name:'Wietnam',dial:'+84'},
-    {cc:'IT',name:'Włochy',dial:'+39'}, {cc:'CI',name:'Wybrzeże Kości Słoniowej',dial:'+225'},
-    {cc:'ZM',name:'Zambia',dial:'+260'}, {cc:'ZW',name:'Zimbabwe',dial:'+263'},
-    {cc:'AE',name:'Zjednoczone Emiraty Arabskie',dial:'+971'}
-].sort(function(a, b) { return a.name.localeCompare(b.name, 'pl'); });
+    {cc:'AF',name:'Afganistan',en:'Afghanistan',dial:'+93'}, {cc:'AL',name:'Albania',en:'Albania',dial:'+355'},
+    {cc:'DZ',name:'Algieria',en:'Algeria',dial:'+213'}, {cc:'AD',name:'Andora',en:'Andorra',dial:'+376'},
+    {cc:'AO',name:'Angola',en:'Angola',dial:'+244'}, {cc:'AR',name:'Argentyna',en:'Argentina',dial:'+54'},
+    {cc:'AM',name:'Armenia',en:'Armenia',dial:'+374'}, {cc:'AU',name:'Australia',en:'Australia',dial:'+61'},
+    {cc:'AT',name:'Austria',en:'Austria',dial:'+43'}, {cc:'AZ',name:'Azerbejdżan',en:'Azerbaijan',dial:'+994'},
+    {cc:'BS',name:'Bahamy',en:'Bahamas',dial:'+1'}, {cc:'BH',name:'Bahrajn',en:'Bahrain',dial:'+973'},
+    {cc:'BD',name:'Bangladesz',en:'Bangladesh',dial:'+880'}, {cc:'BE',name:'Belgia',en:'Belgium',dial:'+32'},
+    {cc:'BZ',name:'Belize',en:'Belize',dial:'+501'}, {cc:'BJ',name:'Benin',en:'Benin',dial:'+229'},
+    {cc:'BT',name:'Bhutan',en:'Bhutan',dial:'+975'}, {cc:'BY',name:'Białoruś',en:'Belarus',dial:'+375'},
+    {cc:'BO',name:'Boliwia',en:'Bolivia',dial:'+591'}, {cc:'BA',name:'Bośnia i Hercegowina',en:'Bosnia and Herzegovina',dial:'+387'},
+    {cc:'BW',name:'Botswana',en:'Botswana',dial:'+267'}, {cc:'BR',name:'Brazylia',en:'Brazil',dial:'+55'},
+    {cc:'BN',name:'Brunei',en:'Brunei',dial:'+673'}, {cc:'BG',name:'Bułgaria',en:'Bulgaria',dial:'+359'},
+    {cc:'BF',name:'Burkina Faso',en:'Burkina Faso',dial:'+226'}, {cc:'BI',name:'Burundi',en:'Burundi',dial:'+257'},
+    {cc:'CL',name:'Chile',en:'Chile',dial:'+56'}, {cc:'CN',name:'Chiny',en:'China',dial:'+86'},
+    {cc:'HR',name:'Chorwacja',en:'Croatia',dial:'+385'}, {cc:'CY',name:'Cypr',en:'Cyprus',dial:'+357'},
+    {cc:'TD',name:'Czad',en:'Chad',dial:'+235'}, {cc:'ME',name:'Czarnogóra',en:'Montenegro',dial:'+382'},
+    {cc:'CZ',name:'Czechy',en:'Czechia',dial:'+420'}, {cc:'DK',name:'Dania',en:'Denmark',dial:'+45'},
+    {cc:'CD',name:'DR Konga',en:'DR Congo',dial:'+243'}, {cc:'DM',name:'Dominika',en:'Dominica',dial:'+1'},
+    {cc:'DO',name:'Dominikana',en:'Dominican Republic',dial:'+1'}, {cc:'DJ',name:'Dżibuti',en:'Djibouti',dial:'+253'},
+    {cc:'EG',name:'Egipt',en:'Egypt',dial:'+20'}, {cc:'EC',name:'Ekwador',en:'Ecuador',dial:'+593'},
+    {cc:'ER',name:'Erytrea',en:'Eritrea',dial:'+291'}, {cc:'EE',name:'Estonia',en:'Estonia',dial:'+372'},
+    {cc:'ET',name:'Etiopia',en:'Ethiopia',dial:'+251'}, {cc:'FJ',name:'Fidżi',en:'Fiji',dial:'+679'},
+    {cc:'PH',name:'Filipiny',en:'Philippines',dial:'+63'}, {cc:'FI',name:'Finlandia',en:'Finland',dial:'+358'},
+    {cc:'FR',name:'Francja',en:'France',dial:'+33'}, {cc:'GA',name:'Gabon',en:'Gabon',dial:'+241'},
+    {cc:'GM',name:'Gambia',en:'Gambia',dial:'+220'}, {cc:'GH',name:'Ghana',en:'Ghana',dial:'+233'},
+    {cc:'GR',name:'Grecja',en:'Greece',dial:'+30'}, {cc:'GE',name:'Gruzja',en:'Georgia',dial:'+995'},
+    {cc:'GD',name:'Grenada',en:'Grenada',dial:'+1'}, {cc:'GT',name:'Gwatemala',en:'Guatemala',dial:'+502'},
+    {cc:'GN',name:'Gwinea',en:'Guinea',dial:'+224'}, {cc:'GW',name:'Gwinea Bissau',en:'Guinea-Bissau',dial:'+245'},
+    {cc:'GQ',name:'Gwinea Równikowa',en:'Equatorial Guinea',dial:'+240'}, {cc:'GY',name:'Gujana',en:'Guyana',dial:'+592'},
+    {cc:'HT',name:'Haiti',en:'Haiti',dial:'+509'}, {cc:'ES',name:'Hiszpania',en:'Spain',dial:'+34'},
+    {cc:'NL',name:'Holandia',en:'Netherlands',dial:'+31'}, {cc:'HN',name:'Honduras',en:'Honduras',dial:'+504'},
+    {cc:'IN',name:'Indie',en:'India',dial:'+91'}, {cc:'ID',name:'Indonezja',en:'Indonesia',dial:'+62'},
+    {cc:'IQ',name:'Irak',en:'Iraq',dial:'+964'}, {cc:'IR',name:'Iran',en:'Iran',dial:'+98'},
+    {cc:'IE',name:'Irlandia',en:'Ireland',dial:'+353'}, {cc:'IS',name:'Islandia',en:'Iceland',dial:'+354'},
+    {cc:'IL',name:'Izrael',en:'Israel',dial:'+972'}, {cc:'JM',name:'Jamajka',en:'Jamaica',dial:'+1'},
+    {cc:'JP',name:'Japonia',en:'Japan',dial:'+81'}, {cc:'YE',name:'Jemen',en:'Yemen',dial:'+967'},
+    {cc:'JO',name:'Jordania',en:'Jordan',dial:'+962'}, {cc:'KY',name:'Kajmany',en:'Cayman Islands',dial:'+1'},
+    {cc:'KH',name:'Kambodża',en:'Cambodia',dial:'+855'}, {cc:'CM',name:'Kamerun',en:'Cameroon',dial:'+237'},
+    {cc:'CA',name:'Kanada',en:'Canada',dial:'+1'}, {cc:'QA',name:'Katar',en:'Qatar',dial:'+974'},
+    {cc:'KZ',name:'Kazachstan',en:'Kazakhstan',dial:'+7'}, {cc:'KE',name:'Kenia',en:'Kenya',dial:'+254'},
+    {cc:'KG',name:'Kirgistan',en:'Kyrgyzstan',dial:'+996'}, {cc:'KI',name:'Kiribati',en:'Kiribati',dial:'+686'},
+    {cc:'CO',name:'Kolumbia',en:'Colombia',dial:'+57'}, {cc:'KM',name:'Komory',en:'Comoros',dial:'+269'},
+    {cc:'CG',name:'Kongo',en:'Congo',dial:'+242'}, {cc:'KR',name:'Korea Południowa',en:'South Korea',dial:'+82'},
+    {cc:'KP',name:'Korea Północna',en:'North Korea',dial:'+850'}, {cc:'CR',name:'Kostaryka',en:'Costa Rica',dial:'+506'},
+    {cc:'CU',name:'Kuba',en:'Cuba',dial:'+53'}, {cc:'KW',name:'Kuwejt',en:'Kuwait',dial:'+965'},
+    {cc:'LA',name:'Laos',en:'Laos',dial:'+856'}, {cc:'LS',name:'Lesotho',en:'Lesotho',dial:'+266'},
+    {cc:'LB',name:'Liban',en:'Lebanon',dial:'+961'}, {cc:'LR',name:'Liberia',en:'Liberia',dial:'+231'},
+    {cc:'LY',name:'Libia',en:'Libya',dial:'+218'}, {cc:'LI',name:'Liechtenstein',en:'Liechtenstein',dial:'+423'},
+    {cc:'LT',name:'Litwa',en:'Lithuania',dial:'+370'}, {cc:'LU',name:'Luksemburg',en:'Luxembourg',dial:'+352'},
+    {cc:'LV',name:'Łotwa',en:'Latvia',dial:'+371'}, {cc:'MK',name:'Macedonia Północna',en:'North Macedonia',dial:'+389'},
+    {cc:'MG',name:'Madagaskar',en:'Madagascar',dial:'+261'}, {cc:'MW',name:'Malawi',en:'Malawi',dial:'+265'},
+    {cc:'MV',name:'Malediwy',en:'Maldives',dial:'+960'}, {cc:'MY',name:'Malezja',en:'Malaysia',dial:'+60'},
+    {cc:'ML',name:'Mali',en:'Mali',dial:'+223'}, {cc:'MT',name:'Malta',en:'Malta',dial:'+356'},
+    {cc:'MA',name:'Maroko',en:'Morocco',dial:'+212'}, {cc:'MR',name:'Mauretania',en:'Mauritania',dial:'+222'},
+    {cc:'MU',name:'Mauritius',en:'Mauritius',dial:'+230'}, {cc:'MX',name:'Meksyk',en:'Mexico',dial:'+52'},
+    {cc:'FM',name:'Mikronezja',en:'Micronesia',dial:'+691'}, {cc:'MM',name:'Mjanma',en:'Myanmar',dial:'+95'},
+    {cc:'MD',name:'Mołdawia',en:'Moldova',dial:'+373'}, {cc:'MC',name:'Monako',en:'Monaco',dial:'+377'},
+    {cc:'MN',name:'Mongolia',en:'Mongolia',dial:'+976'}, {cc:'MZ',name:'Mozambik',en:'Mozambique',dial:'+258'},
+    {cc:'NA',name:'Namibia',en:'Namibia',dial:'+264'}, {cc:'NR',name:'Nauru',en:'Nauru',dial:'+674'},
+    {cc:'NP',name:'Nepal',en:'Nepal',dial:'+977'}, {cc:'DE',name:'Niemcy',en:'Germany',dial:'+49'},
+    {cc:'NE',name:'Niger',en:'Niger',dial:'+227'}, {cc:'NG',name:'Nigeria',en:'Nigeria',dial:'+234'},
+    {cc:'NI',name:'Nikaragua',en:'Nicaragua',dial:'+505'}, {cc:'NO',name:'Norwegia',en:'Norway',dial:'+47'},
+    {cc:'NZ',name:'Nowa Zelandia',en:'New Zealand',dial:'+64'}, {cc:'OM',name:'Oman',en:'Oman',dial:'+968'},
+    {cc:'PK',name:'Pakistan',en:'Pakistan',dial:'+92'}, {cc:'PW',name:'Palau',en:'Palau',dial:'+680'},
+    {cc:'PA',name:'Panama',en:'Panama',dial:'+507'}, {cc:'PG',name:'Papua-Nowa Gwinea',en:'Papua New Guinea',dial:'+675'},
+    {cc:'PY',name:'Paragwaj',en:'Paraguay',dial:'+595'}, {cc:'PE',name:'Peru',en:'Peru',dial:'+51'},
+    {cc:'PL',name:'Polska',en:'Poland',dial:'+48'}, {cc:'PR',name:'Portoryko',en:'Puerto Rico',dial:'+1'},
+    {cc:'PT',name:'Portugalia',en:'Portugal',dial:'+351'}, {cc:'ZA',name:'RPA',en:'South Africa',dial:'+27'},
+    {cc:'CF',name:'Republika Środkowoafrykańska',en:'Central African Republic',dial:'+236'},
+    {cc:'RU',name:'Rosja',en:'Russia',dial:'+7'}, {cc:'RO',name:'Rumunia',en:'Romania',dial:'+40'},
+    {cc:'RW',name:'Rwanda',en:'Rwanda',dial:'+250'}, {cc:'SV',name:'Salwador',en:'El Salvador',dial:'+503'},
+    {cc:'WS',name:'Samoa',en:'Samoa',dial:'+685'}, {cc:'SM',name:'San Marino',en:'San Marino',dial:'+378'},
+    {cc:'SN',name:'Senegal',en:'Senegal',dial:'+221'}, {cc:'RS',name:'Serbia',en:'Serbia',dial:'+381'},
+    {cc:'SC',name:'Seszele',en:'Seychelles',dial:'+248'}, {cc:'SL',name:'Sierra Leone',en:'Sierra Leone',dial:'+232'},
+    {cc:'SG',name:'Singapur',en:'Singapore',dial:'+65'}, {cc:'SK',name:'Słowacja',en:'Slovakia',dial:'+421'},
+    {cc:'SI',name:'Słowenia',en:'Slovenia',dial:'+386'}, {cc:'SO',name:'Somalia',en:'Somalia',dial:'+252'},
+    {cc:'LK',name:'Sri Lanka',en:'Sri Lanka',dial:'+94'}, {cc:'US',name:'Stany Zjednoczone',en:'United States',dial:'+1'},
+    {cc:'SZ',name:'Suazi (Eswatini)',en:'Eswatini',dial:'+268'}, {cc:'SD',name:'Sudan',en:'Sudan',dial:'+249'},
+    {cc:'SS',name:'Sudan Południowy',en:'South Sudan',dial:'+211'}, {cc:'SR',name:'Surinam',en:'Suriname',dial:'+597'},
+    {cc:'SY',name:'Syria',en:'Syria',dial:'+963'}, {cc:'CH',name:'Szwajcaria',en:'Switzerland',dial:'+41'},
+    {cc:'SE',name:'Szwecja',en:'Sweden',dial:'+46'}, {cc:'TJ',name:'Tadżykistan',en:'Tajikistan',dial:'+992'},
+    {cc:'TH',name:'Tajlandia',en:'Thailand',dial:'+66'}, {cc:'TW',name:'Tajwan',en:'Taiwan',dial:'+886'},
+    {cc:'TZ',name:'Tanzania',en:'Tanzania',dial:'+255'}, {cc:'TG',name:'Togo',en:'Togo',dial:'+228'},
+    {cc:'TO',name:'Tonga',en:'Tonga',dial:'+676'}, {cc:'TT',name:'Trynidad i Tobago',en:'Trinidad and Tobago',dial:'+1'},
+    {cc:'TN',name:'Tunezja',en:'Tunisia',dial:'+216'}, {cc:'TR',name:'Turcja',en:'Turkey',dial:'+90'},
+    {cc:'TM',name:'Turkmenistan',en:'Turkmenistan',dial:'+993'}, {cc:'TV',name:'Tuvalu',en:'Tuvalu',dial:'+688'},
+    {cc:'UG',name:'Uganda',en:'Uganda',dial:'+256'}, {cc:'UA',name:'Ukraina',en:'Ukraine',dial:'+380'},
+    {cc:'UY',name:'Urugwaj',en:'Uruguay',dial:'+598'}, {cc:'UZ',name:'Uzbekistan',en:'Uzbekistan',dial:'+998'},
+    {cc:'VU',name:'Vanuatu',en:'Vanuatu',dial:'+678'}, {cc:'VA',name:'Watykan',en:'Vatican City',dial:'+379'},
+    {cc:'VE',name:'Wenezuela',en:'Venezuela',dial:'+58'}, {cc:'HU',name:'Węgry',en:'Hungary',dial:'+36'},
+    {cc:'GB',name:'Wielka Brytania',en:'United Kingdom',dial:'+44'}, {cc:'VN',name:'Wietnam',en:'Vietnam',dial:'+84'},
+    {cc:'IT',name:'Włochy',en:'Italy',dial:'+39'}, {cc:'CI',name:'Wybrzeże Kości Słoniowej',en:'Ivory Coast',dial:'+225'},
+    {cc:'ZM',name:'Zambia',en:'Zambia',dial:'+260'}, {cc:'ZW',name:'Zimbabwe',en:'Zimbabwe',dial:'+263'},
+    {cc:'AE',name:'Zjednoczone Emiraty Arabskie',en:'United Arab Emirates',dial:'+971'}
+];
 
 function ccFlagEmoji(iso) {
     return iso.toUpperCase().replace(/./g, function(c) {
@@ -2184,14 +2566,23 @@ function ccFlagEmoji(iso) {
     });
 }
 
+function ccCountryName(c) {
+    return currentLang === 'en' ? (c.en || c.name) : c.name;
+}
+
 function ccRenderList(listEl, filterText, selectedIso, onPick) {
     var q = (filterText || '').trim().toLowerCase();
-    var items = PHONE_COUNTRIES.filter(function(c) {
-        return !q || c.name.toLowerCase().indexOf(q) !== -1 || c.dial.indexOf(q) !== -1 || c.cc.toLowerCase() === q;
+    var sorted = PHONE_COUNTRIES.slice().sort(function(a, b) {
+        return ccCountryName(a).localeCompare(ccCountryName(b), currentLang === 'en' ? 'en' : 'pl');
+    });
+    var items = sorted.filter(function(c) {
+        return !q || ccCountryName(c).toLowerCase().indexOf(q) !== -1
+            || c.name.toLowerCase().indexOf(q) !== -1
+            || c.dial.indexOf(q) !== -1 || c.cc.toLowerCase() === q;
     });
     listEl.innerHTML = '';
     if (items.length === 0) {
-        listEl.innerHTML = '<div class="cc-empty">Brak wyników</div>';
+        listEl.innerHTML = '<div class="cc-empty">' + t('ccEmptyResults') + '</div>';
         return;
     }
     items.forEach(function(c) {
@@ -2199,7 +2590,7 @@ function ccRenderList(listEl, filterText, selectedIso, onPick) {
         row.className = 'cc-item' + (c.cc === selectedIso ? ' selected' : '');
         row.innerHTML =
             '<span class="cc-flag">' + ccFlagEmoji(c.cc) + '</span>' +
-            '<span class="cc-name">' + c.name + '</span>' +
+            '<span class="cc-name">' + esc(ccCountryName(c)) + '</span>' +
             '<span class="cc-code">' + c.dial + '</span>';
         row.addEventListener('click', function() { onPick(c); });
         listEl.appendChild(row);
@@ -2217,7 +2608,7 @@ function getSharedCcDropdown() {
     sharedCcDropdown = document.createElement('div');
     sharedCcDropdown.className = 'cc-dropdown cc-dropdown-portal';
     sharedCcDropdown.innerHTML =
-        '<div class="cc-search-wrap"><input type="text" class="cc-search" placeholder="Szukaj kraju lub numeru…" autocomplete="off"></div>' +
+        '<div class="cc-search-wrap"><input type="text" class="cc-search" placeholder="' + t('ccSearchPlaceholder') + '" autocomplete="off"></div>' +
         '<div class="cc-list"></div>';
     sharedCcDropdown.addEventListener('click', function(e) { e.stopPropagation(); });
     document.body.appendChild(sharedCcDropdown);
@@ -2306,35 +2697,56 @@ function addUser() {
     card.className = 'user-card';
     card.innerHTML =
         '<div class="user-card-header">' +
-            '<div class="user-num">Użytkownik ' + String(n+1).padStart(2,'0') + '</div>' +
-            '<button type="button" class="remove-btn" onclick="removeUser(this)">✕ Usuń</button>' +
+            '<div class="user-num">' + t('userCardTitle') + ' ' + String(n+1).padStart(2,'0') + '</div>' +
+            '<button type="button" class="remove-btn" onclick="removeUser(this)">' + t('removeBtn') + '</button>' +
         '</div>' +
         '<div class="user-fields">' +
-            '<div class="user-field">' +
-                '<div class="user-field-label">Login</div>' +
-                '<div class="user-field-inner"><input type="text" class="u-login" placeholder="wprowadź login" autocomplete="off"></div>' +
+            '<div class="user-field field-login">' +
+                '<div class="user-field-label">' + t('loginLabel') + '</div>' +
+                '<div class="user-field-inner" style="position:relative">' +
+                    '<input type="text" class="u-login" placeholder="' + t('loginPlaceholder') + '" autocomplete="off" spellcheck="false">' +
+                    '<div class="field-actions">' +
+                        '<button type="button" class="field-action-btn generate-btn login-generate-btn" data-tip="' + esc(t('generateLoginTitle')) + '" onclick="handleGenerateLogin(this)">' +
+                            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                                '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>' +
+                            '</svg>' +
+                        '</button>' +
+                        '<button type="button" class="field-action-btn login-copy-btn" data-tip="' + esc(t('copyLoginTitle')) + '" onclick="handleCopyLogin(this)">' +
+                            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                                '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+                            '</svg>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
             '</div>' +
             '<div class="user-field field-password">' +
-                '<div class="user-field-label">Hasło</div>' +
+                '<div class="user-field-label">' + t('passwordLabel') + '</div>' +
                 '<div class="user-field-inner" style="position:relative">' +
-                    '<input type="password" class="u-pw" placeholder="wprowadź hasło" autocomplete="new-password">' +
-                    '<button type="button" class="toggle-password" onclick="togglePw(this)">' +
-                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                            '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' +
-                        '</svg>' +
-                    '</button>' +
+                    '<input type="text" class="u-pw" placeholder="' + t('passwordPlaceholder') + '" autocomplete="new-password" spellcheck="false">' +
+                    '<div class="field-actions">' +
+                        '<button type="button" class="field-action-btn generate-btn pw-generate-btn" data-tip="' + esc(t('generatePwTitle')) + '" onclick="handleGeneratePw(this)">' +
+                            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                                '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>' +
+                            '</svg>' +
+                        '</button>' +
+                        '<button type="button" class="field-action-btn pw-copy-btn" data-tip="' + esc(t('copyPwTitle')) + '" onclick="handleCopyPw(this)">' +
+                            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                                '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+                            '</svg>' +
+                        '</button>' +
+                    '</div>' +
                 '</div>' +
             '</div>' +
             '<div class="user-field">' +
-                '<div class="user-field-label">Imię</div>' +
-                '<div class="user-field-inner"><input type="text" class="u-first-name" placeholder="np. Mateusz"></div>' +
+                '<div class="user-field-label">' + t('firstNameLabel') + '</div>' +
+                '<div class="user-field-inner"><input type="text" class="u-first-name" placeholder="' + t('firstNamePlaceholder') + '"></div>' +
             '</div>' +
             '<div class="user-field">' +
-                '<div class="user-field-label">Nazwisko</div>' +
-                '<div class="user-field-inner"><input type="text" class="u-last-name" placeholder="np. Karpierz"></div>' +
+                '<div class="user-field-label">' + t('lastNameLabel') + '</div>' +
+                '<div class="user-field-inner"><input type="text" class="u-last-name" placeholder="' + t('lastNamePlaceholder') + '"></div>' +
             '</div>' +
             '<div class="user-field">' +
-                '<div class="user-field-label">Telefon do weryfikacji 2FA</div>' +
+                '<div class="user-field-label">' + t('phone2faLabel') + '</div>' +
                 '<div class="user-field-inner" style="gap:8px;">' +
                     '<div class="cc-pill" tabindex="0">' +
                         '<span class="cc-pill-flag">🇵🇱</span>' +
@@ -2342,13 +2754,13 @@ function addUser() {
                         '<span class="cc-pill-caret">▾</span>' +
                     '</div>' +
                     '<input type="hidden" class="u-phone-cc" value="+48">' +
-                    '<input type="text" class="u-phone" placeholder="np. 123456789" inputmode="tel" style="width:auto; flex:1;">' +
+                    '<input type="text" class="u-phone" placeholder="' + t('phonePlaceholder') + '" inputmode="tel" style="width:auto; flex:1;">' +
                 '</div>' +
             '</div>' +
             '<div class="user-field">' +
-                '<div class="user-field-label">Widoczny w panelu</div>' +
+                '<div class="user-field-label">' + t('visibleInPanelLabel') + '</div>' +
                 '<div class="user-field-toggle">' +
-                    '<span class="toggle-hint">Lista posiadaczy Secret Key. Wyłącz dla kont bez fizycznej karty (np. serwisowych) — logowanie działa tak samo.</span>' +
+                    '<span class="toggle-hint">' + t('visibleInPanelHint') + '</span>' +
                     '<label class="toggle-switch">' +
                         '<input type="checkbox" class="u-show-in-panel" checked>' +
                         '<span class="toggle-switch-track"></span>' +
@@ -2380,20 +2792,250 @@ function updateNums() {
     cards.forEach(function(c, i) {
         var num = c.querySelector('.user-num');
         var btn = c.querySelector('.remove-btn');
-        if (num) num.textContent = 'Użytkownik ' + String(i+1).padStart(2,'0');
+        if (num) num.textContent = t('userCardTitle') + ' ' + String(i+1).padStart(2,'0');
         if (btn) btn.style.display = (cards.length <= 1) ? 'none' : '';
     });
 }
 
-function togglePw(btn) {
+// ══════════════════════════════════════════════
+//  GENEROWANIE HASŁA — 12 znaków, duże + małe litery (na sztywno)
+// ══════════════════════════════════════════════
+var PW_GEN_LENGTH = 12;
+var PW_GEN_CHARS  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+// ══════════════════════════════════════════════
+//  GENEROWANIE LOGINU
+//  — jeśli Imię i Nazwisko są wypełnione: imię-nazwisko-XXX (losowe 3 cyfry)
+//  — jeśli nie: trzy losowe słowa, np. "sherry-creed-defy"
+// ══════════════════════════════════════════════
+var LOGIN_WORD_BANK = [
+    'ash','birch','cedar','oak','maple','pine','willow','elm','reef','cliff','ridge','delta',
+    'brook','stone','field','glade','harbor','island','meadow','summit','valley','canyon','ember','frost',
+    'amber','coral','ivory','jade','onyx','pearl','sepia','slate','azure','violet','crimson','olive',
+    'sherry','creed','defy','brave','swift','quiet','bold','calm','sharp','bright','steady','loyal',
+    'raven','falcon','otter','badger','heron','lynx','wren','fox','hawk','wolf','bear','stag',
+    'anchor','beacon','compass','forge','lantern','mosaic','orbit','prism','quartz','signal','vector',
+    'north','south','east','west','coastal','alpine','arctic','desert','forest','tundra','plateau',
+    'echo','pulse','spark','drift','ripple','shadow','flicker','gleam','haze','mist','tide','zephyr'
+];
+
+function randomInt(max) {
+    var arr = new Uint32Array(1);
+    (window.crypto || window.msCrypto).getRandomValues(arr);
+    return arr[0] % max;
+}
+
+function randomDistinctWords(n) {
+    var pool = LOGIN_WORD_BANK.slice();
+    var out = [];
+    for (var i = 0; i < n && pool.length; i++) {
+        var idx = randomInt(pool.length);
+        out.push(pool[idx]);
+        pool.splice(idx, 1);
+    }
+    return out;
+}
+
+function randomDigits3() {
+    return String(randomInt(1000)).padStart(3, '0');
+}
+
+// Usuwa polskie znaki diakrytyczne i inne akcenty, zamienia na slug a-z0-9-
+function slugify(str) {
+    var plMap = {
+        'ą':'a','ć':'c','ę':'e','ł':'l','ń':'n','ó':'o','ś':'s','ź':'z','ż':'z',
+        'Ą':'a','Ć':'c','Ę':'e','Ł':'l','Ń':'n','Ó':'o','Ś':'s','Ź':'z','Ż':'z'
+    };
+    var replaced = String(str).split('').map(function(ch) { return plMap[ch] || ch; }).join('');
+    var noAccents = replaced.normalize ? replaced.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : replaced;
+    return noAccents.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function existingLogins(excludeInput) {
+    var out = [];
+    document.querySelectorAll('.u-login').forEach(function(el) {
+        if (el === excludeInput) return;
+        var v = el.value.trim().toLowerCase();
+        if (v) out.push(v);
+    });
+    return out;
+}
+
+function generateLoginValue(card, excludeInput) {
+    var firstName = card.querySelector('.u-first-name') ? card.querySelector('.u-first-name').value.trim() : '';
+    var lastName  = card.querySelector('.u-last-name') ? card.querySelector('.u-last-name').value.trim() : '';
+    var taken = existingLogins(excludeInput);
+    var candidate, attempts = 0;
+
+    if (firstName && lastName) {
+        var base = slugify(firstName) + '-' + slugify(lastName);
+        do {
+            candidate = base + '-' + randomDigits3();
+            attempts++;
+        } while (taken.indexOf(candidate) !== -1 && attempts < 30);
+    } else {
+        do {
+            var w = randomDistinctWords(3);
+            candidate = w[0] + '-' + w[1] + '-' + w[2];
+            attempts++;
+        } while (taken.indexOf(candidate) !== -1 && attempts < 30);
+    }
+    return candidate;
+}
+
+function handleGenerateLogin(btn) {
+    if (btn.classList.contains('generating')) return;
+    var card  = btn.closest('.user-card');
     var inner = btn.closest('.user-field-inner');
-    var input = inner ? inner.querySelector('input') : null;
+    var input = inner ? inner.querySelector('.u-login') : null;
+    if (!card || !input) return;
+
+    var finalLogin = generateLoginValue(card, input);
+    var len = finalLogin.length;
+    input.classList.add('pw-scrambling');
+    btn.classList.add('generating');
+
+    var TOTAL_TICKS   = 22;
+    var TICK_MS        = 32;
+    var ticksPerLetter = Math.max(1, Math.floor(TOTAL_TICKS / len));
+    var tick = 0;
+
+    var timer = setInterval(function() {
+        tick++;
+        var settled = Math.min(len, Math.floor(tick / ticksPerLetter));
+        var display = '';
+        for (var i = 0; i < len; i++) {
+            display += (i < settled) ? finalLogin[i] : randomScrambleChar();
+        }
+        input.value = display;
+
+        if (settled >= len) {
+            clearInterval(timer);
+            input.value = finalLogin;
+            input.classList.remove('pw-scrambling');
+            btn.classList.remove('generating');
+        }
+    }, TICK_MS);
+}
+
+function handleCopyLogin(btn) {
+    var inner = btn.closest('.user-field-inner');
+    var input = inner ? inner.querySelector('.u-login') : null;
+    if (!input || !input.value) return;
+
+    function markCopied() {
+        var svg = btn.querySelector('svg');
+        var original = svg.innerHTML;
+        svg.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            svg.innerHTML = original;
+            btn.classList.remove('copied');
+        }, 1500);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value).then(markCopied).catch(function() {
+            fallbackCopyPw(input.value, markCopied);
+        });
+    } else {
+        fallbackCopyPw(input.value, markCopied);
+    }
+}
+
+function existingPasswords(excludeInput) {
+    var out = [];
+    document.querySelectorAll('.u-pw').forEach(function(el) {
+        if (el === excludeInput) return;
+        if (el.value) out.push(el.value);
+    });
+    return out;
+}
+
+function generateSecurePassword(excludeInput) {
+    var taken = excludeInput !== undefined ? existingPasswords(excludeInput) : [];
+    var out, attempts = 0;
+    do {
+        var arr = new Uint32Array(PW_GEN_LENGTH);
+        (window.crypto || window.msCrypto).getRandomValues(arr);
+        out = '';
+        for (var i = 0; i < PW_GEN_LENGTH; i++) out += PW_GEN_CHARS[arr[i] % PW_GEN_CHARS.length];
+        attempts++;
+    } while (taken.indexOf(out) !== -1 && attempts < 10);
+    return out;
+}
+
+function randomScrambleChar() {
+    return PW_GEN_CHARS[Math.floor(Math.random() * PW_GEN_CHARS.length)];
+}
+
+// Animacja w stylu "slot machine" — znaki po kolei "dobijają" do finalnego hasła,
+// reszta w międzyczasie miga losowymi literami (podobnie jak w generatorach haseł typu Avast).
+function handleGeneratePw(btn) {
+    if (btn.classList.contains('generating')) return;
+    var inner = btn.closest('.user-field-inner');
+    var input = inner ? inner.querySelector('.u-pw') : null;
     if (!input) return;
-    var show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    btn.querySelector('svg').innerHTML = show
-        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
-        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+
+    var finalPw = generateSecurePassword(input);
+    var len     = finalPw.length;
+    input.classList.add('pw-scrambling');
+    btn.classList.add('generating');
+
+    var TOTAL_TICKS   = 22;
+    var TICK_MS        = 32;
+    var ticksPerLetter = Math.max(1, Math.floor(TOTAL_TICKS / len));
+    var tick = 0;
+
+    var timer = setInterval(function() {
+        tick++;
+        var settled = Math.min(len, Math.floor(tick / ticksPerLetter));
+        var display = '';
+        for (var i = 0; i < len; i++) {
+            display += (i < settled) ? finalPw[i] : randomScrambleChar();
+        }
+        input.value = display;
+
+        if (settled >= len) {
+            clearInterval(timer);
+            input.value = finalPw;
+            input.classList.remove('pw-scrambling');
+            btn.classList.remove('generating');
+        }
+    }, TICK_MS);
+}
+
+function handleCopyPw(btn) {
+    var inner = btn.closest('.user-field-inner');
+    var input = inner ? inner.querySelector('.u-pw') : null;
+    if (!input || !input.value) return;
+
+    function markCopied() {
+        var svg = btn.querySelector('svg');
+        var original = svg.innerHTML;
+        svg.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            svg.innerHTML = original;
+            btn.classList.remove('copied');
+        }, 1500);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value).then(markCopied).catch(function() {
+            fallbackCopyPw(input.value, markCopied);
+        });
+    } else {
+        fallbackCopyPw(input.value, markCopied);
+    }
+}
+
+function fallbackCopyPw(text, onDone) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    if (onDone) onDone();
 }
 
 // Sekcja "Powiadomienie e-mail" jest domyślnie zwinięta — rozwija się dopiero
@@ -2420,29 +3062,29 @@ function addDownload() {
     card.className = 'download-card';
     card.innerHTML =
         '<div class="download-card-header">' +
-            '<div class="download-num">Plik ' + String(n+1).padStart(2,'0') + '</div>' +
-            '<button type="button" class="remove-btn" onclick="removeDownload(this)">✕ Usuń</button>' +
+            '<div class="download-num">' + t('downloadCardTitle') + ' ' + String(n+1).padStart(2,'0') + '</div>' +
+            '<button type="button" class="remove-btn" onclick="removeDownload(this)">' + t('removeBtn') + '</button>' +
         '</div>' +
         '<div class="download-fields">' +
             '<div class="download-field">' +
-                '<div class="download-field-label">Klucz (identyfikator w adresie)</div>' +
-                '<div class="download-field-inner"><input type="text" class="d-key" placeholder="np. baza-hasel" autocomplete="off"></div>' +
+                '<div class="download-field-label">' + t('downloadKeyLabel') + '</div>' +
+                '<div class="download-field-inner"><input type="text" class="d-key" placeholder="' + t('downloadKeyPlaceholder') + '" autocomplete="off"></div>' +
             '</div>' +
             '<div class="download-field">' +
-                '<div class="download-field-label">Etykieta przycisku</div>' +
-                '<div class="download-field-inner"><input type="text" class="d-label" placeholder="np. Pobierz bazę haseł"></div>' +
+                '<div class="download-field-label">' + t('downloadLabelLabel') + '</div>' +
+                '<div class="download-field-inner"><input type="text" class="d-label" placeholder="' + t('downloadLabelPlaceholder') + '"></div>' +
             '</div>' +
             '<div class="download-field" style="grid-column: 1 / -1;">' +
-                '<div class="download-field-label">Plik — wskaż lokalnie tylko po to, by wpisać nazwę</div>' +
+                '<div class="download-field-label">' + t('downloadFileLabel') + '</div>' +
                 '<div class="download-field-inner">' +
-                    '<span class="info-tip" data-tip="Wybór pliku tutaj tylko pobiera jego nazwę — nic nie jest wysyłane. Sam plik wgrywasz osobno na serwer do folderu /private/."><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>' +
+                    '<span class="info-tip" data-tip="' + esc(t('downloadFileTip')) + '"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>' +
                     '<input type="file" class="d-file" onchange="fillFilename(this)">' +
                 '</div>' +
-                '<div class="download-field-inner" style="margin-top:6px"><input type="text" class="d-filename" placeholder="nazwa-pliku.rozszerzenie (uzupełni się automatycznie)"></div>' +
+                '<div class="download-field-inner" style="margin-top:6px"><input type="text" class="d-filename" placeholder="' + t('downloadFilenamePlaceholder') + '"></div>' +
             '</div>' +
             '<div class="download-field" style="grid-column: 1 / -1;">' +
                 '<div class="download-field-toggle">' +
-                    '<span class="toggle-hint">To instalator programu do odszyfrowywania — doda nagłówek „Hasło do bazy X" w panelu.</span>' +
+                    '<span class="toggle-hint">' + t('downloadIsProgramHint') + '</span>' +
                     '<label class="toggle-switch">' +
                         '<input type="checkbox" class="d-is-program" onchange="toggleProgramField(this)">' +
                         '<span class="toggle-switch-track"></span>' +
@@ -2450,8 +3092,8 @@ function addDownload() {
                 '</div>' +
             '</div>' +
             '<div class="download-field d-program-name-field" style="grid-column: 1 / -1; display:none;">' +
-                '<div class="download-field-label">Nazwa programu (tylko do nagłówka w panelu)</div>' +
-                '<div class="download-field-inner"><input type="text" class="d-program-name" placeholder="np. KeePassXC — krótka nazwa"></div>' +
+                '<div class="download-field-label">' + t('downloadProgramNameLabel') + '</div>' +
+                '<div class="download-field-inner"><input type="text" class="d-program-name" placeholder="' + t('downloadProgramNamePlaceholder') + '"></div>' +
             '</div>' +
         '</div>';
 
@@ -2481,7 +3123,7 @@ function updateDownloadNums() {
     cards.forEach(function(c, i) {
         var num = c.querySelector('.download-num');
         var btn = c.querySelector('.remove-btn');
-        if (num) num.textContent = 'Plik ' + String(i+1).padStart(2,'0');
+        if (num) num.textContent = t('downloadCardTitle') + ' ' + String(i+1).padStart(2,'0');
         if (btn) btn.style.display = (cards.length <= 1) ? 'none' : '';
     });
 }
@@ -2531,13 +3173,13 @@ function addInstruction() {
     card.className = 'instruction-card';
     card.innerHTML =
         '<div class="instruction-card-header">' +
-            '<div class="instruction-num">Krok ' + String(n+1).padStart(2,'0') + '</div>' +
-            '<button type="button" class="remove-btn" onclick="removeInstruction(this)">✕ Usuń</button>' +
+            '<div class="instruction-num">' + t('instructionStepTitle') + ' ' + String(n+1).padStart(2,'0') + '</div>' +
+            '<button type="button" class="remove-btn" onclick="removeInstruction(this)">' + t('removeBtn') + '</button>' +
         '</div>' +
         '<div class="instruction-field">' +
-            '<textarea class="i-text" placeholder="**Zbierzcie się razem.** Skontaktuj się z osobami z listy po prawej stronie…"></textarea>' +
+            '<textarea class="i-text" placeholder="' + esc(t('instructionPlaceholder')) + '"></textarea>' +
             '<div class="instruction-field-hint">' +
-                'Formatowanie: <code>**pogrubienie**</code> (np. na tytuł kroku na początku) i <code>*kursywa*</code> (np. na przykładowy kod czy nazwę pliku). Reszta to zwykły tekst.' +
+                t('instructionHint') +
             '</div>' +
         '</div>';
 
@@ -2567,7 +3209,7 @@ function updateInstructionNums() {
         var num  = c.querySelector('.instruction-num');
         var btn  = c.querySelector('.remove-btn');
         var hint = c.querySelector('.instruction-field-hint');
-        if (num) num.textContent = 'Krok ' + String(i+1).padStart(2,'0');
+        if (num) num.textContent = t('instructionStepTitle') + ' ' + String(i+1).padStart(2,'0');
         if (btn) btn.style.display = (cards.length <= 1) ? 'none' : '';
         if (hint) hint.style.display = (i === 0) ? '' : 'none';
     });
@@ -2581,6 +3223,72 @@ function collectInstructions() {
         instructions.push({ num: String(instructions.length + 1).padStart(2, '0'), text: text });
     });
     return instructions;
+}
+
+// Statyczne etykiety wewnątrz kart (Login, Hasło, Imię…) są tworzone przez JS
+// (innerHTML), więc nie mają data-i18n — trzeba je ręcznie odświeżyć po zmianie
+// języka. Kolejność etykiet w każdej karcie jest stała, stąd mapowanie po indeksie.
+function relabelExistingCards() {
+    document.querySelectorAll('#user-list .user-card').forEach(function(card) {
+        var keys = ['loginLabel','passwordLabel','firstNameLabel','lastNameLabel','phone2faLabel','visibleInPanelLabel'];
+        card.querySelectorAll('.user-field-label').forEach(function(el, i) { if (keys[i]) el.textContent = t(keys[i]); });
+        var m = {
+            '.u-login': 'loginPlaceholder', '.u-pw': 'passwordPlaceholder',
+            '.u-first-name': 'firstNamePlaceholder', '.u-last-name': 'lastNamePlaceholder',
+            '.u-phone': 'phonePlaceholder'
+        };
+        Object.keys(m).forEach(function(sel) {
+            var el = card.querySelector(sel);
+            if (el) el.placeholder = t(m[sel]);
+        });
+        var hint = card.querySelector('.toggle-hint');
+        if (hint) hint.textContent = t('visibleInPanelHint');
+        var removeBtn = card.querySelector('.remove-btn');
+        if (removeBtn) removeBtn.textContent = t('removeBtn');
+        var genBtn = card.querySelector('.pw-generate-btn');
+        if (genBtn) genBtn.setAttribute('data-tip', t('generatePwTitle'));
+        var copyPwBtn = card.querySelector('.pw-copy-btn');
+        if (copyPwBtn) copyPwBtn.setAttribute('data-tip', t('copyPwTitle'));
+        var genLoginBtn = card.querySelector('.login-generate-btn');
+        if (genLoginBtn) genLoginBtn.setAttribute('data-tip', t('generateLoginTitle'));
+        var copyLoginBtn = card.querySelector('.login-copy-btn');
+        if (copyLoginBtn) copyLoginBtn.setAttribute('data-tip', t('copyLoginTitle'));
+    });
+    updateNums();
+
+    document.querySelectorAll('#download-list .download-card').forEach(function(card) {
+        var keys = ['downloadKeyLabel','downloadLabelLabel','downloadFileLabel','downloadProgramNameLabel'];
+        card.querySelectorAll('.download-field-label').forEach(function(el, i) { if (keys[i]) el.textContent = t(keys[i]); });
+        var m = {
+            '.d-key': 'downloadKeyPlaceholder', '.d-label': 'downloadLabelPlaceholder',
+            '.d-filename': 'downloadFilenamePlaceholder', '.d-program-name': 'downloadProgramNamePlaceholder'
+        };
+        Object.keys(m).forEach(function(sel) {
+            var el = card.querySelector(sel);
+            if (el) el.placeholder = t(m[sel]);
+        });
+        var infoTip = card.querySelector('.info-tip');
+        if (infoTip) infoTip.setAttribute('data-tip', t('downloadFileTip'));
+        var hint = card.querySelector('.toggle-hint');
+        if (hint) hint.textContent = t('downloadIsProgramHint');
+        var removeBtn = card.querySelector('.remove-btn');
+        if (removeBtn) removeBtn.textContent = t('removeBtn');
+    });
+    updateDownloadNums();
+
+    document.querySelectorAll('#instruction-list .instruction-card').forEach(function(card) {
+        var textarea = card.querySelector('.i-text');
+        if (textarea) textarea.placeholder = t('instructionPlaceholder');
+        var hint = card.querySelector('.instruction-field-hint');
+        if (hint) hint.innerHTML = t('instructionHint');
+        var removeBtn = card.querySelector('.remove-btn');
+        if (removeBtn) removeBtn.textContent = t('removeBtn');
+    });
+    updateInstructionNums();
+
+    // Wyszukiwarka w liście krajów, jeśli akurat otwarta
+    var ccSearch = document.querySelector('.cc-dropdown-portal .cc-search');
+    if (ccSearch) ccSearch.placeholder = t('ccSearchPlaceholder');
 }
 
 function resetAll() {
@@ -2598,6 +3306,8 @@ function resetAll() {
     document.getElementById('email-notify-from-name').value = '';
     document.getElementById('email-notify-panel-url').value = '';
     document.getElementById('results-area').innerHTML = '';
+    window._lastGenerateData = null;
+    window._lastFileContent  = null;
     var list = document.getElementById('user-list');
     while (list.firstChild) list.removeChild(list.firstChild);
     addUser();
@@ -2621,9 +3331,9 @@ function resetAll() {
 // ══════════════════════════════════════════════
 //  RENDER RESULTS (wstrzykuje HTML bez przeładowania)
 // ══════════════════════════════════════════════
-function renderResults(data) {
+function renderResults(data, skipScroll) {
     var html = '<div class="results">';
-    html += '<div class="section-label" style="margin-top:0">Wygenerowane hasze bcrypt</div>';
+    html += '<div class="section-label" style="margin-top:0">' + t('resultsBcryptTitle') + '</div>';
 
     data.users.forEach(function(u) {
         html +=
@@ -2632,19 +3342,19 @@ function renderResults(data) {
                     '<div>' +
                         '<div class="result-login">' + esc(u.login) + '</div>' +
                         '<div class="result-meta">' +
-                            'Imię: <span>' + esc(u.firstName || u.login) + '</span>' +
-                            ' &nbsp;·&nbsp; Nazwisko: <span>' + esc(u.lastName || '—') + '</span>' +
-                            ' &nbsp;·&nbsp; Widoczny w panelu: <span>' + (u.showInPanel ? 'tak' : 'nie') + '</span>' +
-                            ' &nbsp;·&nbsp; Hasło: <span>' + u.pw_len + ' znaków</span>' +
+                            t('resultFirstNameLabel') + ' <span>' + esc(u.firstName || u.login) + '</span>' +
+                            ' &nbsp;·&nbsp; ' + t('resultLastNameLabel') + ' <span>' + esc(u.lastName || '—') + '</span>' +
+                            ' &nbsp;·&nbsp; ' + t('resultVisibleLabel') + ' <span>' + (u.showInPanel ? t('resultYes') : t('resultNo')) + '</span>' +
+                            ' &nbsp;·&nbsp; ' + t('resultPasswordLabel') + ' <span>' + u.pw_len + ' ' + t('resultPasswordChars') + '</span>' +
                         '</div>' +
                     '</div>' +
-                    '<button type="button" class="copy-btn" data-hash="' + esc(u.hash) + '">Kopiuj hash</button>' +
+                    '<button type="button" class="copy-btn" data-hash="' + esc(u.hash) + '">' + t('copyHashBtn') + '</button>' +
                 '</div>' +
                 '<div class="hash-box" data-hash="' + esc(u.hash) + '">' +
                     '<span class="hash-text">' + esc(u.hash) + '</span>' +
-                    '<div class="hash-copied-overlay">✓ Skopiowano do schowka</div>' +
+                    '<div class="hash-copied-overlay">' + t('hashCopiedOverlay') + '</div>' +
                 '</div>' +
-                '<div class="hash-hint">Kliknij hash aby skopiować do schowka.</div>' +
+                '<div class="hash-hint">' + t('hashHint') + '</div>' +
             '</div>';
     });
 
@@ -2660,12 +3370,12 @@ function renderResults(data) {
     html +=
         '<div class="file-block">' +
             '<div class="file-block-header">' +
-                '<div class="file-block-title">Podgląd &nbsp;<span>secret-key.php</span></div>' +
+                '<div class="file-block-title">' + t('previewLabel') + ' &nbsp;<span>secret-key.php</span></div>' +
             '</div>' +
             '<pre class="file-preview" id="file-preview">' + code + '</pre>' +
             '<div class="download-row">' +
-                '<button type="button" class="btn-download" id="btn-download" onclick="doDownload()">↓ Pobierz secret-key.php</button>' +
-                '<button type="button" class="btn-copy-file" id="copy-file-btn">Kopiuj</button>' +
+                '<button type="button" class="btn-download" id="btn-download" onclick="doDownload()">' + t('downloadConfigBtn') + '</button>' +
+                '<button type="button" class="btn-copy-file" id="copy-file-btn">' + t('copyBtn') + '</button>' +
             '</div>' +
         '</div>' +
     '</div>';
@@ -2675,12 +3385,14 @@ function renderResults(data) {
 
     document.getElementById('copy-file-btn').addEventListener('click', function() {
         var pre = document.getElementById('file-preview');
-        if (pre) copyText(pre.innerText, this, 'Skopiowano');
+        if (pre) copyText(pre.innerText, this, t('copiedShort'));
     });
 
-    setTimeout(function() {
-        area.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
+    if (!skipScroll) {
+        setTimeout(function() {
+            area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 80);
+    }
 }
 
 // ══════════════════════════════════════════════
@@ -2702,7 +3414,7 @@ function validatePhones() {
         var ccDigits = ccVal.replace(/\D/g, '');
 
         if (ccDigits === '' || digits.length < 4 || digits.length > 15) {
-            showError('Użytkownik ' + num + ': podaj poprawny kierunkowy (np. +48) i numer telefonu (4–15 cyfr).');
+            showError(t('userCardTitle') + ' ' + num + ': ' + t('errPhoneInvalid'));
             var phoneField = phoneInput.closest('.user-field');
             phoneField.style.background = 'rgba(248,113,113,0.06)';
             phoneField.style.borderLeft = '2px solid rgba(248,113,113,0.7)';
@@ -2724,7 +3436,7 @@ function validateDownloadKeys() {
         var val = keyInput ? keyInput.value.trim() : '';
         if (val === '') continue;
         if (seen[val]) {
-            showError('Klucz „' + val + '" jest użyty więcej niż raz w sekcji „Pliki do pobrania" — klucze muszą być unikalne (to one trafiają do adresu pobierania).');
+            showError(t('errDuplicateKeyPrefix') + val + t('errDuplicateKeySuffix'));
             var keyField = keyInput.closest('.download-field');
             keyField.style.background = 'rgba(248,113,113,0.06)';
             keyField.style.borderLeft = '2px solid rgba(248,113,113,0.7)';
@@ -2750,7 +3462,7 @@ function validateInstructionsMarkdown() {
         var starCount    = (withoutBold.match(/\*/g) || []).length;
         if (boldMarkers % 2 !== 0 || starCount % 2 !== 0) {
             var num = String(i + 1).padStart(2, '0');
-            showError('Krok ' + num + ': niesparowane ** (pogrubienie) lub * (kursywa) w tekście — sprawdź formatowanie.');
+            showError(t('instructionStepTitle') + ' ' + num + ': ' + t('errInstructionFormatting'));
             var field = textarea.closest('.instruction-field');
             field.style.background = 'rgba(248,113,113,0.06)';
             field.style.borderLeft = '2px solid rgba(248,113,113,0.7)';
@@ -2759,6 +3471,69 @@ function validateInstructionsMarkdown() {
                 return function() { f.style.background = ''; f.style.borderLeft = ''; };
             }(field), 2500);
             return false;
+        }
+    }
+    return true;
+}
+
+function validateUniqueUsers() {
+    var cards = document.querySelectorAll('#user-list .user-card');
+    var seenLogins = {};
+    var seenPasswords = {};
+    var seenPhones = {};
+
+    function flash(input) {
+        var field = input.closest('.user-field');
+        if (!field) return;
+        field.style.background = 'rgba(248,113,113,0.06)';
+        field.style.borderLeft = '2px solid rgba(248,113,113,0.7)';
+        input.focus();
+        setTimeout(function() { field.style.background = ''; field.style.borderLeft = ''; }, 2500);
+    }
+
+    for (var i = 0; i < cards.length; i++) {
+        var loginInput = cards[i].querySelector('.u-login');
+        var pwInput    = cards[i].querySelector('.u-pw');
+        var ccInput    = cards[i].querySelector('.u-phone-cc');
+        var phoneInput = cards[i].querySelector('.u-phone');
+        var loginVal   = loginInput ? loginInput.value.trim() : '';
+        var pwVal      = pwInput ? pwInput.value : '';
+        var ccVal      = ccInput ? ccInput.value.trim() : '';
+        var phoneVal   = phoneInput ? phoneInput.value.trim() : '';
+
+        if (loginVal !== '') {
+            var loginKey = loginVal.toLowerCase();
+            if (seenLogins[loginKey]) {
+                showError(t('errDuplicateLoginPrefix') + loginVal + t('errDuplicateLoginSuffix'));
+                flash(loginInput);
+                return false;
+            }
+            seenLogins[loginKey] = true;
+        }
+
+        if (pwVal !== '') {
+            if (seenPasswords[pwVal] !== undefined) {
+                showError(t('errDuplicatePassword'));
+                flash(pwInput);
+                flash(cards[seenPasswords[pwVal]].querySelector('.u-pw'));
+                return false;
+            }
+            seenPasswords[pwVal] = i;
+        }
+
+        // Numer telefonu — porównujemy po samych cyfrach (kierunkowy + numer), żeby np.
+        // "+48 123456789" i "+48 123-456-789" zostały poprawnie rozpoznane jako ten sam numer.
+        if (ccVal !== '' || phoneVal !== '') {
+            var phoneKey = ccVal.replace(/\D/g, '') + phoneVal.replace(/\D/g, '');
+            if (phoneKey !== '') {
+                if (seenPhones[phoneKey] !== undefined) {
+                    showError(t('errDuplicatePhone'));
+                    flash(phoneInput);
+                    flash(cards[seenPhones[phoneKey]].querySelector('.u-phone'));
+                    return false;
+                }
+                seenPhones[phoneKey] = i;
+            }
         }
     }
     return true;
@@ -2807,19 +3582,19 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
     var lines = [];
     lines.push('<?php');
     lines.push('// ════════════════════════════════════════════════════════');
-    lines.push('//  secret-key.php — wrażliwe dane systemu Secret Key');
-    lines.push('//  Plik poza public_html: /private/secret-key.php');
+    lines.push('//  ' + t('phpFileHeader1'));
+    lines.push('//  ' + t('phpFileHeader2'));
     lines.push('// ════════════════════════════════════════════════════════');
     lines.push('');
-    lines.push('// Token API SMSPlanet');
+    lines.push('// ' + t('phpTokenComment'));
     lines.push("define('SMSPLANET_TOKEN', " + ve(smsToken)  + ');');
     lines.push("define('SMS_SENDER',      " + ve(smsSender) + ');');
     lines.push('');
-    lines.push('// Domena widoczna w treści SMS-a (autouzupełnianie kodu na Android/iOS) —');
-    lines.push('// musi zaczynać się od "@" i być domeną, na której faktycznie działa panel.');
+    lines.push('// ' + t('phpDomainComment1'));
+    lines.push('// ' + t('phpDomainComment2'));
     lines.push("define('SMS_AUTOFILL_DOMAIN', " + ve(smsAutofillDomain) + ');');
     lines.push('');
-    lines.push('// Osoby systemu — jedno źródło prawdy (login, hasło, dane 2FA, widoczność w panelu)');
+    lines.push('// ' + t('phpPeopleComment'));
     lines.push('$people = [');
     users.forEach(function(u, i) {
         lines.push('  [');
@@ -2834,9 +3609,9 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
     });
     lines.push('];');
     lines.push('');
-    lines.push('// Pliki do pobrania — jedno źródło dla przycisków w panelu (index.php)');
-    lines.push('// i białej listy pobierania (download.php). Same pliki wgrywane są');
-    lines.push('// ręcznie na serwer do /private/ — ten config trzyma tylko metadane.');
+    lines.push('// ' + t('phpDownloadsComment1'));
+    lines.push('// ' + t('phpDownloadsComment2'));
+    lines.push('// ' + t('phpDownloadsComment3'));
     lines.push('$downloads = [');
     downloads.forEach(function(d) {
         var parts = [];
@@ -2848,14 +3623,14 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
     });
     lines.push('];');
     lines.push('');
-    lines.push('// Teksty w sekcji „Pliki do pobrania" panelu — zwykły tekst, BEZ markdown-lite');
-    lines.push('// (formatowanie ** / * działa tylko w $instructions poniżej).');
+    lines.push('// ' + t('phpTextsComment1'));
+    lines.push('// ' + t('phpTextsComment2'));
     lines.push('$download_heading = ' + ve(downloadHeading) + ';');
     lines.push('$download_intro = ' + ve(downloadIntro) + ';');
     lines.push('$alert_box_text = ' + ve(alertBoxText) + ';');
     lines.push('');
-    lines.push('// Powiadomienie e-mail o logowaniu — jedno źródło prawdy dla adresu/domeny/URL.');
-    lines.push('// enabled => false wyłącza wysyłkę całkowicie, bez ruszania kodu.');
+    lines.push('// ' + t('phpEmailComment1'));
+    lines.push('// ' + t('phpEmailComment2'));
     lines.push('$email_notify = [');
     lines.push("  'enabled'    => " + vb(emailNotify.enabled) + ',');
     lines.push("  'to'         => " + ve(emailNotify.to) + ',');
@@ -2864,8 +3639,8 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
     lines.push("  'panel_url'  => " + ve(emailNotify.panelUrl) + ',');
     lines.push('];');
     lines.push('');
-    lines.push('// Kroki instrukcji — markdown-lite: **pogrubienie** i *kursywa*,');
-    lines.push('// renderowane przez md_lite() w decrypt/index.php.');
+    lines.push('// ' + t('phpInstructionsComment1'));
+    lines.push('// ' + t('phpInstructionsComment2'));
     lines.push('$instructions = [');
     instructions.forEach(function(s) {
         lines.push("  ['num' => " + ve(s.num) + ', ' + "'text' => " + ve(s.text) + '],');
@@ -2874,11 +3649,31 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
     return lines.join('\n');
 }
 
+function rebuildResultsView(skipScroll) {
+    var d = window._lastGenerateData;
+    if (!d) return;
+    var fileContent = buildFileContent(d.users, d.hashes, d.smsToken, d.smsSender, d.smsAutofillDomain, d.downloads, d.instructions, d.downloadHeading, d.downloadIntro, d.alertBoxText, d.emailNotify);
+    renderResults({ users: d.users.map(function(u,j){
+        return {
+            login: u.login,
+            hash: d.hashes[j],
+            firstName: u.firstName,
+            lastName: u.lastName,
+            phone: u.phone,
+            mask: u.mask,
+            showInPanel: u.showInPanel,
+            pw_len: u.pw.length
+        };
+    }), downloads: d.downloads, instructions: d.instructions, downloadHeading: d.downloadHeading, downloadIntro: d.downloadIntro, alertBoxText: d.alertBoxText, file_content: fileContent }, skipScroll);
+    window._lastFileContent = fileContent;
+}
+
 function doGenerate() {
     hideError();
     if (!validatePhones()) return;
     if (!validateDownloadKeys()) return;
     if (!validateInstructionsMarkdown()) return;
+    if (!validateUniqueUsers()) return;
 
     var smsToken      = document.getElementById('sms_token').value.trim();
     var smsSender     = document.getElementById('sms_sender').value.trim();
@@ -2899,11 +3694,11 @@ function doGenerate() {
     var instructions = collectInstructions();
 
     if (users.length === 0) {
-        showError('Podaj dane co najmniej jednego użytkownika (login + hasło).');
+        showError(t('errNoUsers'));
         return;
     }
 
-    showLoading('Generowanie…');
+    showLoading(t('loadingText'));
 
     // Hashuj bcrypt asynchronicznie kolejno — żeby loading screen był widoczny
     var hashes = [];
@@ -2911,20 +3706,14 @@ function doGenerate() {
     function hashNext() {
         if (i >= users.length) {
             hideLoading(function() {
-                var fileContent = buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain, downloads, instructions, downloadHeading, downloadIntro, alertBoxText, emailNotify);
-                renderResults({ users: users.map(function(u,j){
-                    return {
-                        login: u.login,
-                        hash: hashes[j],
-                        firstName: u.firstName,
-                        lastName: u.lastName,
-                        phone: u.phone,
-                        mask: u.mask,
-                        showInPanel: u.showInPanel,
-                        pw_len: u.pw.length
-                    };
-                }), downloads: downloads, instructions: instructions, downloadHeading: downloadHeading, downloadIntro: downloadIntro, alertBoxText: alertBoxText, file_content: fileContent });
-                window._lastFileContent = fileContent;
+                window._lastGenerateData = {
+                    users: users, hashes: hashes.slice(),
+                    smsToken: smsToken, smsSender: smsSender, smsAutofillDomain: smsAutofillDomain,
+                    downloads: downloads, instructions: instructions,
+                    downloadHeading: downloadHeading, downloadIntro: downloadIntro, alertBoxText: alertBoxText,
+                    emailNotify: emailNotify
+                };
+                rebuildResultsView();
             });
             return;
         }
@@ -2943,7 +3732,7 @@ function doDownload() {
     if (!validatePhones()) return;
 
     var fileContent = window._lastFileContent;
-    if (!fileContent) { showError('Najpierw wygeneruj podgląd.'); return; }
+    if (!fileContent) { showError(t('errNoPreview')); return; }
 
     var blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
     var url  = URL.createObjectURL(blob);
@@ -2960,7 +3749,7 @@ function doDownload() {
 document.addEventListener('click', function(e) {
     // Przycisk "Kopiuj hash"
     var btn = e.target.closest('.copy-btn');
-    if (btn) { copyText(btn.dataset.hash, btn, 'Skopiowano'); return; }
+    if (btn) { copyText(btn.dataset.hash, btn, t('copiedShort')); return; }
 
     // Kliknięcie w boks hasha
     var box = e.target.closest('.hash-box');
@@ -3017,6 +3806,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var text = (e.clipboardData || window.clipboardData).getData('text');
         e.target.value = text.replace(/\D/g, '');
     });
+
+    applyLang();
 });
 
 // ══════════════════════════════════════════════
@@ -3030,7 +3821,7 @@ if (window.matchMedia('(pointer: fine)').matches) {
     var isMorphed = false, morphTarget = null, cursorVisible = false;
 
     var MORPH_ALL = '.btn, .btn-primary, .btn-ghost, .btn-copy-file, .add-user-btn, .hash-box';
-    var RING_HIDE = '.copy-btn, .btn-download, .remove-btn, .toggle-password, .toggle-switch, .info-tip, .cc-pill, .cc-dropdown-portal';
+    var RING_HIDE = '.copy-btn, .btn-download, .remove-btn, .field-action-btn, .toggle-switch, .info-tip, .cc-pill, .cc-dropdown-portal, .lang-switch';
 
     document.addEventListener('mousemove', function(e) {
         mx = e.clientX; my = e.clientY;

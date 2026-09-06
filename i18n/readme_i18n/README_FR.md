@@ -273,6 +273,9 @@ Le système combine **huit couches de protection indépendantes** — la comprom
 | 🖥️ **Protection de l'interface** | Détection DevTools | Détecte les outils de développement, supprime physiquement le DOM, enregistre l'incident avec IP, REF# et durée |
 | 📥 **Téléchargements contrôlés** | `download.php` + liste blanche | Les fichiers téléchargeables se trouvent en dehors de `public_html` ; une session active est requise, aucune URL directe, toujours journalisé côté serveur |
 
+> [!TIP]
+> **Protection contre la collusion des tiers de confiance de votre vivant.** L'algorithme de Shamir permet mathématiquement aux personnes désignées de reconstituer le mot de passe principal si elles s'entendent pour le faire — c'est une propriété inévitable de tout schéma de partage de secret à seuil, pas seulement de celui-ci. Si vous ne protégez pas en plus votre base de mots de passe par une clé de sécurité physique (par ex. YubiKey/FIDO2), le mot de passe reconstitué leur suffit pour ouvrir entièrement la base. Secret Key limite ce risque grâce à des sondes de notification par e-mail lors des tentatives de connexion et de téléchargement, mais pour une protection maximale, il est recommandé d'utiliser une clé physique comme second facteur de la base de mots de passe elle-même — ainsi, connaître seul le mot de passe principal ne sert à rien sans la présence physique de la clé auprès de vous.
+
 ---
 
 ## Installation
@@ -458,6 +461,14 @@ Plus le seuil est élevé, plus la sécurité est grande — mais aussi plus il 
 Indéfiniment — tant que le propriétaire ne génère pas une nouvelle configuration et ne remplace pas le fichier `secret-key.php` sur le serveur. Après cette opération, les anciennes cartes cessent de fonctionner et il faut en distribuer de nouvelles à toutes les personnes désignées.
 
 </details>
+
+---
+
+<div align="center">
+
+Si ce projet vous a été utile, laissez une ⭐ — cela aide d'autres personnes qui pourraient en avoir besoin à le trouver.
+
+</div>
 
 ---
 

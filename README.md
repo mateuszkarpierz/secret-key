@@ -273,6 +273,9 @@ System łączy **osiem niezależnych warstw ochrony** — kompromitacja jednej n
 | 🖥️ **Ochrona interfejsu** | DevTools detect | Detekcja narzędzi deweloperskich, fizyczne usunięcie DOM, rejestracja incydentu w logach z IP, REF# i czasem trwania |
 | 📥 **Bramkowane pobieranie** | `download.php` + biała lista | Pliki do pobrania leżą poza `public_html`; wymagana aktywna sesja, brak bezpośredniego URL, log zawsze po stronie serwera |
 
+> [!TIP]
+> **Ochrona przed zmową powierników za Twojego życia.** Algorytm Shamira matematycznie pozwala wyznaczonym osobom odtworzyć samo hasło główne, jeśli się w tym celu zmówią — to nieunikniona własność każdego systemu progowego dzielenia sekretu, nie tylko tego. Jeśli nie zabezpieczasz swojej bazy haseł dodatkowo kluczem sprzętowym (np. YubiKey/FIDO2), odtworzone hasło wystarczy im do pełnego otwarcia bazy. Secret Key ogranicza to ryzyko sondami powiadomień e-mail przy próbie logowania i pobrania plików, ale dla maksymalnego poziomu ochrony zalecane jest stosowanie klucza sprzętowego jako drugiego składnika samej bazy haseł — wtedy sama znajomość hasła głównego nikomu nic nie daje bez fizycznej obecności klucza przy Tobie.
+
 ---
 
 ## Instalacja
@@ -458,6 +461,14 @@ Im wyższy próg, tym większe bezpieczeństwo — ale też trudniejsze zebranie
 Bezterminowo — o ile właściciel nie wygeneruje nowej konfiguracji i nie zastąpi pliku `secret-key.php` na serwerze. Po tej operacji stare karty przestają działać i konieczne jest rozdanie nowych wszystkim wyznaczonym osobom.
 
 </details>
+
+---
+
+<div align="center">
+
+Jeśli ten projekt okazał się przydatny, zostaw ⭐ — dzięki temu łatwiej znajdą go inni, którzy mogą go potrzebować.
+
+</div>
 
 ---
 
