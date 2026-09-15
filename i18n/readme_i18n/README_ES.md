@@ -239,10 +239,14 @@ Navegador     →  recibe los fragmentos Shamir, reconstruye el secreto localmen
 - `logout.php` — cierre de sesión
 
 **Capa de acceso** (`/decrypt/`)
-- `index.php` — el panel de descifrado con reconstrucción Shamir en JS
-- `download.php` — descargas de archivos controladas (requiere sesión, lista blanca construida a partir de la configuración, registro del lado del servidor)
+- `index.php` — el panel de descifrado con reconstrucción Shamir en JS; verifica el resultado con dos métodos independientes (consistencia matemática entre subconjuntos de fragmentos + análisis del formato de texto) en lugar de confiar solo en la ausencia de una excepción
+- `download.php` — descargas de archivos controladas (requiere sesión, lista blanca construida a partir de la configuración, registro del lado del servidor) + validación estricta del timelock independiente del panel
 - `log.php` — registro de eventos
 - `devtools-log.php` — registro de intentos de inspección con DevTools (con limitación de tasa por IP)
+- `timelock.php` — lógica del timelock tras la connivencia de fiduciarios (ver [Seguridad](#seguridad))
+- `arm-timelock.php` — activa el bloqueo de 48h tras una reconstrucción de contraseña confirmada, envía el correo de alerta
+- `panic.php` — gestiona el enlace de un solo uso «Panic Button» del correo
+- `tl-status.php` — consulta en vivo del estado del bloqueo (sin necesidad de recargar el panel)
 
 **Capa de datos** (`/private/` — fuera de `public_html`)
 - `secret-key.php` — un único archivo de configuración: personas (`$people`), archivos descargables (`$downloads`), instrucciones (`$instructions`), notificación por correo (`$email_notify`), dominio SMS
@@ -250,6 +254,7 @@ Navegador     →  recibe los fragmentos Shamir, reconstruye el secreto localmen
 - `rate-limit.php` — limitación de tasa persistente (contadores independientes de la sesión)
 - `rate_limits.json` — contadores de intentos de inicio de sesión por IP/cuenta *(se crea automáticamente)*
 - `trusted_devices.json` — tokens de dispositivos de confianza *(se crea automáticamente)*
+- `timelock.json` — estado del bloqueo de 48h tras connivencia de fiduciarios *(se crea automáticamente, ver [Seguridad](#seguridad))*
 - `secret-key.log` — registros de eventos
 - `moja-baza-hasel.kdbx` *(y otros archivos descargables)* — servidos únicamente a través de `download.php`, nunca directamente por HTTP
 
@@ -260,7 +265,7 @@ Navegador     →  recibe los fragmentos Shamir, reconstruye el secreto localmen
 
 ## Seguridad
 
-El sistema combina **ocho capas de protección independientes** — comprometer una no otorga acceso al sistema.
+El sistema combina **nueve capas de protección independientes** — comprometer una no otorga acceso al sistema.
 
 | Capa | Mecanismo | Detalles |
 |---|---|---|
@@ -274,7 +279,9 @@ El sistema combina **ocho capas de protección independientes** — comprometer 
 | 📥 **Descargas controladas** | `download.php` + lista blanca | Los archivos descargables están fuera de `public_html`; se requiere una sesión activa, sin URL directa, siempre registrado del lado del servidor |
 
 > [!TIP]
-> **Protección contra la connivencia de los fiduciarios en vida.** El algoritmo de Shamir permite matemáticamente que las personas designadas reconstruyan la contraseña maestra si se coluden para ello — es una propiedad inevitable de cualquier esquema de reparto de secretos por umbral, no solo de este. Si no proteges además tu base de contraseñas con una llave de seguridad física (p. ej. YubiKey/FIDO2), la contraseña reconstruida les basta para abrir la base por completo. Secret Key limita este riesgo con sondas de notificación por correo al iniciar sesión y al intentar descargar archivos, pero para la máxima protección se recomienda usar una llave física como segundo factor de la propia base de contraseñas — así, conocer solo la contraseña maestra no le sirve a nadie sin la presencia física de la llave contigo.
+| 🚨 **Protección contra connivencia de fiduciarios** | Timelock 48h + Panic Button | La primera reconstrucción exitosa de la contraseña bloquea las descargas de archivos durante 48h y envía un correo de alerta con un enlace de un solo uso para bloquear el acceso de forma inmediata y permanente — ver más abajo |
+
+> **Protección contra la connivencia de los fiduciarios en vida.** El algoritmo de Shamir permite matemáticamente que las personas designadas reconstruyan la contraseña maestra si se coluden para ello — es una propiedad inevitable de cualquier esquema de reparto de secretos por umbral, no solo de este. El sistema responde a esto en dos niveles: (1) **verifica** que la contraseña recuperada sea auténtica y no basura criptográfica de fragmentos erróneos (consistencia matemática entre subconjuntos de fragmentos + análisis del formato del resultado), y (2) tras una reconstrucción exitosa confirmada, **bloquea las descargas de archivos durante 48 horas**, enviándote un correo con un enlace de un solo uso «Panic Button» — un clic corta el acceso de forma permanente antes de que nadie pueda descargar nada. Conocer solo la contraseña no sirve de nada sin el archivo físico de la base de datos. Para máxima protección, se recomienda además usar una llave de seguridad física (p. ej. YubiKey/FIDO2) como segundo factor de la propia base de contraseñas.
 
 ---
 
@@ -374,13 +381,17 @@ secret-key/
 ├── 📁 app/                        # Público — sistema de inicio de sesión
 │   ├── 📁 decrypt/                # Protegido — panel de usuario
 │   │   ├── .htaccess
+│   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
 │   │   ├── devtools-log.php
 │   │   ├── download.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
-│   │   └── log.php
+│   │   ├── log.php
+│   │   ├── panic.php
+│   │   ├── timelock.php
+│   │   └── tl-status.php
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -438,6 +449,13 @@ El sistema está diseñado con redundancia — basta con reunir el número míni
 <summary><strong>¿La contraseña llega al servidor durante el descifrado?</strong></summary>
 
 No. La reconstrucción de la contraseña a partir de los fragmentos Shamir ocurre **completamente en el lado del navegador** (JavaScript). El servidor solo se usa para autenticar al usuario — el secreto en sí nunca lo abandona.
+
+</details>
+
+<details>
+<summary><strong>¿Qué pasa si los fiduciarios se coluden y recuperan la contraseña en vida, sin que yo lo sepa?</strong></summary>
+
+La contraseña por sí sola no les basta. Los archivos de la base de datos están fuera del directorio público del servidor, y el acceso a ellos lo controla `download.php`. En el momento en que la contraseña se reconstruye correctamente por primera vez en el panel, el sistema bloquea automáticamente las descargas de archivos durante 48 horas y te envía un correo de alerta con un enlace de un solo uso «Panic Button» — un clic corta el acceso de forma permanente, dándote tiempo para cambiar la contraseña maestra con calma. Si además proteges la base de contraseñas con una llave de seguridad física (p. ej. YubiKey), con solo conocer la contraseña no bastará para abrirla, incluso después de desbloquear los archivos.
 
 </details>
 

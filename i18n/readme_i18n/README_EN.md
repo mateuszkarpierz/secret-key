@@ -239,10 +239,14 @@ Browser      →  accepts the Shamir shares, reconstructs the secret locally in 
 - `logout.php` — logout
 
 **Access layer** (`/decrypt/`)
-- `index.php` — the decryption panel with Shamir reconstruction in JS
-- `download.php` — gated file downloads (requires a session, a whitelist built from the config, server-side logging)
+- `index.php` — the decryption panel with Shamir reconstruction in JS; verifies the result with two independent methods (mathematical consistency across share subsets + text-format analysis) instead of trusting the mere absence of an exception
+- `download.php` — gated file downloads (requires a session, a whitelist built from the config, server-side logging) + hard timelock validation independent of the panel
 - `log.php` — event logging
 - `devtools-log.php` — logging DevTools-inspection incidents (with per-IP rate limiting)
+- `timelock.php` — timelock logic after trustee collusion (see [Security](#security))
+- `arm-timelock.php` — arms the 48h lock after a confirmed password reconstruction, sends the alert email
+- `panic.php` — handles the one-time "Panic Button" link from the email
+- `tl-status.php` — live polling of the lock state (no need to refresh the panel)
 
 **Data layer** (`/private/` — outside `public_html`)
 - `secret-key.php` — a single config file: people (`$people`), downloadable files (`$downloads`), instructions (`$instructions`), email notification (`$email_notify`), SMS domain
@@ -250,6 +254,7 @@ Browser      →  accepts the Shamir shares, reconstructs the secret locally in 
 - `rate-limit.php` — persistent rate limiting (counters independent of the session)
 - `rate_limits.json` — login-attempt counters per IP/account *(created automatically)*
 - `trusted_devices.json` — trusted-device tokens *(created automatically)*
+- `timelock.json` — 48h lock state after trustee collusion *(created automatically, see [Security](#security))*
 - `secret-key.log` — event logs
 - `moja-baza-hasel.kdbx` *(and other downloadable files)* — served only through `download.php`, never directly over HTTP
 
@@ -260,7 +265,7 @@ Browser      →  accepts the Shamir shares, reconstructs the secret locally in 
 
 ## Security
 
-The system combines **eight independent layers of protection** — compromising one does not grant access to the system.
+The system combines **nine independent layers of protection** — compromising one does not grant access to the system.
 
 | Layer | Mechanism | Details |
 |---|---|---|
@@ -274,7 +279,9 @@ The system combines **eight independent layers of protection** — compromising 
 | 📥 **Gated downloads** | `download.php` + whitelist | Downloadable files live outside `public_html`; an active session is required, no direct URL, always logged server-side |
 
 > [!TIP]
-> **Protection against trustee collusion during your lifetime.** Shamir's algorithm mathematically allows designated trustees to reconstruct the master password itself if they collude to do so — this is an unavoidable property of any threshold secret-sharing scheme, not just this one. If you don't additionally protect your password database with a hardware key (e.g. YubiKey/FIDO2), a reconstructed password is enough for them to fully open the database. Secret Key limits this risk with email notification probes on login and file-download attempts, but for maximum protection it's recommended to use a hardware key as a second factor for the password database itself — that way, knowing the master password alone gives no one anything without the key physically present with you.
+| 🚨 **Trustee-collusion protection** | 48h timelock + Panic Button | The first successful password reconstruction blocks file downloads for 48h and sends an alert email with a one-time link to immediately and permanently block access — see below |
+
+> **Protection against trustee collusion during your lifetime.** Shamir's algorithm mathematically allows designated trustees to reconstruct the master password itself if they collude to do so — this is an unavoidable property of any threshold secret-sharing scheme, not just this one. The system responds to this on two levels: (1) it **verifies** that the recovered password is genuine rather than cryptographic garbage from bad shares (mathematical consistency across share subsets + result-format analysis), and (2) after a confirmed successful reconstruction it **blocks file downloads for 48 hours**, sending you an email with a one-time "Panic Button" link — one click permanently cuts off access before anyone can download anything. Knowing the password alone is worthless without the physical database file. For maximum protection, it's additionally recommended to use a hardware key (e.g. YubiKey/FIDO2) as a second factor for the password database itself.
 
 ---
 
@@ -374,13 +381,17 @@ secret-key/
 ├── 📁 app/                        # Public — login system
 │   ├── 📁 decrypt/                # Protected — user panel
 │   │   ├── .htaccess
+│   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
 │   │   ├── devtools-log.php
 │   │   ├── download.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
-│   │   └── log.php
+│   │   ├── log.php
+│   │   ├── panic.php
+│   │   ├── timelock.php
+│   │   └── tl-status.php
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -438,6 +449,13 @@ The system is designed with redundancy — it's enough to gather the minimum req
 <summary><strong>Does the password reach the server during decryption?</strong></summary>
 
 No. Reconstructing the password from the Shamir shares happens **entirely on the browser side** (JavaScript). The server is only used to authenticate the user — the secret itself never leaves it.
+
+</details>
+
+<details>
+<summary><strong>What if the trustees collude and recover the password during my lifetime, without my knowledge?</strong></summary>
+
+The password alone isn't enough for them. The database files live outside the server's public directory, and access to them is controlled by `download.php`. The moment the password is first successfully reconstructed in the panel, the system automatically blocks file downloads for 48 hours and sends you an alert email with a one-time "Panic Button" link — one click permanently cuts off access, giving you time to change the master password in peace. If you additionally protect the password database with a hardware key (e.g. YubiKey), knowing the password alone isn't enough to open it even after the files are unlocked.
 
 </details>
 

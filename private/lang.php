@@ -1,4 +1,6 @@
 <?php
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Mateusz Karpierz (karpierz.me)
 // ════════════════════════════════════════════════════════
 //  lang.php — teksty interfejsu Secret Key
 //  Plik poza public_html: /private/lang.php
@@ -11,7 +13,7 @@
 //  bo to Twoja własna treść dla Twoich bliskich, nie generyczny UI.
 //
 //  Brakujący klucz nie wysypuje strony — t() zwraca wtedy sam klucz
-//  jako widoczny placeholder (patrz funkcja t() w key/auth.php).
+//  jako widoczny placeholder (patrz funkcja t() w app/auth.php).
 // ════════════════════════════════════════════════════════
 
 $lang = [
@@ -47,7 +49,7 @@ $lang = [
     // nie wpisuj "<" ani "&" jako zwykłego tekstu (zepsuje wygląd, patrz błąd
     // z literalnym "&nbsp;" na stronie zamiast spacji — to jest ten przypadek).
     'login_card_intro'            => 'Znajdujesz się na tej stronie, ponieważ jesteś posiadaczem <strong>1&nbsp;z&nbsp;5&nbsp;części</strong> kodu Secret Key.',
-    'login_hint_box'               => 'Dane do logowania znajdują się na Twojej karcie&nbsp;<strong>Secret Key</strong>.',
+    'login_hint_box'              => 'Dane do logowania znajdują się na Twojej karcie&nbsp;<strong>Secret Key</strong>.',
     'login_label_username'        => 'Login',
     'login_placeholder_username'  => 'Twój login z karty',
     'login_label_password'        => 'Hasło',
@@ -105,7 +107,7 @@ $lang = [
 
     // ── DECRYPT/INDEX.PHP — nagłówek i powitanie ──
     'panel_header_title'          => 'Panel Secret Key',
-    'panel_welcome'                => 'Witaj, ',
+    'panel_welcome'               => 'Witaj, ',
     'panel_welcome_fallback_name' => 'Gość',
     'panel_logout_btn'            => 'Wyloguj',
 
@@ -150,5 +152,34 @@ $lang = [
     'mail_body_ip_label'          => 'Adres IP:     ',
     'mail_body_browser_label'     => 'Przeglądarka: ',
     'mail_body_panel_label'       => 'Panel: ',
+
+    // ── TIMELOCK — mail alarmowy przy udanej rekonstrukcji hasła (Panic Button) ──
+    'tl_mail_subject'             => '🔐 Secret Key — powiadomienie bezpieczeństwa: odzyskano hasło główne',
+    'tl_mail_intro'               => 'W panelu Secret Key ktoś poprawnie wprowadził wymagane części kodu Secret Key i odzyskał hasło główne do Twojej bazy haseł.',
+    'tl_mail_by_label'            => 'Wykonane przez: ',
+    'tl_mail_date_label'          => 'Data i czas:    ',
+    'tl_mail_ip_label'            => 'Adres IP:       ',
+    'tl_mail_explain'             => "Ze względów bezpieczeństwa pliki (baza haseł i program) pozostają zablokowane na serwerze przez 48 godzin od tego momentu — nawet ze znajomością hasła, nie da się ich pobrać wcześniej. Jeśli nie podejmiesz żadnej akcji, pliki odblokują się automatycznie po tym czasie.",
+    'tl_mail_panic_intro'         => 'Jeśli to nie byłeś Ty (lub osoba, której ufasz w tej sytuacji), możesz od razu zablokować pobieranie plików, klikając poniższy link:',
+    'tl_mail_panic_label'         => 'Zablokuj dostęp do plików: ',
+    'tl_mail_footer'              => 'Jeśli to byłeś Ty (np. test systemu) — nie musisz nic robić, pliki odblokują się same po 48h.',
+
+    // ── PANIC.PHP — strona potwierdzenia zablokowania dostępu ──
+    'tl_panic_success_title'      => 'Dostęp zablokowany',
+    'tl_panic_success_body'       => 'Pobieranie plików zostało trwale zablokowane. Aby przywrócić normalne działanie systemu, zmień hasło główne bazy, wygeneruj nowe części kodu Secret Key i wydaj nowe karty.',
+    'tl_panic_invalid_title'      => 'Link nieprawidłowy lub nieaktualny',
+    'tl_panic_invalid_body'       => 'Ten link do zablokowania dostępu jest nieprawidłowy, wygasł, lub dostęp został już wcześniej zablokowany.',
+
+    // ── DECRYPT/INDEX.PHP — stany blokady sekcji pobierania (Stan A/B/C) ──
+    'tl_state_a_tooltip'          => 'Wprowadź poprawny Secret key, aby odblokować pliki',
+    'tl_state_b_label'            => 'Do odblokowania plików pozostało',
+    'tl_state_b_note'             => 'Wysłano alert e-mail do właściciela systemu',
+    'tl_state_c_message'          => '❌ Dostęp do plików został permanentnie zablokowany przez właściciela systemu.',
+
+    // ── DOWNLOAD.PHP — strona błędu przy próbie ominięcia panelu ──
+    'tl_download_blocked_title'          => 'Pliki tymczasowo zablokowane',
+    'tl_download_blocked_pending_body'   => 'Trwa 48-godzinne okno bezpieczeństwa od momentu odzyskania hasła. Pliki odblokują się automatycznie po jego zakończeniu — wróć do panelu, aby zobaczyć dokładny odliczany czas.',
+    'tl_download_blocked_owner_title'    => 'Dostęp zablokowany przez właściciela',
+    'tl_download_blocked_owner_body'     => 'Właściciel systemu trwale zablokował dostęp do tych plików.',
 
 ];

@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Mateusz Karpierz (karpierz.me)
 require_once '../auth.php';
+require_once 'timelock.php';
 requireLogin();
+
+// ─── Stan blokady czasowej pobierania (Collusion Risk Protection) — patrz timelock.php ───
+$tlStatus = tl_status($people ?? []);
 
 // Fallback — jeśli stara sesja nie ma display_name, odczytaj z $people
 if (empty($_SESSION['display_name']) && !empty($_SESSION['username'])) {
@@ -305,6 +309,13 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             .download-grid {
                 grid-template-columns: 1fr;
             }
+            .dl-overlay { padding: 12px; }
+            .dl-overlay-card { padding: 16px 18px; max-width: calc(100vw - 64px); }
+            .dl-overlay-label { font-size: 0.78rem; }
+            .dl-countdown { font-size: 1.3rem; }
+            .dl-overlay-note { font-size: 0.68rem; }
+            .dl-overlay-danger { font-size: 0.82rem; max-width: calc(100vw - 64px); }
+            .dl-tip-portal { width: 180px; font-size: 0.7rem; }
         }
         .card {
             background: var(--surface);
@@ -667,6 +678,71 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             color: var(--danger);
         }
         .alert-box svg { flex-shrink: 0; margin-top: 1px; }
+
+        /* ─── TIMELOCK — blokada sekcji pobierania (Collusion Risk Protection) ─── */
+        .dl-blurred {
+            filter: blur(5px);
+            opacity: 0.55;
+            pointer-events: none;
+            user-select: none;
+            transition: filter 0.3s, opacity 0.3s;
+        }
+        .dl-overlay {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; z-index: 5;
+        }
+        .dl-overlay-card {
+            background: var(--surface2);
+            border: 1px solid var(--accent);
+            border-radius: 14px;
+            padding: 20px 30px;
+            text-align: center;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+        }
+        .dl-overlay-label {
+            font-family: var(--sans); font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px;
+        }
+        .dl-countdown {
+            font-family: var(--mono, monospace);
+            font-size: 1.7rem; font-weight: 700; color: var(--accent);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+        }
+        .dl-countdown .dl-tick { display: inline-block; animation: dl-tick-pulse 0.4s ease; }
+        @keyframes dl-tick-pulse {
+            0%   { opacity: 0.35; transform: translateY(-2px) scale(0.92); }
+            100% { opacity: 1;    transform: translateY(0)    scale(1); }
+        }
+        .dl-overlay-note {
+            font-family: var(--sans); font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;
+        }
+        .dl-overlay-danger {
+            border-color: var(--danger);
+            background: var(--danger-dim);
+            color: var(--danger);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-width: 380px;
+        }
+        .download-btn.dl-disabled {
+            opacity: 0.4; cursor: not-allowed; position: relative;
+        }
+        .download-btn.dl-disabled:hover { background: var(--surface2); border-color: var(--border-glow); color: var(--text); }
+        /* Dymek dla wyłączonych przycisków renderowany przez JS bezpośrednio do <body> (patrz
+           skrypt niżej) — .card ma overflow:hidden (celowo, dla zaokrąglonych rogów), więc
+           czysty CSS ::after zawsze by się przycinał, niezależnie od kierunku otwierania. */
+        .dl-tip-portal {
+            position: fixed;
+            background: #1e2230; border: 1px solid var(--border-glow);
+            color: var(--text); font-family: var(--sans); font-size: 0.74rem; line-height: 1.45;
+            padding: 9px 13px; border-radius: 8px; width: 210px;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.6);
+            z-index: 9999; pointer-events: none;
+            opacity: 0; transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .dl-tip-portal.show { opacity: 1; transform: translateY(0); }
 
         /* ─── FOOTER + SESSION INFO ─── */
         .footer {
@@ -1094,30 +1170,51 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         </div>
 
         <!-- BOTTOM FULL WIDTH: Downloads -->
-        <div class="card" style="grid-column: 1 / -1;">
-            <div class="section-label">
-                <span class="icon">💾</span>
-                <h3><?= trim($download_heading) !== '' ? htmlspecialchars($download_heading) : '<span style="color:var(--text-muted); font-weight:400;">(brak tytułu sekcji)</span>' ?></h3>
+        <div class="card" id="dl-card" style="grid-column: 1 / -1;">
+            <div id="dl-inner-content"<?= in_array($tlStatus['state'], ['pending', 'blocked'], true) ? ' class="dl-blurred"' : '' ?>>
+                <div class="section-label">
+                    <span class="icon">💾</span>
+                    <h3><?= trim($download_heading) !== '' ? htmlspecialchars($download_heading) : '<span style="color:var(--text-muted); font-weight:400;">(brak tytułu sekcji)</span>' ?></h3>
+                </div>
+                <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:16px;">
+                    <?= htmlspecialchars($download_intro) ?>
+                </p>
+                <?php if ($alert_box_text !== ''): ?>
+                <div class="alert-box info">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <?= htmlspecialchars($alert_box_text) ?>
+                </div>
+                <?php endif; ?>
+                <?php if (trim($download_heading) === '' || empty($downloads)): ?>
+                <?= empty_state_box('Sekcja niekompletna — wymagany jest tytuł ($download_heading) oraz przynajmniej jeden wpis w $downloads (private/secret-key.php).') ?>
+                <?php else: ?>
+                <?php $dlLocked = ($tlStatus['state'] === 'none'); ?>
+                <div class="download-grid">
+                    <?php foreach ($downloads as $d): ?>
+                    <a<?= $dlLocked ? '' : ' href="download.php?file=' . urlencode($d['key']) . '"' ?>
+                       class="download-btn<?= $dlLocked ? ' dl-disabled' : '' ?>"
+                       <?php if ($dlLocked): ?>onclick="return false;" data-tip="<?= htmlspecialchars(t('tl_state_a_tooltip')) ?>" tabindex="-1" aria-disabled="true"<?php endif; ?>>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <?= htmlspecialchars($d['label']) ?>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
             </div>
-            <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:16px;">
-                <?= htmlspecialchars($download_intro) ?>
-            </p>
-            <?php if ($alert_box_text !== ''): ?>
-            <div class="alert-box info">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <?= htmlspecialchars($alert_box_text) ?>
+
+            <?php if ($tlStatus['state'] === 'pending'): ?>
+            <div class="dl-overlay" id="dl-overlay">
+                <div class="dl-overlay-card">
+                    <div class="dl-overlay-label"><?= htmlspecialchars(t('tl_state_b_label')) ?></div>
+                    <div class="dl-countdown" id="dl-countdown" data-unlock-at="<?= (int)$tlStatus['data']['unlock_at'] ?>">--h --m --s</div>
+                    <div class="dl-overlay-note"><?= htmlspecialchars(t('tl_state_b_note')) ?></div>
+                </div>
             </div>
-            <?php endif; ?>
-            <?php if (trim($download_heading) === '' || empty($downloads)): ?>
-            <?= empty_state_box('Sekcja niekompletna — wymagany jest tytuł ($download_heading) oraz przynajmniej jeden wpis w $downloads (private/secret-key.php).') ?>
-            <?php else: ?>
-            <div class="download-grid">
-                <?php foreach ($downloads as $d): ?>
-                <a href="download.php?file=<?= urlencode($d['key']) ?>" class="download-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    <?= htmlspecialchars($d['label']) ?>
-                </a>
-                <?php endforeach; ?>
+            <?php elseif ($tlStatus['state'] === 'blocked'): ?>
+            <div class="dl-overlay">
+                <div class="dl-overlay-card dl-overlay-danger">
+                    <?= htmlspecialchars(t('tl_state_c_message')) ?>
+                </div>
             </div>
             <?php endif; ?>
         </div>
@@ -1125,7 +1222,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v2.1.0</div>
+        <div class="footer-version">WERSJA SYSTEMU: v3.0.0</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
@@ -1270,6 +1367,130 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <!-- ═══════════════════════════════════════ -->
     <script>
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
+    var DL_INITIAL_STATE = <?= json_encode($tlStatus['state']) ?>;
+
+    // ─── Żywy licznik odliczania 48h (Stan B — trwa timelock) ───
+    // Wydzielone jako funkcja wielokrotnego użytku: wywoływane albo od razu przy starcie
+    // strony (jeśli PHP od razu wyrenderował Stan B), albo dynamicznie, natychmiast po
+    // udanym uzbrojeniu timelocka w tej samej sesji — bez potrzeby odświeżania strony.
+    // ─── Odpytywanie stanu timelocka (Panic Button / reset przez regenerację configu) ───
+    // Licznik sam z siebie nie wie, że coś się zmieniło po stronie serwera — odpytujemy
+    // co 10s i przeładowujemy stronę przy JAKIEJKOLWIEK zmianie stanu (najprostszy, w pełni
+    // niezawodny sposób poprawnego odzwierciedlenia wszystkich możliwych przejść stanów).
+    var dlStatusPollTimer = null;
+    function startDlStatusPoll(knownState) {
+        if (dlStatusPollTimer) return; // już działa
+        dlStatusPollTimer = setInterval(function() {
+            fetch('tl-status.php')
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res && res.state && res.state !== knownState) {
+                        location.reload();
+                    }
+                })
+                .catch(function() {});
+        }, 10000);
+    }
+
+    function startDlCountdown(el, unlockAtSeconds) {
+        var unlockAt = unlockAtSeconds * 1000;
+        var lastText = '';
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function render() {
+            var remaining = unlockAt - Date.now();
+            if (remaining <= 0) {
+                // WAŻNE: nie odświeżamy strony tutaj bezpośrednio na podstawie zegara klienta —
+                // przy nawet niewielkim rozjeździe zegara klient/serwer to potrafiło wywołać
+                // nieskończoną pętlę odświeżeń (strona wracała w Stanie B z ułamkiem sekundy
+                // do końca, znowu osiągała zero, znowu się odświeżała...). Zamiast tego:
+                // zatrzymujemy licznik na zerze, a o faktyczne przeładowanie dba już działający
+                // równolegle startDlStatusPoll() — on pyta SERWER (autorytatywny zegar), więc
+                // przeładuje dopiero gdy stan naprawdę się zmieni, bez ryzyka pętli.
+                clearInterval(intervalId);
+                el.innerHTML = '0h 00m <span class="dl-tick">00s</span>';
+                return;
+            }
+            var h = Math.floor(remaining / 3600000);
+            var m = Math.floor((remaining % 3600000) / 60000);
+            var s = Math.floor((remaining % 60000) / 1000);
+            var text = h + 'h ' + pad(m) + 'm ' + pad(s) + 's';
+
+            if (text !== lastText) {
+                lastText = text;
+                // Owijamy same sekundy w span z animacją "tick", żeby każda zmiana subtelnie mrugnęła
+                el.innerHTML = h + 'h ' + pad(m) + 'm <span class="dl-tick">' + pad(s) + 's</span>';
+            }
+        }
+
+        render();
+        var intervalId = setInterval(render, 1000);
+    }
+
+    // Dynamicznie przełącza sekcję pobierania w Stan B — bez przeładowania strony.
+    function activateDlPendingState(unlockAtSeconds) {
+        var inner = document.getElementById('dl-inner-content');
+        var card  = document.getElementById('dl-card');
+        if (!inner || !card || document.getElementById('dl-overlay')) return; // już aktywny albo brak sekcji
+
+        inner.classList.add('dl-blurred');
+
+        var overlay = document.createElement('div');
+        overlay.className = 'dl-overlay';
+        overlay.id = 'dl-overlay';
+        overlay.innerHTML =
+            '<div class="dl-overlay-card">' +
+                '<div class="dl-overlay-label">' + <?= json_encode(t('tl_state_b_label')) ?> + '</div>' +
+                '<div class="dl-countdown" id="dl-countdown">--h --m --s</div>' +
+                '<div class="dl-overlay-note">' + <?= json_encode(t('tl_state_b_note')) ?> + '</div>' +
+            '</div>';
+        card.appendChild(overlay);
+
+        startDlCountdown(document.getElementById('dl-countdown'), unlockAtSeconds);
+        startDlStatusPoll('pending');
+    }
+
+    // ─── Dymek dla wyłączonych przycisków pobierania (Stan A) — portal do <body> ───
+    (function() {
+        var tipEl = null;
+        function showTip(btn) {
+            hideTip();
+            var text = btn.getAttribute('data-tip');
+            if (!text) return;
+            tipEl = document.createElement('div');
+            tipEl.className = 'dl-tip-portal';
+            tipEl.textContent = text;
+            document.body.appendChild(tipEl);
+            var rect = btn.getBoundingClientRect();
+            var top = rect.bottom + 10;
+            var left = rect.left + rect.width / 2 - tipEl.offsetWidth / 2;
+            left = Math.max(8, Math.min(left, window.innerWidth - tipEl.offsetWidth - 8));
+            tipEl.style.top = top + 'px';
+            tipEl.style.left = left + 'px';
+            requestAnimationFrame(function() { if (tipEl) tipEl.classList.add('show'); });
+        }
+        function hideTip() {
+            if (tipEl) { tipEl.remove(); tipEl = null; }
+        }
+        document.querySelectorAll('.download-btn.dl-disabled[data-tip]').forEach(function(btn) {
+            btn.addEventListener('mouseenter', function() { showTip(btn); });
+            btn.addEventListener('mouseleave', hideTip);
+            btn.addEventListener('blur', hideTip);
+        });
+        window.addEventListener('scroll', hideTip, true);
+    })();
+
+    // ─── Inicjalizacja licznika, jeśli strona ładuje się już w Stanie B (renderowanym przez PHP) ───
+    (function() {
+        var el = document.getElementById('dl-countdown');
+        if (el) startDlCountdown(el, parseInt(el.getAttribute('data-unlock-at'), 10));
+    })();
+
+    // ─── Odpytywanie stanu — zawsze, niezależnie od stanu początkowego. Musi działać też
+    // w Stanie A/D, żeby złapać np. ręczne usunięcie timelock.json (powrót do Stanu A)
+    // albo uzbrojenie nowego timelocka w innej karcie/sesji (przejście do Stanu B). ───
+    startDlStatusPoll(DL_INITIAL_STATE);
 
     // ─── Wylogowanie — POST + CSRF zamiast zwykłej nawigacji GET ───
     // (logout.php wymaga teraz POST-a z poprawnym tokenem, żeby zapobiec
@@ -1450,6 +1671,76 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         resultError.textContent = msg;
     }
 
+    // ─── Weryfikacja poprawności złożonego sekretu (nie tylko "czy combine() nie rzucił wyjątku") ───
+    // Samo Shamir Secret Sharing nie ma wbudowanej integralności — błędne/niewystarczające udziały
+    // prawie zawsze i tak zwracają jakiś niepusty, losowy ciąg zamiast rzucić błąd. Dwie niezależne
+    // metody poniżej odróżniają prawdziwe hasło od kryptograficznego śmiecia.
+    function tryCombineParts(subset) {
+        try {
+            var hex = secrets.combine(subset);
+            var str = secrets.hex2str(hex);
+            return (str && str.length > 0) ? str : null;
+        } catch (e) {
+            return null;
+        }
+    }
+    // Metoda 1: prawdziwe hasło to w praktyce czytelny tekst — losowy śmieć z błędnych udziałów
+    // prawie zawsze nim nie jest. WAŻNE: sekret w tym secrets.js jest kodowany znak po znaku jako
+    // pełny 16-bitowy kod Unicode (charCodeAt/String.fromCharCode, bytesPerChar=2), NIE jako bajty
+    // UTF-8 — dlatego test musi obejmować cały Unicode, nie tylko ASCII. Hasła z polskimi/innymi
+    // znakami diakrytycznymi (np. "ł" = U+0142) są w pełni poprawne i muszą przejść ten test.
+    // Wymagamy, żeby KAŻDY znak należał do "sensownych" kategorii Unicode: litera (\p{L}), cyfra
+    // (\p{N}), interpunkcja (\p{P}), symbol (\p{S}) lub zwykła spacja (\p{Zs}) — to znacznie
+    // ciaśniejsze sito niż samo odrzucanie znaków sterujących, bo większość 16-bitowej przestrzeni
+    // kodowej to nieprzypisane/formatujące/inne nie-drukowalne punkty kodowe. Im dłuższy sekret,
+    // tym mocniejszy test (przy typowej długości hasła do menedżera haseł, 16+ znaków, szansa na
+    // przypadkowe przejście testu przez śmieć jest rzędu pojedynczych procent lub mniej).
+    function looksLikeRealSecret(str) {
+        return /^[\p{L}\p{N}\p{P}\p{S}\p{Zs}]+$/u.test(str);
+    }
+    // Metoda 2: własność matematyczna Shamira — KAŻDY podzbiór udziałów o rozmiarze >= progu
+    // z tego samego podziału musi zrekonstruować identyczny sekret. Jeśli powiernicy podali więcej
+    // udziałów niż ściśle wymagane minimum, sprawdzamy to empirycznie (leave-one-out): jeśli
+    // pominięcie DOWOLNEGO pojedynczego udziału nadal daje ten sam wynik dla wszystkich kombinacji,
+    // to niemal pewność matematyczna (nie heurystyka), że wynik jest poprawny. Jeśli podano dokładnie
+    // tyle udziałów ile wynosi próg, pominięcie któregokolwiek z nich musi z definicji dać inny wynik
+    // (za mało udziałów) — to NIE jest dowodem błędu, więc brak potwierdzenia tą metodą nie jest karany,
+    // tylko traktowany jako nierozstrzygający (spada wtedy do Metody 1).
+    function verifiedBySubsetConsistency(parts, fullResult) {
+        if (parts.length < 2) return false;
+        for (var i = 0; i < parts.length; i++) {
+            var subset = parts.slice(0, i).concat(parts.slice(i + 1));
+            var subResult = tryCombineParts(subset);
+            if (subResult === null || subResult !== fullResult) return false;
+        }
+        return true;
+    }
+
+    // ─── Logowanie DECRYPT FAILED/ERROR — dopiero przy utracie fokusu pola (blur),
+    // z awaryjnym limitem 10s nieaktywności jako zabezpieczeniem (np. gdy ktoś zamknie kartę
+    // zamiast kliknąć gdzie indziej). Dzięki temu ręczne, powolne przepisywanie udziałów
+    // z przerwami między znakami nie generuje fałszywych wpisów FAILED w logu — SUCCESS
+    // nie jest tym objęty i loguje się tak jak dotychczas, od razu po 1,5s. ───
+    var failLogTimer = null;
+    var pendingFailLog = null;
+
+    function scheduleFailLog(payload) {
+        pendingFailLog = payload;
+        clearTimeout(failLogTimer);
+        failLogTimer = setTimeout(flushFailLog, 10000);
+    }
+    function flushFailLog() {
+        clearTimeout(failLogTimer);
+        if (!pendingFailLog) return;
+        fetch('log.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(pendingFailLog) });
+        pendingFailLog = null;
+    }
+    function cancelFailLog() {
+        clearTimeout(failLogTimer);
+        pendingFailLog = null;
+    }
+    partsInput.addEventListener('blur', flushFailLog);
+
     partsInput.addEventListener('input', function() {
         var raw = partsInput.value.trim();
 
@@ -1480,36 +1771,36 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             }
         });
 
-        if (!raw) { showLocked(); return; }
+        if (!raw) { cancelFailLog(); showLocked(); return; }
 
         var parts = raw.split(/\s+/).filter(function(p) { return p.length > 0; });
-        if (parts.length < 3) { showLocked(); return; }
+        if (parts.length < 3) { cancelFailLog(); showLocked(); return; }
 
         try {
-            var combinedHex = secrets.combine(parts);
-            var combined = secrets.hex2str(combinedHex);
-            if (combined && combined.trim().length > 0) {
+            var combined = tryCombineParts(parts);
+            var verifiedSubsets = combined !== null && verifiedBySubsetConsistency(parts, combined);
+            var verifiedFormat  = combined !== null && looksLikeRealSecret(combined.trim());
+
+            if (combined !== null && (verifiedSubsets || verifiedFormat)) {
                 showValue(combined.trim());
+                cancelFailLog();
                 clearTimeout(window._decryptLogTimer);
                 window._decryptLogTimer = setTimeout(function() {
                     fetch('log.php', { method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ event: 'DECRYPT SUCCESS', keys: parts.length, csrf_token: CSRF_TOKEN }) });
+                        body: JSON.stringify({ event: 'DECRYPT SUCCESS', keys: parts.length, verified_by: (verifiedSubsets ? 'subset_consistency' : 'format_check'), csrf_token: CSRF_TOKEN }) });
+                    fetch('arm-timelock.php', { method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ csrf_token: CSRF_TOKEN }) })
+                        .then(function(r) { return r.json(); })
+                        .then(function(res) { if (res && res.armed && res.unlock_at) activateDlPendingState(res.unlock_at); })
+                        .catch(function() {});
                 }, 1500);
             } else {
                 showError('Nie można odszyfrować hasła. Sprawdź, czy klucze są wpisane poprawnie (jeden klucz w linii, bez spacji).');
-                clearTimeout(window._decryptLogTimer);
-                window._decryptLogTimer = setTimeout(function() {
-                    fetch('log.php', { method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ event: 'DECRYPT FAILED', keys: parts.length, csrf_token: CSRF_TOKEN }) });
-                }, 1500);
+                scheduleFailLog({ event: 'DECRYPT FAILED', keys: parts.length, csrf_token: CSRF_TOKEN });
             }
         } catch(e) {
             showError(I18N_JS.errorPrefix + e.message);
-            clearTimeout(window._decryptLogTimer);
-            window._decryptLogTimer = setTimeout(function() {
-                fetch('log.php', { method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ event: 'DECRYPT ERROR', keys: parts.length, csrf_token: CSRF_TOKEN }) });
-            }, 1500);
+            scheduleFailLog({ event: 'DECRYPT ERROR', keys: parts.length, csrf_token: CSRF_TOKEN });
         }
     });
     </script>

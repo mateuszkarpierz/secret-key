@@ -239,10 +239,14 @@ Browser      →  nimmt die Shamir-Anteile entgegen, rekonstruiert das Geheimnis
 - `logout.php` — Abmeldung
 
 **Zugriffsebene** (`/decrypt/`)
-- `index.php` — das Entschlüsselungspanel mit Shamir-Rekonstruktion in JS
-- `download.php` — geschützte Dateidownloads (erfordert eine Sitzung, eine aus der Konfiguration erstellte Whitelist, serverseitige Protokollierung)
+- `index.php` — das Entschlüsselungspanel mit Shamir-Rekonstruktion in JS; überprüft das Ergebnis mit zwei unabhängigen Methoden (mathematische Konsistenz über Anteil-Teilmengen + Textformat-Analyse), statt sich nur auf das Ausbleiben einer Ausnahme zu verlassen
+- `download.php` — geschützte Dateidownloads (erfordert eine Sitzung, eine aus der Konfiguration erstellte Whitelist, serverseitige Protokollierung) + harte, vom Panel unabhängige Timelock-Validierung
 - `log.php` — Ereignisprotokollierung
 - `devtools-log.php` — Protokollierung von DevTools-Inspektionsversuchen (mit IP-basiertem Rate Limiting)
+- `timelock.php` — Timelock-Logik nach Vertrauenspersonen-Absprache (siehe [Sicherheit](#sicherheit))
+- `arm-timelock.php` — aktiviert die 48h-Sperre nach bestätigter Passwort-Rekonstruktion, versendet die Alarm-E-Mail
+- `panic.php` — verarbeitet den einmaligen "Panic Button"-Link aus der E-Mail
+- `tl-status.php` — Live-Abfrage des Sperrzustands (kein Neuladen des Panels nötig)
 
 **Datenebene** (`/private/` — außerhalb von `public_html`)
 - `secret-key.php` — eine einzige Konfigurationsdatei: Personen (`$people`), herunterladbare Dateien (`$downloads`), Anleitung (`$instructions`), E-Mail-Benachrichtigung (`$email_notify`), SMS-Domain
@@ -250,6 +254,7 @@ Browser      →  nimmt die Shamir-Anteile entgegen, rekonstruiert das Geheimnis
 - `rate-limit.php` — dauerhaftes Rate Limiting (Zähler unabhängig von der Sitzung)
 - `rate_limits.json` — Anmeldeversuch-Zähler pro IP/Konto *(wird automatisch erstellt)*
 - `trusted_devices.json` — Tokens für vertrauenswürdige Geräte *(wird automatisch erstellt)*
+- `timelock.json` — Zustand der 48h-Sperre nach Vertrauenspersonen-Absprache *(wird automatisch erstellt, siehe [Sicherheit](#sicherheit))*
 - `secret-key.log` — Ereignisprotokolle
 - `moja-baza-hasel.kdbx` *(und weitere herunterladbare Dateien)* — werden ausschließlich über `download.php` ausgeliefert, nie direkt über HTTP
 
@@ -260,7 +265,7 @@ Browser      →  nimmt die Shamir-Anteile entgegen, rekonstruiert das Geheimnis
 
 ## Sicherheit
 
-Das System kombiniert **acht unabhängige Schutzebenen** — die Kompromittierung einer Ebene gewährt keinen Zugriff auf das System.
+Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierung einer Ebene gewährt keinen Zugriff auf das System.
 
 | Ebene | Mechanismus | Details |
 |---|---|---|
@@ -274,7 +279,9 @@ Das System kombiniert **acht unabhängige Schutzebenen** — die Kompromittierun
 | 📥 **Geschützte Downloads** | `download.php` + Whitelist | Herunterladbare Dateien liegen außerhalb von `public_html`; eine aktive Sitzung ist erforderlich, keine direkte URL, immer serverseitig protokolliert |
 
 > [!TIP]
-> **Schutz vor Absprachen der Vertrauenspersonen zu Lebzeiten.** Der Shamir-Algorithmus erlaubt es den benannten Vertrauenspersonen mathematisch, das Master-Passwort selbst zu rekonstruieren, wenn sie sich dazu absprechen — das ist eine unvermeidliche Eigenschaft jedes Schwellenwert-Secret-Sharing-Verfahrens, nicht nur dieses. Wenn du deine Passwortdatenbank nicht zusätzlich mit einem Hardware-Schlüssel (z. B. YubiKey/FIDO2) schützt, reicht das rekonstruierte Passwort aus, um die Datenbank vollständig zu öffnen. Secret Key begrenzt dieses Risiko durch E-Mail-Benachrichtigungssonden bei Anmelde- und Download-Versuchen, aber für maximalen Schutz wird empfohlen, einen Hardware-Schlüssel als zweiten Faktor für die Passwortdatenbank selbst zu verwenden — dann nützt die bloße Kenntnis des Master-Passworts niemandem etwas ohne die physische Anwesenheit des Schlüssels bei dir.
+| 🚨 **Schutz vor Vertrauenspersonen-Absprachen** | 48h-Timelock + Panic Button | Die erste erfolgreiche Passwort-Rekonstruktion blockiert Datei-Downloads für 48h und sendet eine Alarm-E-Mail mit einem einmaligen Link, um den Zugriff sofort und dauerhaft zu blockieren — siehe unten |
+
+> **Schutz vor Absprachen der Vertrauenspersonen zu Lebzeiten.** Der Shamir-Algorithmus erlaubt es den benannten Vertrauenspersonen mathematisch, das Master-Passwort selbst zu rekonstruieren, wenn sie sich dazu absprechen — das ist eine unvermeidliche Eigenschaft jedes Schwellenwert-Secret-Sharing-Verfahrens, nicht nur dieses. Das System reagiert darauf auf zwei Ebenen: (1) es **verifiziert**, dass das wiederhergestellte Passwort echt ist und nicht kryptografischer Müll aus falschen Anteilen (mathematische Konsistenz über Anteil-Teilmengen + Analyse des Ergebnisformats), und (2) nach einer bestätigten erfolgreichen Rekonstruktion **blockiert es Datei-Downloads für 48 Stunden** und sendet dir eine E-Mail mit einem einmaligen "Panic Button"-Link — ein Klick trennt den Zugriff dauerhaft, bevor irgendjemand etwas herunterladen kann. Die bloße Kenntnis des Passworts ist ohne die physische Datenbankdatei wertlos. Für maximalen Schutz wird zusätzlich empfohlen, einen Hardware-Schlüssel (z. B. YubiKey/FIDO2) als zweiten Faktor für die Passwortdatenbank selbst zu verwenden.
 
 ---
 
@@ -374,13 +381,17 @@ secret-key/
 ├── 📁 app/                        # Öffentlich — Anmeldesystem
 │   ├── 📁 decrypt/                # Geschützt — Benutzerpanel
 │   │   ├── .htaccess
+│   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
 │   │   ├── devtools-log.php
 │   │   ├── download.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
-│   │   └── log.php
+│   │   ├── log.php
+│   │   ├── panic.php
+│   │   ├── timelock.php
+│   │   └── tl-status.php
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -438,6 +449,13 @@ Das System ist mit Redundanz konzipiert — es genügt, die minimal erforderlich
 <summary><strong>Erreicht das Passwort während der Entschlüsselung den Server?</strong></summary>
 
 Nein. Die Rekonstruktion des Passworts aus den Shamir-Anteilen erfolgt **vollständig auf der Browserseite** (JavaScript). Der Server dient nur zur Authentifizierung des Benutzers — das Geheimnis selbst verlässt ihn niemals.
+
+</details>
+
+<details>
+<summary><strong>Was passiert, wenn sich die Vertrauenspersonen absprechen und zu meinen Lebzeiten ohne mein Wissen das Passwort wiederherstellen?</strong></summary>
+
+Das Passwort allein reicht ihnen nicht. Die Datenbankdateien liegen außerhalb des öffentlichen Verzeichnisses des Servers, und der Zugriff darauf wird von `download.php` kontrolliert. In dem Moment, in dem das Passwort im Panel zum ersten Mal erfolgreich rekonstruiert wird, blockiert das System automatisch die Datei-Downloads für 48 Stunden und sendet dir eine Alarm-E-Mail mit einem einmaligen „Panic Button"-Link — ein Klick trennt den Zugriff dauerhaft, sodass du in Ruhe das Master-Passwort ändern kannst. Wenn du die Passwortdatenbank zusätzlich mit einem Hardware-Schlüssel (z. B. YubiKey) schützt, reicht die bloße Kenntnis des Passworts auch nach der Freigabe der Dateien nicht aus, um sie zu öffnen.
 
 </details>
 

@@ -239,10 +239,14 @@ Navigateur   →  reçoit les fragments Shamir, reconstitue le secret localement
 - `logout.php` — déconnexion
 
 **Couche d'accès** (`/decrypt/`)
-- `index.php` — le panneau de déchiffrement avec reconstitution Shamir en JS
-- `download.php` — téléchargements de fichiers contrôlés (session requise, liste blanche construite à partir de la configuration, journalisation côté serveur)
+- `index.php` — le panneau de déchiffrement avec reconstitution Shamir en JS ; vérifie le résultat avec deux méthodes indépendantes (cohérence mathématique entre sous-ensembles de parts + analyse du format du texte) plutôt que de se fier à la simple absence d'exception
+- `download.php` — téléchargements de fichiers contrôlés (session requise, liste blanche construite à partir de la configuration, journalisation côté serveur) + validation stricte du timelock indépendante du panneau
 - `log.php` — journalisation des événements
 - `devtools-log.php` — journalisation des tentatives d'inspection DevTools (avec limitation de débit par IP)
+- `timelock.php` — logique du timelock après collusion des tiers de confiance (voir [Sécurité](#sécurité))
+- `arm-timelock.php` — active le blocage de 48h après une reconstitution de mot de passe confirmée, envoie l'e-mail d'alerte
+- `panic.php` — traite le lien à usage unique « Panic Button » de l'e-mail
+- `tl-status.php` — interrogation en direct de l'état du blocage (pas besoin de recharger le panneau)
 
 **Couche de données** (`/private/` — en dehors de `public_html`)
 - `secret-key.php` — un fichier de configuration unique : personnes (`$people`), fichiers téléchargeables (`$downloads`), instructions (`$instructions`), notification e-mail (`$email_notify`), domaine SMS
@@ -250,6 +254,7 @@ Navigateur   →  reçoit les fragments Shamir, reconstitue le secret localement
 - `rate-limit.php` — limitation de débit persistante (compteurs indépendants de la session)
 - `rate_limits.json` — compteurs de tentatives de connexion par IP/compte *(créé automatiquement)*
 - `trusted_devices.json` — jetons des appareils de confiance *(créé automatiquement)*
+- `timelock.json` — état du blocage de 48h après collusion des tiers de confiance *(créé automatiquement, voir [Sécurité](#sécurité))*
 - `secret-key.log` — journaux d'événements
 - `moja-baza-hasel.kdbx` *(et autres fichiers téléchargeables)* — servis uniquement via `download.php`, jamais directement via HTTP
 
@@ -260,7 +265,7 @@ Navigateur   →  reçoit les fragments Shamir, reconstitue le secret localement
 
 ## Sécurité
 
-Le système combine **huit couches de protection indépendantes** — la compromission de l'une ne donne pas accès au système.
+Le système combine **neuf couches de protection indépendantes** — la compromission de l'une ne donne pas accès au système.
 
 | Couche | Mécanisme | Détails |
 |---|---|---|
@@ -274,7 +279,9 @@ Le système combine **huit couches de protection indépendantes** — la comprom
 | 📥 **Téléchargements contrôlés** | `download.php` + liste blanche | Les fichiers téléchargeables se trouvent en dehors de `public_html` ; une session active est requise, aucune URL directe, toujours journalisé côté serveur |
 
 > [!TIP]
-> **Protection contre la collusion des tiers de confiance de votre vivant.** L'algorithme de Shamir permet mathématiquement aux personnes désignées de reconstituer le mot de passe principal si elles s'entendent pour le faire — c'est une propriété inévitable de tout schéma de partage de secret à seuil, pas seulement de celui-ci. Si vous ne protégez pas en plus votre base de mots de passe par une clé de sécurité physique (par ex. YubiKey/FIDO2), le mot de passe reconstitué leur suffit pour ouvrir entièrement la base. Secret Key limite ce risque grâce à des sondes de notification par e-mail lors des tentatives de connexion et de téléchargement, mais pour une protection maximale, il est recommandé d'utiliser une clé physique comme second facteur de la base de mots de passe elle-même — ainsi, connaître seul le mot de passe principal ne sert à rien sans la présence physique de la clé auprès de vous.
+| 🚨 **Protection contre la collusion des tiers de confiance** | Timelock 48h + Panic Button | La première reconstitution réussie du mot de passe bloque les téléchargements de fichiers pendant 48h et envoie un e-mail d'alerte avec un lien à usage unique pour bloquer l'accès immédiatement et définitivement — voir ci-dessous |
+
+> **Protection contre la collusion des tiers de confiance de votre vivant.** L'algorithme de Shamir permet mathématiquement aux personnes désignées de reconstituer le mot de passe principal si elles s'entendent pour le faire — c'est une propriété inévitable de tout schéma de partage de secret à seuil, pas seulement de celui-ci. Le système réagit à cela sur deux niveaux : (1) il **vérifie** que le mot de passe récupéré est authentique et non un résultat cryptographique aléatoire issu de parts erronées (cohérence mathématique entre sous-ensembles de parts + analyse du format du résultat), et (2) après une reconstitution réussie confirmée, il **bloque les téléchargements de fichiers pendant 48 heures**, en vous envoyant un e-mail avec un lien à usage unique « Panic Button » — un clic coupe définitivement l'accès avant que quiconque puisse télécharger quoi que ce soit. Connaître seul le mot de passe ne sert à rien sans le fichier physique de la base de données. Pour une protection maximale, il est en outre recommandé d'utiliser une clé de sécurité physique (par ex. YubiKey/FIDO2) comme second facteur de la base de mots de passe elle-même.
 
 ---
 
@@ -374,13 +381,17 @@ secret-key/
 ├── 📁 app/                        # Public — système de connexion
 │   ├── 📁 decrypt/                # Protégé — panneau utilisateur
 │   │   ├── .htaccess
+│   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
 │   │   ├── devtools-log.php
 │   │   ├── download.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
-│   │   └── log.php
+│   │   ├── log.php
+│   │   ├── panic.php
+│   │   ├── timelock.php
+│   │   └── tl-status.php
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -438,6 +449,13 @@ Le système est conçu avec de la redondance — il suffit de réunir le nombre 
 <summary><strong>Le mot de passe atteint-il le serveur pendant le déchiffrement ?</strong></summary>
 
 Non. La reconstitution du mot de passe à partir des fragments Shamir se fait **entièrement côté navigateur** (JavaScript). Le serveur ne sert qu'à authentifier l'utilisateur — le secret lui-même ne le quitte jamais.
+
+</details>
+
+<details>
+<summary><strong>Que se passe-t-il si les tiers de confiance s'entendent pour récupérer le mot de passe de mon vivant, à mon insu ?</strong></summary>
+
+Le mot de passe seul ne leur suffit pas. Les fichiers de la base de données se trouvent en dehors du répertoire public du serveur, et l'accès y est contrôlé par `download.php`. Dès la première reconstitution réussie du mot de passe dans le panneau, le système bloque automatiquement les téléchargements de fichiers pendant 48 heures et vous envoie un e-mail d'alerte avec un lien à usage unique « Panic Button » — un clic coupe définitivement l'accès, vous laissant le temps de changer le mot de passe principal en toute tranquillité. Si vous protégez en plus la base de mots de passe par une clé de sécurité physique (par ex. YubiKey), la seule connaissance du mot de passe ne suffira pas à l'ouvrir, même une fois les fichiers débloqués.
 
 </details>
 

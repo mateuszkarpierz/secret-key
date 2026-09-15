@@ -239,10 +239,14 @@ Navegador     →  recebe os fragmentos Shamir, reconstrói o segredo localmente
 - `logout.php` — logout
 
 **Camada de acesso** (`/decrypt/`)
-- `index.php` — o painel de descriptografia com reconstrução Shamir em JS
-- `download.php` — downloads de arquivos controlados (requer sessão, lista branca construída a partir da configuração, log no lado do servidor)
+- `index.php` — o painel de descriptografia com reconstrução Shamir em JS; verifica o resultado com dois métodos independentes (consistência matemática entre subconjuntos de partes + análise do formato do texto) em vez de confiar apenas na ausência de uma exceção
+- `download.php` — downloads de arquivos controlados (requer sessão, lista branca construída a partir da configuração, log no lado do servidor) + validação rígida do timelock independente do painel
 - `log.php` — registro de eventos
 - `devtools-log.php` — registro de tentativas de inspeção via DevTools (com rate limiting por IP)
+- `timelock.php` — lógica do timelock após conluio de fiduciários (veja [Segurança](#segurança))
+- `arm-timelock.php` — ativa o bloqueio de 48h após uma reconstrução de senha confirmada, envia o e-mail de alerta
+- `panic.php` — trata o link de uso único „Panic Button" do e-mail
+- `tl-status.php` — consulta ao vivo do estado do bloqueio (sem precisar recarregar o painel)
 
 **Camada de dados** (`/private/` — fora de `public_html`)
 - `secret-key.php` — um único arquivo de configuração: pessoas (`$people`), arquivos para download (`$downloads`), instruções (`$instructions`), notificação por e-mail (`$email_notify`), domínio SMS
@@ -250,6 +254,7 @@ Navegador     →  recebe os fragmentos Shamir, reconstrói o segredo localmente
 - `rate-limit.php` — rate limiting persistente (contadores independentes da sessão)
 - `rate_limits.json` — contadores de tentativas de login por IP/conta *(criado automaticamente)*
 - `trusted_devices.json` — tokens de dispositivos confiáveis *(criado automaticamente)*
+- `timelock.json` — estado do bloqueio de 48h após conluio de fiduciários *(criado automaticamente, veja [Segurança](#segurança))*
 - `secret-key.log` — logs de eventos
 - `moja-baza-hasel.kdbx` *(e outros arquivos para download)* — servidos apenas via `download.php`, nunca diretamente via HTTP
 
@@ -260,7 +265,7 @@ Navegador     →  recebe os fragmentos Shamir, reconstrói o segredo localmente
 
 ## Segurança
 
-O sistema combina **oito camadas independentes de proteção** — comprometer uma delas não concede acesso ao sistema.
+O sistema combina **nove camadas independentes de proteção** — comprometer uma delas não concede acesso ao sistema.
 
 | Camada | Mecanismo | Detalhes |
 |---|---|---|
@@ -274,7 +279,9 @@ O sistema combina **oito camadas independentes de proteção** — comprometer u
 | 📥 **Downloads controlados** | `download.php` + lista branca | Arquivos para download ficam fora de `public_html`; sessão ativa exigida, sem URL direta, sempre registrado no lado do servidor |
 
 > [!TIP]
-> **Proteção contra conluio dos fiduciários em vida.** O algoritmo de Shamir permite, matematicamente, que as pessoas designadas reconstruam a própria senha mestra caso se conluiem para isso — essa é uma propriedade inevitável de qualquer esquema de compartilhamento de segredo por limiar, não só deste. Se você não proteger adicionalmente seu banco de senhas com uma chave de segurança física (ex.: YubiKey/FIDO2), a senha reconstruída é suficiente para abrirem o banco por completo. O Secret Key reduz esse risco com sondas de notificação por e-mail em tentativas de login e download de arquivos, mas para o máximo de proteção recomenda-se usar uma chave física como segundo fator do próprio banco de senhas — assim, apenas conhecer a senha mestra não adianta nada sem a presença física da chave com você.
+| 🚨 **Proteção contra conluio de fiduciários** | Timelock 48h + Panic Button | A primeira reconstrução bem-sucedida da senha bloqueia os downloads de arquivos por 48h e envia um e-mail de alerta com um link de uso único para bloquear o acesso imediata e permanentemente — veja abaixo |
+
+> **Proteção contra conluio dos fiduciários em vida.** O algoritmo de Shamir permite, matematicamente, que as pessoas designadas reconstruam a própria senha mestra caso se conluiem para isso — essa é uma propriedade inevitável de qualquer esquema de compartilhamento de segredo por limiar, não só deste. O sistema reage a isso em dois níveis: (1) **verifica** se a senha recuperada é genuína, e não lixo criptográfico de partes erradas (consistência matemática entre subconjuntos de partes + análise do formato do resultado), e (2) após uma reconstrução bem-sucedida confirmada, **bloqueia os downloads de arquivos por 48 horas**, enviando um e-mail com um link de uso único "Panic Button" — um clique corta o acesso permanentemente antes que alguém consiga baixar qualquer coisa. Apenas conhecer a senha não vale nada sem o arquivo físico do banco de dados. Para o máximo de proteção, recomenda-se ainda usar uma chave de segurança física (ex.: YubiKey/FIDO2) como segundo fator do próprio banco de senhas.
 
 ---
 
@@ -374,13 +381,17 @@ secret-key/
 ├── 📁 app/                        # Público — sistema de login
 │   ├── 📁 decrypt/                # Protegido — painel do usuário
 │   │   ├── .htaccess
+│   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
 │   │   ├── devtools-log.php
 │   │   ├── download.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
-│   │   └── log.php
+│   │   ├── log.php
+│   │   ├── panic.php
+│   │   ├── timelock.php
+│   │   └── tl-status.php
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -438,6 +449,13 @@ O sistema foi projetado com redundância — basta reunir o número mínimo nece
 <summary><strong>A senha chega ao servidor durante a descriptografia?</strong></summary>
 
 Não. A reconstrução da senha a partir dos fragmentos Shamir ocorre **totalmente no lado do navegador** (JavaScript). O servidor serve apenas para autenticar o usuário — o segredo em si nunca o deixa.
+
+</details>
+
+<details>
+<summary><strong>E se os fiduciários se conluiarem e recuperarem a senha em vida, sem o meu conhecimento?</strong></summary>
+
+A senha sozinha não é suficiente para eles. Os arquivos do banco de dados ficam fora do diretório público do servidor, e o acesso a eles é controlado pelo `download.php`. No momento em que a senha é reconstruída com sucesso pela primeira vez no painel, o sistema bloqueia automaticamente os downloads de arquivos por 48 horas e envia um e-mail de alerta com um link de uso único „Panic Button" — um clique corta o acesso permanentemente, dando tempo para você trocar a senha mestra com calma. Se você também proteger o banco de senhas com uma chave de segurança física (ex.: YubiKey), apenas conhecer a senha não será suficiente para abri-lo, mesmo depois de os arquivos serem desbloqueados.
 
 </details>
 

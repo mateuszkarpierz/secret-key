@@ -44,7 +44,7 @@ $people = [
   [
     'login'         => 'piotr-kowalski',
     'password'      => '$2y$10$t4qj7ionahDnPRX0rI2CBOxE27Sk/6qOdfbvuGW/B2be19n5/XAn2',
-    'first_name'    => 'Piort',
+    'first_name'    => 'Piotr',
     'last_name'     => 'Kowalski',
     'phone_cc'      => '+48',
     'phone'         => '123456789',

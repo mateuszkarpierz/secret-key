@@ -239,10 +239,14 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 - `logout.php` — wylogowanie
 
 **Warstwa dostępu** (`/decrypt/`)
-- `index.php` — panel odszyfrowania z rekonstrukcją Shamira w JS
-- `download.php` — bramkowane pobieranie plików (wymaga sesji, biała lista budowana z configu, log po stronie serwera)
+- `index.php` — panel odszyfrowania z rekonstrukcją Shamira w JS; weryfikuje poprawność wyniku dwiema niezależnymi metodami (spójność matematyczna podzbiorów udziałów + analiza formatu tekstu), zamiast ufać samemu brakowi wyjątku
+- `download.php` — bramkowane pobieranie plików (wymaga sesji, biała lista budowana z configu, log po stronie serwera) + twarda walidacja timelocka niezależna od panelu
 - `log.php` — logowanie zdarzeń
 - `devtools-log.php` — rejestrowanie incydentów inspekcji DevTools (z rate-limitingiem per IP)
+- `timelock.php` — logika blokady czasowej po zmowie powierników (patrz [Bezpieczeństwo](#bezpieczeństwo))
+- `arm-timelock.php` — uzbraja 48h blokadę po potwierdzonej rekonstrukcji hasła, wysyła alert e-mail
+- `panic.php` — obsługa jednorazowego linku „Panic Button" z maila
+- `tl-status.php` — odpytywanie stanu blokady na żywo (bez potrzeby odświeżania panelu)
 
 **Warstwa danych** (`/private/` — poza `public_html`)
 - `secret-key.php` — jeden plik configu: osoby (`$people`), pliki do pobrania (`$downloads`), instrukcja (`$instructions`), powiadomienie email (`$email_notify`), domena SMS
@@ -250,6 +254,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 - `rate-limit.php` — trwały rate-limiting (liczniki niezależne od sesji)
 - `rate_limits.json` — liczniki prób logowania per IP/konto *(tworzy się automatycznie)*
 - `trusted_devices.json` — tokeny zaufanych urządzeń *(tworzy się automatycznie)*
+- `timelock.json` — stan 48h blokady po zmowie powierników *(tworzy się automatycznie, patrz [Bezpieczeństwo](#bezpieczeństwo))*
 - `secret-key.log` — logi zdarzeń
 - `moja-baza-hasel.kdbx` *(i inne pliki do pobrania)* — serwowane wyłącznie przez `download.php`, nigdy bezpośrednio przez HTTP
 
@@ -260,7 +265,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 
 ## Bezpieczeństwo
 
-System łączy **osiem niezależnych warstw ochrony** — kompromitacja jednej nie daje dostępu do systemu.
+System łączy **dziewięć niezależnych warstw ochrony** — kompromitacja jednej nie daje dostępu do systemu.
 
 | Warstwa | Mechanizm | Szczegóły |
 |---|---|---|
@@ -272,9 +277,10 @@ System łączy **osiem niezależnych warstw ochrony** — kompromitacja jednej n
 | ⏱️ **Sesja** | Auto-logout | Ciasteczko sesji z jawnymi flagami HttpOnly + Secure + SameSite=Strict; 30 min timeout, odnowienie identyfikatora sesji po każdej weryfikacji |
 | 🖥️ **Ochrona interfejsu** | DevTools detect | Detekcja narzędzi deweloperskich, fizyczne usunięcie DOM, rejestracja incydentu w logach z IP, REF# i czasem trwania |
 | 📥 **Bramkowane pobieranie** | `download.php` + biała lista | Pliki do pobrania leżą poza `public_html`; wymagana aktywna sesja, brak bezpośredniego URL, log zawsze po stronie serwera |
+| 🚨 **Ochrona przed zmową powierników** | Timelock 48h + Panic Button | Pierwsza udana rekonstrukcja hasła blokuje pobieranie plików na 48h i wysyła alert e-mail z jednorazowym linkiem do natychmiastowego, trwałego zablokowania dostępu — patrz niżej |
 
 > [!TIP]
-> **Ochrona przed zmową powierników za Twojego życia.** Algorytm Shamira matematycznie pozwala wyznaczonym osobom odtworzyć samo hasło główne, jeśli się w tym celu zmówią — to nieunikniona własność każdego systemu progowego dzielenia sekretu, nie tylko tego. Jeśli nie zabezpieczasz swojej bazy haseł dodatkowo kluczem sprzętowym (np. YubiKey/FIDO2), odtworzone hasło wystarczy im do pełnego otwarcia bazy. Secret Key ogranicza to ryzyko sondami powiadomień e-mail przy próbie logowania i pobrania plików, ale dla maksymalnego poziomu ochrony zalecane jest stosowanie klucza sprzętowego jako drugiego składnika samej bazy haseł — wtedy sama znajomość hasła głównego nikomu nic nie daje bez fizycznej obecności klucza przy Tobie.
+> **Ochrona przed zmową powierników za Twojego życia.** Algorytm Shamira matematycznie pozwala wyznaczonym osobom odtworzyć samo hasło główne, jeśli się w tym celu zmówią — to nieunikniona własność każdego systemu progowego dzielenia sekretu, nie tylko tego. System reaguje na to na dwóch poziomach: (1) **weryfikuje**, że odzyskane hasło jest prawdziwe, a nie przypadkowym śmieciem z błędnych udziałów (spójność matematyczna podzbiorów udziałów + analiza formatu wyniku), i (2) po potwierdzonej udanej rekonstrukcji **blokuje pobieranie plików na 48 godzin**, wysyłając Ci e-mail z jednorazowym linkiem „Panic Button" — jedno kliknięcie trwale odcina dostęp, zanim ktokolwiek zdąży cokolwiek pobrać. Sama znajomość hasła nic nie daje bez fizycznego pliku bazy. Dla maksymalnego poziomu ochrony zalecane jest dodatkowo stosowanie klucza sprzętowego (np. YubiKey/FIDO2) jako drugiego składnika samej bazy haseł.
 
 ---
 
@@ -298,7 +304,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 2. Dla każdej wyznaczonej osoby: login, hasło, imię, nazwisko, numer telefonu i czy ma być widoczna na liście posiadaczy w panelu
 3. Pliki do pobrania (baza haseł, baza 2FA, instalator programu) — klucz, etykieta przycisku, nazwa pliku
 4. Kroki instrukcji dla panelu (formatowanie `**pogrubienie**` / `*kursywa*`)
-5. Opcjonalnie: powiadomienie email o każdym logowaniu (adres odbiorcy, nadawca, link do panelu)
+5. Opcjonalnie: powiadomienie email o każdym logowaniu (adres odbiorcy, nadawca, link do panelu) — *wskazówka: niektóre powiadomienia mogą trafiać do spamu, warto dodać adres nadawcy do białej listy na skrzynce odbiorczej*
 6. Kliknij „Generuj konfigurację" i pobierz wygenerowany plik `secret-key.php`
 
 **Szyfrowanie** — dzieli hasło główne na udziały Shamira:
@@ -374,13 +380,17 @@ secret-key/
 ├── 📁 app/                        # Publiczny — system logowania
 │   ├── 📁 decrypt/                # Chroniony — panel użytkownika
 │   │   ├── .htaccess
+│   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
 │   │   ├── devtools-log.php
 │   │   ├── download.php
 │   │   ├── favicon.ico
 │   │   ├── index.php
 │   │   ├── key.svg
-│   │   └── log.php
+│   │   ├── log.php
+│   │   ├── panic.php
+│   │   ├── timelock.php
+│   │   └── tl-status.php
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -438,6 +448,13 @@ System jest zaprojektowany z nadmiarowością — wystarczy zebrać minimalną w
 <summary><strong>Czy hasło trafia na serwer podczas odszyfrowania?</strong></summary>
 
 Nie. Rekonstrukcja hasła z udziałów Shamira odbywa się **całkowicie po stronie przeglądarki** (JavaScript). Serwer służy tylko do uwierzytelnienia użytkownika — sam sekret nigdy go nie opuszcza.
+
+</details>
+
+<details>
+<summary><strong>Co jeśli powiernicy zmówią się i odzyskają hasło za mojego życia, bez mojej wiedzy?</strong></summary>
+
+Samo hasło im nie wystarczy. Pliki bazy danych leżą poza katalogiem publicznym serwera, a dostęp do nich kontroluje `download.php`. W momencie pierwszej udanej rekonstrukcji hasła w panelu system automatycznie blokuje pobieranie plików na 48 godzin i wysyła Ci e-mail z alertem oraz jednorazowym linkiem „Panic Button" — jedno kliknięcie trwale odcina dostęp, dając Ci czas na zmianę hasła głównego w spokoju. Jeśli dodatkowo zabezpieczasz bazę haseł kluczem sprzętowym (np. YubiKey), sama znajomość hasła nie wystarczy do jej otwarcia nawet po odblokowaniu plików.
 
 </details>
 
