@@ -298,7 +298,7 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 
 ### Schritt 1 — Konfiguration (offline)
 
-Öffnen Sie `dashboard.html` lokal in Ihrem Browser. Es enthält zwei Registerkarten:
+Öffnen Sie `dashboard.html` lokal in Ihrem Browser. Es enthält drei Registerkarten:
 
 **Konfiguration** — generiert die Datei `secret-key.php`:
 1. Das SMSPlanet-API-Token, den SMS-Absendernamen und die Domain für das automatische Ausfüllen des Codes (Android/iOS) — nur die Domain, ohne `@` und ohne `https://`
@@ -314,8 +314,16 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 3. Klicken Sie auf „Anteile generieren"
 4. Laden Sie die Datei `secret-key-shares.txt` herunter
 
+**Kartengenerator** — erstellt personalisierte Secret-Key-Karten, druckfertig (ISO-ID-1-Format, 85,6×54mm):
+1. Globale Einstellungen: die Instanz-URL und der vollständige Name des Inhabers
+2. Aufteilungsparameter (Gesamtzahl der Anteile und erforderliches Minimum) — konsistent mit den Registerkarten Konfiguration und Verschlüsselung
+3. Eine bearbeitbare Nachricht auf der Rückseite der Karte, mit Platzhaltern zum automatischen Einfügen der Anteilsanzahl, des Schwellenwerts und der Instanz-URL
+4. Für jede Person: Login, Passwort und Shamir-Anteil (hex) — Daten aus den beiden vorherigen Registerkarten
+5. Optional: 2mm Beschnitt und Schnittlinien für den Druck in einer Druckerei
+6. Klicken Sie auf „Karten generieren" — Vorschau von Vorder- und Rückseite jeder Karte, bereit zum Herunterladen als PDF
+
 > [!TIP]
-> Beide Werkzeuge arbeiten **vollständig offline** — es verlassen keine Daten den Browser. Das Formular generiert `secret-key.php` bei jedem Durchlauf von Grund auf neu — es lädt oder bearbeitet keine bestehende Datei.
+> Alle drei Werkzeuge arbeiten **vollständig offline** — es verlassen keine Daten den Browser. Das Konfigurationsformular generiert `secret-key.php` bei jedem Durchlauf von Grund auf neu — es lädt oder bearbeitet keine bestehende Datei.
 
 ---
 

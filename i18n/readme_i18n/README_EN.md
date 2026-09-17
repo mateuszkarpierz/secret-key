@@ -298,7 +298,7 @@ The system combines **nine independent layers of protection** — compromising o
 
 ### Step 1 — Configuration (offline)
 
-Open `dashboard.html` locally in your browser. It has two tabs:
+Open `dashboard.html` locally in your browser. It has three tabs:
 
 **Configuration** — generates the `secret-key.php` file:
 1. The SMSPlanet API token, the SMS sender name, and the domain for autofilling the code (Android/iOS) — just the domain, without `@` and without `https://`
@@ -314,8 +314,16 @@ Open `dashboard.html` locally in your browser. It has two tabs:
 3. Click "Generate shares"
 4. Download the `secret-key-shares.txt` file
 
+**Card Generator** — creates personalized Secret Key cards ready to print (ISO ID-1 format, 85.6×54mm):
+1. Global settings: the instance URL and the owner's full name
+2. Split parameters (total shares and required minimum) — consistent with the Configuration and Encryption tabs
+3. An editable message on the back of the card, with tokens to auto-insert the share count, the threshold, and the instance URL
+4. For each person: login, password, and Shamir share (hex) — data from the two previous tabs
+5. Optional: 2mm bleed and cut lines for print-shop printing
+6. Click "Generate cards" — preview of the front and back of each card, ready to download as a PDF
+
 > [!TIP]
-> Both tools work **entirely offline** — no data leaves the browser. The form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
+> All three tools work **entirely offline** — no data leaves the browser. The configuration form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
 
 ---
 

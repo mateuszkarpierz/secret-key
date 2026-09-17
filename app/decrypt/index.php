@@ -8,6 +8,15 @@ requireLogin();
 // ─── Stan blokady czasowej pobierania (Collusion Risk Protection) — patrz timelock.php ───
 $tlStatus = tl_status($people ?? []);
 
+// ─── Wymagany próg (K) udziałów Shamira — konfigurowalny, z fallbackiem dla starych configów ───
+$sharesRequired = defined('SHARES_REQUIRED') ? max(2, (int) SHARES_REQUIRED) : 3;
+// Polska odmiana liczebnika: 2-4 "wymagane" / 5+ (oraz 12-14) "wymaganych"
+$reqMod10  = $sharesRequired % 10;
+$reqMod100 = $sharesRequired % 100;
+$sharesRequiredWord = ($reqMod10 >= 2 && $reqMod10 <= 4 && !($reqMod100 >= 12 && $reqMod100 <= 14))
+    ? t('panel_key_counter_required')
+    : t('panel_key_counter_required_many');
+
 // Fallback — jeśli stara sesja nie ma display_name, odczytaj z $people
 if (empty($_SESSION['display_name']) && !empty($_SESSION['username'])) {
     $sessionPerson = findPersonByLogin($_SESSION['username']);
@@ -903,6 +912,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         .key-counter-dots {
             margin-left: 6px;
             display: flex;
+            flex-wrap: wrap;
             gap: 5px;
         }
         .kdot {
@@ -922,9 +932,6 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             border-color: var(--success);
             box-shadow: 0 0 6px rgba(74,222,128,0.6);
         }
-
-        /* hidden inputs for secrets.js */
-        .hidden { display: none !important; }
 
         /* ════════════════════════════════════════
            CUSTOM CURSOR — outline arrow + morph ring
@@ -1050,10 +1057,9 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 </head>
 <body>
 
-    <!-- Hidden inputs required by secrets.js -->
-    <input class="required hidden" type="number" value="3" min="2" max="255">
-    <input class="total hidden" type="number" value="5" min="2" max="255">
-    <textarea class="secret hidden"></textarea>
+    <!-- Uwaga: usunięto martwe pola .required/.total/.secret — pozostałość po oryginalnym
+         demo iancoleman.io/secrets.js (dot. operacji dzielenia sekretu), niewykorzystywane
+         przez logikę składania (combine) w tym panelu. -->
 
     <!-- MODAL -->
     <div class="modal-overlay" id="modal-overlay">
@@ -1150,17 +1156,17 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                     <span class="key-counter-label"><?= htmlspecialchars(t('panel_key_counter_label')) ?></span>
                     <span class="key-counter-val" id="key-count">0</span>
                     <span class="key-counter-sep">/</span>
-                    <span class="key-counter-max">3 <?= htmlspecialchars(t('panel_key_counter_required')) ?></span>
+                    <span class="key-counter-max"><?= $sharesRequired ?> <?= htmlspecialchars($sharesRequiredWord) ?></span>
                     <span class="key-counter-dots" id="key-dots">
-                        <span class="kdot" id="kdot-1"></span>
-                        <span class="kdot" id="kdot-2"></span>
-                        <span class="kdot" id="kdot-3"></span>
+                        <?php for ($i = 1; $i <= $sharesRequired; $i++): ?>
+                        <span class="kdot" id="kdot-<?= $i ?>"></span>
+                        <?php endfor; ?>
                     </span>
                 </div>
                     <p class="result-title"><?= htmlspecialchars(t('panel_password_title_prefix')) ?><?= htmlspecialchars($programName) ?></p>
                     <div class="result-locked" id="result-locked">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <?= htmlspecialchars(t('panel_decrypt_waiting')) ?>
+                        <?= htmlspecialchars(t('panel_decrypt_waiting', $sharesRequired)) ?>
                     </div>
                     <div class="result-value" id="result-value"></div>
                     <div class="result-error" id="result-error"></div>
@@ -1368,6 +1374,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <script>
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
     var DL_INITIAL_STATE = <?= json_encode($tlStatus['state']) ?>;
+    var SHARES_REQUIRED = <?= $sharesRequired ?>;
 
     // ─── Żywy licznik odliczania 48h (Stan B — trwa timelock) ───
     // Wydzielone jako funkcja wielokrotnego użytku: wywoływane albo od razu przy starcie
@@ -1745,26 +1752,22 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         var raw = partsInput.value.trim();
 
         var keyCountEl = document.getElementById('key-count');
-        var dots = [
-            document.getElementById('kdot-1'),
-            document.getElementById('kdot-2'),
-            document.getElementById('kdot-3')
-        ];
+        var dots = Array.prototype.slice.call(document.querySelectorAll('#key-dots .kdot'));
         var lines = raw ? raw.split(/\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length > 0; }) : [];
         var n = lines.length;
         keyCountEl.textContent = n;
 
         // Koloruj liczbę
-        if (n >= 3) {
+        if (n >= SHARES_REQUIRED) {
             keyCountEl.classList.add('ready');
         } else {
             keyCountEl.classList.remove('ready');
         }
-        // Kropki — max 3
+        // Kropki — dynamicznie, tyle ile SHARES_REQUIRED
         dots.forEach(function(dot, i) {
             if (i < n) {
                 dot.classList.add('active');
-                if (n >= 3) dot.classList.add('done');
+                if (n >= SHARES_REQUIRED) dot.classList.add('done');
                 else        dot.classList.remove('done');
             } else {
                 dot.classList.remove('active', 'done');
@@ -1774,7 +1777,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         if (!raw) { cancelFailLog(); showLocked(); return; }
 
         var parts = raw.split(/\s+/).filter(function(p) { return p.length > 0; });
-        if (parts.length < 3) { cancelFailLog(); showLocked(); return; }
+        if (parts.length < SHARES_REQUIRED) { cancelFailLog(); showLocked(); return; }
 
         try {
             var combined = tryCombineParts(parts);

@@ -297,7 +297,7 @@ System łączy **dziewięć niezależnych warstw ochrony** — kompromitacja jed
 
 ### Krok 1 — Konfiguracja (offline)
 
-Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
+Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 
 **Konfiguracja** — generuje plik `secret-key.php`:
 1. Token API SMSPlanet, nazwa nadawcy SMS oraz domena do autouzupełniania kodu (Android/iOS) — sama domena, bez `@` i bez `https://`
@@ -313,8 +313,16 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera dwie zakładki:
 3. Kliknij „Generuj udziały"
 4. Pobierz plik `secret-key-shares.txt`
 
+**Generator kart** — tworzy spersonalizowane karty Secret Key gotowe do druku (format ISO ID-1, 85.6×54mm):
+1. Ustawienia globalne: adres instancji (URL) oraz imię i nazwisko właściciela
+2. Parametry podziału (łączna liczba udziałów i wymagane minimum) — spójne z zakładkami Konfiguracja i Szyfrowanie
+3. Edytowalna wiadomość na tylnej stronie karty, z żetonami do automatycznego wstawienia liczby udziałów, progu i adresu instancji
+4. Dla każdej osoby: login, hasło i udział Shamira (hex) — dane z dwóch poprzednich zakładek
+5. Opcjonalnie: spad 2mm i linie cięcia do druku w drukarni
+6. Kliknij „Generuj karty" — podgląd przodu i tyłu każdej karty, gotowy do pobrania jako PDF
+
 > [!TIP]
-> Oba narzędzia działają **całkowicie offline** — żadne dane nie opuszczają przeglądarki. Formularz generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
+> Wszystkie trzy narzędzia działają **całkowicie offline** — żadne dane nie opuszczają przeglądarki. Formularz konfiguracji generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
 
 ---
 

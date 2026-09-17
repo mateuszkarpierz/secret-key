@@ -298,7 +298,7 @@ Le système combine **neuf couches de protection indépendantes** — la comprom
 
 ### Étape 1 — Configuration (hors ligne)
 
-Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte deux onglets :
+Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois onglets :
 
 **Configuration** — génère le fichier `secret-key.php` :
 1. Le jeton API SMSPlanet, le nom de l'expéditeur SMS et le domaine pour le remplissage automatique du code (Android/iOS) — le domaine seul, sans `@` ni `https://`
@@ -314,8 +314,16 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte deux ongle
 3. Cliquez sur « Générer les fragments »
 4. Téléchargez le fichier `secret-key-shares.txt`
 
+**Générateur de cartes** — crée des cartes Secret Key personnalisées, prêtes à imprimer (format ISO ID-1, 85,6×54mm) :
+1. Paramètres globaux : l'URL de l'instance et le nom complet du propriétaire
+2. Paramètres de partage (nombre total de fragments et minimum requis) — cohérents avec les onglets Configuration et Chiffrement
+3. Un message modifiable au dos de la carte, avec des jetons pour insérer automatiquement le nombre de fragments, le seuil et l'URL de l'instance
+4. Pour chaque personne : identifiant, mot de passe et fragment Shamir (hex) — données des deux onglets précédents
+5. Optionnel : fond perdu de 2 mm et traits de coupe pour une impression en imprimerie
+6. Cliquez sur « Générer les cartes » — aperçu du recto et du verso de chaque carte, prête à télécharger au format PDF
+
 > [!TIP]
-> Les deux outils fonctionnent **entièrement hors ligne** — aucune donnée ne quitte le navigateur. Le formulaire génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
+> Les trois outils fonctionnent **entièrement hors ligne** — aucune donnée ne quitte le navigateur. Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
 
 ---
 

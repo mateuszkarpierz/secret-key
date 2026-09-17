@@ -125,8 +125,9 @@ $lang = [
     'panel_decrypt_placeholder'   => 'Wpisz swój kod z karty tutaj — jeden kod, jedna linia…',
     'panel_key_counter_label'     => 'KODY:',
     'panel_key_counter_required'  => 'wymagane',
+    'panel_key_counter_required_many' => 'wymaganych',
     'panel_password_title_prefix' => 'Hasło do bazy ',
-    'panel_decrypt_waiting'       => 'Czekam na kody… wpisz co najmniej 3, a hasło pojawi się w tym miejscu.',
+    'panel_decrypt_waiting'       => 'Czekam na kody… wpisz co najmniej %d, a hasło pojawi się w tym miejscu.',
     'panel_decrypt_error_prefix'  => 'Błąd: ',
 
     // ── DECRYPT/INDEX.PHP — modal "Co to jest Secret key?" ──

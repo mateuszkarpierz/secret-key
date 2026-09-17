@@ -298,7 +298,7 @@ El sistema combina **nueve capas de protección independientes** — comprometer
 
 ### Paso 1 — Configuración (sin conexión)
 
-Abre `dashboard.html` localmente en tu navegador. Tiene dos pestañas:
+Abre `dashboard.html` localmente en tu navegador. Tiene tres pestañas:
 
 **Configuración** — genera el archivo `secret-key.php`:
 1. El token de la API de SMSPlanet, el nombre del remitente del SMS y el dominio para autocompletar el código (Android/iOS) — solo el dominio, sin `@` ni `https://`
@@ -314,8 +314,16 @@ Abre `dashboard.html` localmente en tu navegador. Tiene dos pestañas:
 3. Haz clic en «Generar fragmentos»
 4. Descarga el archivo `secret-key-shares.txt`
 
+**Generador de tarjetas** — crea tarjetas Secret Key personalizadas, listas para imprimir (formato ISO ID-1, 85.6×54mm):
+1. Ajustes globales: la URL de la instancia y el nombre completo del propietario
+2. Parámetros de división (número total de fragmentos y mínimo requerido) — coherentes con las pestañas Configuración y Encriptación
+3. Un mensaje editable en el reverso de la tarjeta, con marcadores para insertar automáticamente el número de fragmentos, el umbral y la URL de la instancia
+4. Para cada persona: usuario, contraseña y fragmento Shamir (hex) — datos de las dos pestañas anteriores
+5. Opcional: sangrado de 2mm y líneas de corte para impresión en imprenta
+6. Haz clic en «Generar tarjetas» — vista previa del anverso y reverso de cada tarjeta, lista para descargar como PDF
+
 > [!TIP]
-> Ambas herramientas funcionan **completamente sin conexión** — ningún dato sale del navegador. El formulario genera `secret-key.php` desde cero en cada ejecución — no carga ni edita un archivo existente.
+> Las tres herramientas funcionan **completamente sin conexión** — ningún dato sale del navegador. El formulario de configuración genera `secret-key.php` desde cero en cada ejecución — no carga ni edita un archivo existente.
 
 ---
 
