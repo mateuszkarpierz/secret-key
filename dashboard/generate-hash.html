@@ -206,7 +206,7 @@
         }
 
         /* ─── SMS CONFIG ─── */
-        .sms-grid { display: grid; grid-template-columns: 1fr 180px; gap: 8px; }
+        .sms-grid { display: grid; grid-template-columns: 1fr 480px; gap: 8px; }
         .field-group {
             background: var(--surface2); border: 1px solid var(--border);
             border-radius: 10px; padding: 10px 13px;
@@ -219,6 +219,22 @@
             color: var(--text); font-family: var(--mono); font-size: 0.8rem; width: 100%;
         }
         .field-group input::placeholder { color: var(--text-muted); }
+        .field-group input#shares_required::-webkit-outer-spin-button,
+        .field-group input#shares_required::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .mini-stepper { display: flex; align-items: center; gap: 6px; }
+        .mini-stepper-btn {
+            width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border);
+            background: var(--surface3); color: var(--text-dim);
+            font-size: 0.8rem; font-weight: 700; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; flex-shrink: 0; outline: none; cursor: pointer;
+        }
+        .mini-stepper-btn:hover { border-color: rgba(192,132,252,0.5); color: var(--accent); background: var(--accent-dim); }
+        .mini-stepper-btn:active { transform: scale(0.9); }
+        .mini-stepper input {
+            -moz-appearance: textfield; text-align: center; flex: 1; min-width: 0;
+        }
 
         /* ─── DIVIDER ─── */
         .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border-glow), transparent); margin: 24px 0; }
@@ -1946,17 +1962,28 @@
         <span id="alert-error-msg"></span>
     </div>
 
-    <div class="section-label" style="margin-top:0" data-i18n="smsConfigLabel">Konfiguracja SMS</div>
+    <div class="section-label" style="margin-top:0" data-i18n="basicSettingsLabel">Ustawienia podstawowe</div>
     <div class="sms-grid">
+        <div class="field-group">
+            <div class="field-group-label" data-i18n="senderNameLabel">Nazwa nadawcy SMS</div>
+            <input type="text" id="sms_sender" placeholder="np. Secret Key" data-i18n-placeholder="senderNamePlaceholder" autocomplete="off">
+        </div>
         <div class="field-group">
             <div class="field-group-label" data-i18n="tokenLabel">Token API</div>
             <input type="text" id="sms_token" placeholder="wprowadź token API SMSPlanet" data-i18n-placeholder="tokenPlaceholder" autocomplete="off">
         </div>
         <div class="field-group">
-            <div class="field-group-label" data-i18n="senderNameLabel">Nazwa nadawcy SMS</div>
-            <input type="text" id="sms_sender" placeholder="np. Secret Key" data-i18n-placeholder="senderNamePlaceholder" autocomplete="off">
+            <div class="field-group-label" style="display:flex; align-items:center; gap:4px;">
+                <span data-i18n="sharesRequiredFieldLabel">Wymagane kody</span>
+                <span class="info-tip" style="margin-left:0;" data-i18n-tip="sharesRequiredHint" data-tip="Musi być zgodne z progiem ustawionym w zakładce „Szyfrowanie" — inaczej panel będzie wymagał innej liczby kodów."><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+            </div>
+            <div class="mini-stepper">
+                <button type="button" class="mini-stepper-btn" onclick="changeSharesRequired(-1)">−</button>
+                <input type="number" id="shares_required" min="2" max="255" step="1" value="3" inputmode="numeric" autocomplete="off">
+                <button type="button" class="mini-stepper-btn" onclick="changeSharesRequired(1)">+</button>
+            </div>
         </div>
-        <div class="field-group" style="grid-column: 1 / -1;">
+        <div class="field-group">
             <div class="field-group-label" data-i18n="autofillDomainLabel">Domena do autouzupełniania SMS (Android/iOS)</div>
             <input type="text" id="sms_autofill_domain" placeholder="np. twoja-domena.pl" data-i18n-placeholder="autofillDomainPlaceholder" autocomplete="off">
         </div>
@@ -2077,13 +2104,17 @@ var I18N = {
         mainWarningTitle: '⚠ Używaj tylko lokalnie! Nie otwieraj tego pliku przez internet.',
         mainWarningBody: 'Pobierz wygenerowany <code>secret-key.php</code> i wgraj ręcznie na serwer do folderu <code>/private/</code>.',
 
-        smsConfigLabel: 'Konfiguracja SMS',
+        basicSettingsLabel: 'Ustawienia podstawowe',
         tokenLabel: 'Token API',
         tokenPlaceholder: 'wprowadź token API SMSPlanet',
         senderNameLabel: 'Nazwa nadawcy SMS',
         senderNamePlaceholder: 'np. Secret Key',
         autofillDomainLabel: 'Domena do autouzupełniania SMS (Android/iOS)',
         autofillDomainPlaceholder: 'np. twoja-domena.pl',
+
+        sharesRequiredFieldLabel: 'Wymagane kody',
+        sharesRequiredHint: 'Musi być zgodne z progiem ustawionym w zakładce „Szyfrowanie" — inaczej panel będzie wymagał innej liczby kodów.',
+        errSharesRequired: 'Próg odzyskiwania hasła musi być liczbą całkowitą od 2 do 255.',
 
         emailNotifyLabel: 'Powiadomienie e-mail o logowaniu',
         notifySettingsLabel: 'Ustawienia powiadomień',
@@ -2183,6 +2214,8 @@ var I18N = {
         phpTokenComment: 'Token API SMSPlanet',
         phpDomainComment1: 'Domena widoczna w treści SMS-a (autouzupełnianie kodu na Android/iOS) —',
         phpDomainComment2: 'musi zaczynać się od "@" i być domeną, na której faktycznie działa panel.',
+        phpSharesRequiredComment1: 'Wymagany próg (K) udziałów Shamira — ile kodów trzeba wpisać w panelu, żeby odzyskać hasło.',
+        phpSharesRequiredComment2: 'Musi być zgodne z progiem ustawionym w zakładce dashboardu "Szyfrowanie" przy generowaniu udziałów.',
         phpPeopleComment: 'Osoby systemu — jedno źródło prawdy (login, hasło, dane 2FA, widoczność w panelu)',
         phpDownloadsComment1: 'Pliki do pobrania — jedno źródło dla przycisków w panelu (index.php)',
         phpDownloadsComment2: 'i białej listy pobierania (download.php). Same pliki wgrywane są',
@@ -2203,13 +2236,17 @@ var I18N = {
         mainWarningTitle: '⚠ Local use only! Do not open this file over the internet.',
         mainWarningBody: 'Download the generated <code>secret-key.php</code> and upload it manually to the server, into the <code>/private/</code> folder.',
 
-        smsConfigLabel: 'SMS configuration',
+        basicSettingsLabel: 'Basic settings',
         tokenLabel: 'API token',
         tokenPlaceholder: 'enter SMSPlanet API token',
         senderNameLabel: 'SMS sender name',
         senderNamePlaceholder: 'e.g. Secret Key',
         autofillDomainLabel: 'SMS autofill domain (Android/iOS)',
         autofillDomainPlaceholder: 'e.g. your-domain.com',
+
+        sharesRequiredFieldLabel: 'Required codes',
+        sharesRequiredHint: 'Must match the threshold set in the "Encryption" tab — otherwise the recovery panel will require a different number of codes.',
+        errSharesRequired: 'The password recovery threshold must be a whole number between 2 and 255.',
 
         emailNotifyLabel: 'Login e-mail notification',
         notifySettingsLabel: 'Notification settings',
@@ -2309,6 +2346,8 @@ var I18N = {
         phpTokenComment: 'SMSPlanet API token',
         phpDomainComment1: 'Domain shown in the SMS text (autofill code on Android/iOS) —',
         phpDomainComment2: 'must start with "@" and be a domain the panel actually runs on.',
+        phpSharesRequiredComment1: 'Required Shamir share threshold (K) — how many codes must be entered in the panel to recover the password.',
+        phpSharesRequiredComment2: 'Must match the threshold set in the dashboard\'s "Encryption" tab when generating the shares.',
         phpPeopleComment: 'System users — single source of truth (login, password, 2FA data, panel visibility)',
         phpDownloadsComment1: 'Downloadable files — single source for both the panel buttons (index.php)',
         phpDownloadsComment2: 'and the download whitelist (download.php). The files themselves are uploaded',
@@ -2352,6 +2391,9 @@ function applyLang() {
     });
     document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
         el.title = t(el.getAttribute('data-i18n-title'));
+    });
+    document.querySelectorAll('[data-i18n-tip]').forEach(function(el) {
+        el.setAttribute('data-tip', t(el.getAttribute('data-i18n-tip')));
     });
     document.querySelectorAll('#lang-switch .lang-btn').forEach(function(btn) {
         btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
@@ -3296,6 +3338,7 @@ function resetAll() {
     document.getElementById('sms_token').value  = '';
     document.getElementById('sms_sender').value = '';
     document.getElementById('sms_autofill_domain').value = '';
+    document.getElementById('shares_required').value = '3';
     document.getElementById('download-heading-text').value = '';
     document.getElementById('download-intro-text').value = '';
     document.getElementById('alert-box-text').value = '';
@@ -3322,7 +3365,7 @@ function resetAll() {
     // nowym polu — wygrywa ostatnie (instrukcje), przez co przeglądarka
     // automatycznie przewija stronę w dół. Wracamy fokus na pierwsze pole
     // i przewijamy z powrotem na samą górę.
-    document.getElementById('sms_token').focus();
+    document.getElementById('sms_sender').focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -3360,12 +3403,24 @@ function renderResults(data, skipScroll) {
 
     // Syntax-highlight kodu pliku
     var code = esc(data.file_content);
-    code = code.replace(/(\/\/ [^\n]+)/g,        '<span class="cm">$1</span>');
+    // Komentarze wyciągamy na chronione plakietki PRZED resztą podświetlania —
+    // inaczej apostrof wewnątrz komentarza (np. angielskie "dashboard's") łączy się
+    // z przypadkowym apostrofem gdzieś dalej w pliku i całość między nimi zostaje
+    // błędnie pokolorowana jak string (regex nie zna granic już wstawionych tagów).
+    var __cmComments = [];
+    code = code.replace(/(\/\/ [^\n]+)/g, function(m) {
+        __cmComments.push(m);
+        return '\u0000CM' + (__cmComments.length - 1) + '\u0000';
+    });
     code = code.replace(/(define\('[A-Z_]+',\s*)/g, '<span class="cd">$1</span>');
     // Zmienne PHP — tylko POZA apostrofami (czyli nie wewnątrz wartości stringa)
     code = code.replace(/^(\s*\$[a-zA-Z_]+)/gm,  '<span class="cv">$1</span>');
     // Stringi — całe wartości w apostrofach jako jeden kolor (hasze bcrypt, telefony, imiona)
     code = code.replace(/'([^']*)'/g,             "<span class='cs'>'$1'</span>");
+    // Przywracamy komentarze dopiero na końcu — nietknięte przez powyższe reguły.
+    code = code.replace(/\u0000CM(\d+)\u0000/g, function(_, i) {
+        return '<span class="cm">' + __cmComments[Number(i)] + '</span>';
+    });
 
     html +=
         '<div class="file-block">' +
@@ -3398,6 +3453,25 @@ function renderResults(data, skipScroll) {
 // ══════════════════════════════════════════════
 //  AJAX: GENERUJ PODGLĄD
 // ══════════════════════════════════════════════
+function changeSharesRequired(delta) {
+    var input = document.getElementById('shares_required');
+    var val = (parseInt(input.value, 10) || 0) + delta;
+    if (val < 2) val = 2;
+    if (val > 255) val = 255;
+    input.value = val;
+}
+
+function validateSharesRequired() {
+    var input = document.getElementById('shares_required');
+    var val = Number(input.value);
+    if (!Number.isInteger(val) || val < 2 || val > 255) {
+        showError(t('errSharesRequired'));
+        input.focus();
+        return false;
+    }
+    return true;
+}
+
 function validatePhones() {
     var cards = document.querySelectorAll('#user-list .user-card');
     for (var i = 0; i < cards.length; i++) {
@@ -3575,9 +3649,10 @@ function collectUsers() {
     return users;
 }
 
-function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain, downloads, instructions, downloadHeading, downloadIntro, alertBoxText, emailNotify) {
+function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain, sharesRequired, downloads, instructions, downloadHeading, downloadIntro, alertBoxText, emailNotify) {
     function ve(v) { return "'" + String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"; }
     function vb(v) { return v ? 'true' : 'false'; }
+    function vi(v) { return String(parseInt(v, 10) || 0); }
 
     var lines = [];
     lines.push('<?php');
@@ -3593,6 +3668,10 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
     lines.push('// ' + t('phpDomainComment1'));
     lines.push('// ' + t('phpDomainComment2'));
     lines.push("define('SMS_AUTOFILL_DOMAIN', " + ve(smsAutofillDomain) + ');');
+    lines.push('');
+    lines.push('// ' + t('phpSharesRequiredComment1'));
+    lines.push('// ' + t('phpSharesRequiredComment2'));
+    lines.push("define('SHARES_REQUIRED', " + vi(sharesRequired) + ');');
     lines.push('');
     lines.push('// ' + t('phpPeopleComment'));
     lines.push('$people = [');
@@ -3652,7 +3731,7 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
 function rebuildResultsView(skipScroll) {
     var d = window._lastGenerateData;
     if (!d) return;
-    var fileContent = buildFileContent(d.users, d.hashes, d.smsToken, d.smsSender, d.smsAutofillDomain, d.downloads, d.instructions, d.downloadHeading, d.downloadIntro, d.alertBoxText, d.emailNotify);
+    var fileContent = buildFileContent(d.users, d.hashes, d.smsToken, d.smsSender, d.smsAutofillDomain, d.sharesRequired, d.downloads, d.instructions, d.downloadHeading, d.downloadIntro, d.alertBoxText, d.emailNotify);
     renderResults({ users: d.users.map(function(u,j){
         return {
             login: u.login,
@@ -3671,6 +3750,7 @@ function rebuildResultsView(skipScroll) {
 function doGenerate() {
     hideError();
     if (!validatePhones()) return;
+    if (!validateSharesRequired()) return;
     if (!validateDownloadKeys()) return;
     if (!validateInstructionsMarkdown()) return;
     if (!validateUniqueUsers()) return;
@@ -3679,6 +3759,7 @@ function doGenerate() {
     var smsSender     = document.getElementById('sms_sender').value.trim();
     var smsAutofillDomain = document.getElementById('sms_autofill_domain').value.trim().replace(/^@+/, '');
     if (smsAutofillDomain) smsAutofillDomain = '@' + smsAutofillDomain;
+    var sharesRequired = parseInt(document.getElementById('shares_required').value, 10);
     var downloadHeading = document.getElementById('download-heading-text').value.trim();
     var downloadIntro = document.getElementById('download-intro-text').value.trim();
     var alertBoxText  = document.getElementById('alert-box-text').value.trim();
@@ -3709,6 +3790,7 @@ function doGenerate() {
                 window._lastGenerateData = {
                     users: users, hashes: hashes.slice(),
                     smsToken: smsToken, smsSender: smsSender, smsAutofillDomain: smsAutofillDomain,
+                    sharesRequired: sharesRequired,
                     downloads: downloads, instructions: instructions,
                     downloadHeading: downloadHeading, downloadIntro: downloadIntro, alertBoxText: alertBoxText,
                     emailNotify: emailNotify
@@ -3786,7 +3868,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // addUser/addDownload/addInstruction każde na końcu robią focus() na swoim
     // nowym polu — przy starcie strony wygrywa ten wywołany jako ostatni
     // (Krok 01 instrukcji), a nie chcemy tego. Wracamy fokus na pierwsze pole.
-    document.getElementById('sms_token').focus();
+    document.getElementById('sms_sender').focus();
 
     // Blokuj litery w polach telefonu — bez limitu długości (numery w różnych
     // krajach mają różną liczbę cyfr, walidacja zakresu jest w validatePhones())
@@ -3821,7 +3903,7 @@ if (window.matchMedia('(pointer: fine)').matches) {
     var isMorphed = false, morphTarget = null, cursorVisible = false;
 
     var MORPH_ALL = '.btn, .btn-primary, .btn-ghost, .btn-copy-file, .add-user-btn, .hash-box';
-    var RING_HIDE = '.copy-btn, .btn-download, .remove-btn, .field-action-btn, .toggle-switch, .info-tip, .cc-pill, .cc-dropdown-portal, .lang-switch';
+    var RING_HIDE = '.copy-btn, .btn-download, .remove-btn, .field-action-btn, .toggle-switch, .info-tip, .cc-pill, .cc-dropdown-portal, .lang-switch, .mini-stepper-btn';
 
     document.addEventListener('mousemove', function(e) {
         mx = e.clientX; my = e.clientY;

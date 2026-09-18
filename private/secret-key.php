@@ -12,6 +12,10 @@ define('SMS_SENDER',      'Secret Key');
 // musi zaczynać się od "@" i być domeną, na której faktycznie działa panel.
 define('SMS_AUTOFILL_DOMAIN', '');
 
+// Wymagany próg (K) udziałów Shamira — ile kodów trzeba wpisać w panelu, żeby odzyskać hasło.
+// Musi być zgodne z progiem ustawionym w zakładce dashboardu "Szyfrowanie" przy generowaniu udziałów.
+define('SHARES_REQUIRED', 3);
+
 // Osoby systemu — jedno źródło prawdy (login, hasło, dane 2FA, widoczność w panelu)
 $people = [
   [
