@@ -117,6 +117,9 @@ $lang = [
     'panel_person_reveal_btn'     => 'odszyfruj',
     'panel_person_name_label'     => 'Imię i nazwisko',
     'panel_person_phone_label'    => 'Telefon',
+    'panel_empty_instructions'    => 'Brak skonfigurowanych kroków instrukcji — uzupełnij $instructions w private/secret-key.php.',
+    'panel_empty_persons'         => 'Brak widocznych posiadaczy — sprawdź show_in_panel w $people (private/secret-key.php).',
+    'panel_empty_downloads'       => 'Sekcja niekompletna — wymagany jest tytuł ($download_heading) oraz przynajmniej jeden wpis w $downloads (private/secret-key.php).',
 
     // ── DECRYPT/INDEX.PHP — panel odszyfrowywania ──
     'panel_decrypt_title'         => 'Odszyfrowywanie',
@@ -129,6 +132,13 @@ $lang = [
     'panel_password_title_prefix' => 'Hasło do bazy ',
     'panel_decrypt_waiting'       => 'Czekam na kody… wpisz co najmniej %d, a hasło pojawi się w tym miejscu.',
     'panel_decrypt_error_prefix'  => 'Błąd: ',
+    'panel_secret_rejected'       => 'Kody złożyły się poprawnie, ale to nie jest prawidłowe hasło. Sprawdź, czy każdy kod wpisano dokładnie tak jak na karcie.',
+    'panel_secret_rate_limited'   => 'Zbyt wiele nieudanych prób weryfikacji hasła. Spróbuj ponownie za około 30 minut.',
+    'panel_secret_verifying'      => 'Weryfikuję hasło…',
+    'panel_secret_network_error'  => 'Nie udało się połączyć z serwerem, aby zweryfikować hasło. Sprawdź połączenie i spróbuj ponownie.',
+    'panel_decrypt_failed'        => 'Nie można odszyfrować hasła. Sprawdź, czy klucze są wpisane poprawnie (jeden klucz w linii, bez spacji).',
+    'panel_download_heading_default' => 'Pliki do pobrania',
+    'panel_download_intro_default'   => 'Pobierz pliki potrzebne do odzyskania dostępu.',
 
     // ── DECRYPT/INDEX.PHP — modal "Co to jest Secret key?" ──
     'modal_secret_key_title'      => 'Co to jest Secret key?',
@@ -182,5 +192,10 @@ $lang = [
     'tl_download_blocked_pending_body'   => 'Trwa 48-godzinne okno bezpieczeństwa od momentu odzyskania hasła. Pliki odblokują się automatycznie po jego zakończeniu — wróć do panelu, aby zobaczyć dokładny odliczany czas.',
     'tl_download_blocked_owner_title'    => 'Dostęp zablokowany przez właściciela',
     'tl_download_blocked_owner_body'     => 'Właściciel systemu trwale zablokował dostęp do tych plików.',
+    'download_file_not_found'            => 'Nie znaleziono pliku.',
+
+    // ── VERIFY.PHP / RESEND.PHP / LOGOUT.PHP — technika API, zwykle niewidoczna
+    // w normalnym użytkowaniu (tylko przy bezpośrednim/błędnym wywołaniu endpointu) ──
+    'http_method_not_allowed'            => 'Niedozwolona metoda żądania.',
 
 ];

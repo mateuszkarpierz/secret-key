@@ -3238,10 +3238,29 @@ function t(key, vars) {
     return str;
 }
 
+// Bezpieczne wstawianie tłumaczeń, które mogą zawierać znaczniki <code>...</code>
+// (np. nazwy plików we frazach ostrzeżeń) — buduje prawdziwe węzły DOM zamiast
+// przypisywać surowy string do innerHTML, więc żaden tekst (nawet spoza kontrolowanego
+// słownika I18N, np. przez literówkę w atrybucie data-i18n) nie może zostać
+// zinterpretowany jako dowolny HTML/JS (CodeQL: "DOM text reinterpreted as HTML").
+function setI18nText(el, str) {
+    el.textContent = '';
+    var re = /<code>([\s\S]*?)<\/code>/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(str)) !== null) {
+        if (m.index > lastIndex) el.appendChild(document.createTextNode(str.slice(lastIndex, m.index)));
+        var codeEl = document.createElement('code');
+        codeEl.textContent = m[1];
+        el.appendChild(codeEl);
+        lastIndex = re.lastIndex;
+    }
+    if (lastIndex < str.length) el.appendChild(document.createTextNode(str.slice(lastIndex)));
+}
+
 function applyLang() {
     document.documentElement.lang = currentLang;
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        el.innerHTML = t(el.getAttribute('data-i18n'));
+        setI18nText(el, t(el.getAttribute('data-i18n')));
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
         el.placeholder = t(el.getAttribute('data-i18n-placeholder'));

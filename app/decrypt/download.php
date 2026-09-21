@@ -64,7 +64,7 @@ $key = $_GET['file'] ?? '';
 
 if (!isset($allowed[$key])) {
     http_response_code(404);
-    exit('Nie znaleziono pliku.');
+    exit(t('download_file_not_found'));
 }
 
 $filename = $allowed[$key];
@@ -72,7 +72,7 @@ $filepath = PRIVATE_DIR . '/' . $filename;
 
 if (!is_file($filepath)) {
     http_response_code(404);
-    exit('Nie znaleziono pliku.');
+    exit(t('download_file_not_found'));
 }
 
 // Log po stronie serwera — dzieje się zawsze, niezależnie od JS klienta

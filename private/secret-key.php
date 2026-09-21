@@ -16,6 +16,10 @@ define('SMS_AUTOFILL_DOMAIN', '');
 // Musi być zgodne z progiem ustawionym w zakładce dashboardu "Szyfrowanie" przy generowaniu udziałów.
 define('SHARES_REQUIRED', 3);
 
+// Bcrypt hash prawdziwego hasła — do weryfikacji po stronie serwera przy uzbrajaniu blokady czasowej.
+// Opcjonalny, ale mocno zalecany. Wpisz to samo hasło co w zakładce Szyfrowanie, dashboard sam policzy hasz.
+define('SECRET_HASH', '$2y$10$rVPUt2no/521.vM6h2S6/.kMDCWNHB5RjDU7wK6.UnUQY59bRy1TK');
+
 // Osoby systemu — jedno źródło prawdy (login, hasło, dane 2FA, widoczność w panelu)
 $people = [
   [

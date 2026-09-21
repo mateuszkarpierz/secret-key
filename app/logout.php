@@ -12,7 +12,7 @@ require_once 'auth.php';
 // osadzony na obcej stronie).
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    exit('Method not allowed');
+    exit(t('http_method_not_allowed'));
 }
 
 $csrfToken = trim($_POST['csrf_token'] ?? '');

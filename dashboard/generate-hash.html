@@ -509,7 +509,7 @@
             padding: 8px 12px; border-radius: 8px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.45);
             white-space: normal; text-align: left; line-height: 1.45;
-            width: 220px;
+            width: 330px;
             opacity: 0; pointer-events: none;
             transform: translateY(4px);
             transition: opacity 0.18s ease, transform 0.18s ease;
@@ -661,7 +661,7 @@
            CUSTOM CURSOR
         ════════════════════════════════════════ */
         @media (pointer: fine) { * { cursor: none !important; } }
-        input { cursor: text !important; caret-color: var(--accent); }
+        input, textarea { cursor: text !important; caret-color: var(--accent); }
 
         #cur-arrow {
             position: fixed; width: 28px; height: 28px;
@@ -1962,7 +1962,7 @@
         <span id="alert-error-msg"></span>
     </div>
 
-    <div class="section-label" style="margin-top:0" data-i18n="basicSettingsLabel">Ustawienia podstawowe</div>
+    <div class="section-label" style="margin-top:0" data-i18n="smsConfigLabel">Konfiguracja SMS</div>
     <div class="sms-grid">
         <div class="field-group">
             <div class="field-group-label" data-i18n="senderNameLabel">Nazwa nadawcy SMS</div>
@@ -1972,6 +1972,14 @@
             <div class="field-group-label" data-i18n="tokenLabel">Token API</div>
             <input type="text" id="sms_token" placeholder="wprowadź token API SMSPlanet" data-i18n-placeholder="tokenPlaceholder" autocomplete="off">
         </div>
+        <div class="field-group" style="grid-column: 1 / -1;">
+            <div class="field-group-label" data-i18n="autofillDomainLabel">Domena do autouzupełniania SMS (Android/iOS)</div>
+            <input type="text" id="sms_autofill_domain" placeholder="np. twoja-domena.pl" data-i18n-placeholder="autofillDomainPlaceholder" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="section-label" data-i18n="recoveryVerifyLabel">Weryfikacja odzyskiwania hasła</div>
+    <div class="sms-grid">
         <div class="field-group">
             <div class="field-group-label" style="display:flex; align-items:center; gap:4px;">
                 <span data-i18n="sharesRequiredFieldLabel">Wymagane kody</span>
@@ -1984,8 +1992,11 @@
             </div>
         </div>
         <div class="field-group">
-            <div class="field-group-label" data-i18n="autofillDomainLabel">Domena do autouzupełniania SMS (Android/iOS)</div>
-            <input type="text" id="sms_autofill_domain" placeholder="np. twoja-domena.pl" data-i18n-placeholder="autofillDomainPlaceholder" autocomplete="off">
+            <div class="field-group-label" style="display:flex; align-items:center; gap:4px;">
+                <span data-i18n="secretHashFieldLabel">Prawdziwe hasło główne</span>
+                <span class="info-tip" style="margin-left:0;" data-i18n-tip="secretHashFieldHint" data-tip="Opcjonalne, ale zalecane — utrudnia wymuszenie odzyskania hasła bez jego znajomości. Wpisz to samo hasło co w zakładce Szyfrowanie, dashboard sam policzy hasz. Szczegóły w dokumentacji."><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+            </div>
+            <input type="text" id="secret_password" placeholder="to samo hasło co w zakładce Szyfrowanie" data-i18n-placeholder="secretHashPlaceholder" autocomplete="off" spellcheck="false">
         </div>
     </div>
 
@@ -2104,7 +2115,7 @@ var I18N = {
         mainWarningTitle: '⚠ Używaj tylko lokalnie! Nie otwieraj tego pliku przez internet.',
         mainWarningBody: 'Pobierz wygenerowany <code>secret-key.php</code> i wgraj ręcznie na serwer do folderu <code>/private/</code>.',
 
-        basicSettingsLabel: 'Ustawienia podstawowe',
+        smsConfigLabel: 'Konfiguracja SMS',
         tokenLabel: 'Token API',
         tokenPlaceholder: 'wprowadź token API SMSPlanet',
         senderNameLabel: 'Nazwa nadawcy SMS',
@@ -2112,8 +2123,12 @@ var I18N = {
         autofillDomainLabel: 'Domena do autouzupełniania SMS (Android/iOS)',
         autofillDomainPlaceholder: 'np. twoja-domena.pl',
 
+        recoveryVerifyLabel: 'Weryfikacja odzyskiwania hasła',
         sharesRequiredFieldLabel: 'Wymagane kody',
         sharesRequiredHint: 'Musi być zgodne z progiem ustawionym w zakładce „Szyfrowanie" — inaczej panel będzie wymagał innej liczby kodów.',
+        secretHashFieldLabel: 'Prawdziwe hasło główne',
+        secretHashPlaceholder: 'to samo hasło co w zakładce Szyfrowanie',
+        secretHashFieldHint: 'Opcjonalne, ale zalecane — utrudnia wymuszenie odzyskania hasła bez jego znajomości. Wpisz to samo hasło co w zakładce Szyfrowanie, dashboard sam policzy hasz. Szczegóły w dokumentacji.',
         errSharesRequired: 'Próg odzyskiwania hasła musi być liczbą całkowitą od 2 do 255.',
 
         emailNotifyLabel: 'Powiadomienie e-mail o logowaniu',
@@ -2216,6 +2231,8 @@ var I18N = {
         phpDomainComment2: 'musi zaczynać się od "@" i być domeną, na której faktycznie działa panel.',
         phpSharesRequiredComment1: 'Wymagany próg (K) udziałów Shamira — ile kodów trzeba wpisać w panelu, żeby odzyskać hasło.',
         phpSharesRequiredComment2: 'Musi być zgodne z progiem ustawionym w zakładce dashboardu "Szyfrowanie" przy generowaniu udziałów.',
+        phpSecretHashComment1: 'Bcrypt hash prawdziwego hasła — do weryfikacji po stronie serwera przy uzbrajaniu blokady czasowej.',
+        phpSecretHashComment2: 'Opcjonalny, ale mocno zalecany. Policzony automatycznie z pola „Prawdziwe hasło główne" w tej zakładce.',
         phpPeopleComment: 'Osoby systemu — jedno źródło prawdy (login, hasło, dane 2FA, widoczność w panelu)',
         phpDownloadsComment1: 'Pliki do pobrania — jedno źródło dla przycisków w panelu (index.php)',
         phpDownloadsComment2: 'i białej listy pobierania (download.php). Same pliki wgrywane są',
@@ -2236,7 +2253,7 @@ var I18N = {
         mainWarningTitle: '⚠ Local use only! Do not open this file over the internet.',
         mainWarningBody: 'Download the generated <code>secret-key.php</code> and upload it manually to the server, into the <code>/private/</code> folder.',
 
-        basicSettingsLabel: 'Basic settings',
+        smsConfigLabel: 'SMS configuration',
         tokenLabel: 'API token',
         tokenPlaceholder: 'enter SMSPlanet API token',
         senderNameLabel: 'SMS sender name',
@@ -2244,8 +2261,12 @@ var I18N = {
         autofillDomainLabel: 'SMS autofill domain (Android/iOS)',
         autofillDomainPlaceholder: 'e.g. your-domain.com',
 
+        recoveryVerifyLabel: 'Password recovery verification',
         sharesRequiredFieldLabel: 'Required codes',
         sharesRequiredHint: 'Must match the threshold set in the "Encryption" tab — otherwise the recovery panel will require a different number of codes.',
+        secretHashFieldLabel: 'Real master password',
+        secretHashPlaceholder: 'the same password as in the Encryption tab',
+        secretHashFieldHint: 'Optional, but recommended — makes it harder to force password recovery without actually knowing it. Enter the same password as in the Encryption tab; the dashboard computes the hash for you. Details in the documentation.',
         errSharesRequired: 'The password recovery threshold must be a whole number between 2 and 255.',
 
         emailNotifyLabel: 'Login e-mail notification',
@@ -2348,6 +2369,8 @@ var I18N = {
         phpDomainComment2: 'must start with "@" and be a domain the panel actually runs on.',
         phpSharesRequiredComment1: 'Required Shamir share threshold (K) — how many codes must be entered in the panel to recover the password.',
         phpSharesRequiredComment2: 'Must match the threshold set in the dashboard\'s "Encryption" tab when generating the shares.',
+        phpSecretHashComment1: 'A bcrypt hash of the real password — for server-side verification when arming the timelock.',
+        phpSecretHashComment2: 'Optional, but strongly recommended. Computed automatically from the "Real master password" field in this tab.',
         phpPeopleComment: 'System users — single source of truth (login, password, 2FA data, panel visibility)',
         phpDownloadsComment1: 'Downloadable files — single source for both the panel buttons (index.php)',
         phpDownloadsComment2: 'and the download whitelist (download.php). The files themselves are uploaded',
@@ -2381,10 +2404,29 @@ function t(key, vars) {
     return str;
 }
 
+// Bezpieczne wstawianie tłumaczeń, które mogą zawierać znaczniki <code>...</code>
+// (np. nazwy plików/ścieżek w tekstach ostrzeżeń i podpowiedzi) — buduje prawdziwe
+// węzły DOM zamiast przypisywać surowy string do innerHTML, więc żaden tekst (nawet
+// spoza kontrolowanego słownika I18N, np. przez literówkę w atrybucie data-i18n) nie
+// może zostać zinterpretowany jako dowolny HTML/JS (CodeQL: "DOM text reinterpreted as HTML").
+function setI18nText(el, str) {
+    el.textContent = '';
+    var re = /<code>([\s\S]*?)<\/code>/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(str)) !== null) {
+        if (m.index > lastIndex) el.appendChild(document.createTextNode(str.slice(lastIndex, m.index)));
+        var codeEl = document.createElement('code');
+        codeEl.textContent = m[1];
+        el.appendChild(codeEl);
+        lastIndex = re.lastIndex;
+    }
+    if (lastIndex < str.length) el.appendChild(document.createTextNode(str.slice(lastIndex)));
+}
+
 function applyLang() {
     document.documentElement.lang = currentLang;
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        el.innerHTML = t(el.getAttribute('data-i18n'));
+        setI18nText(el, t(el.getAttribute('data-i18n')));
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
         el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
@@ -3322,7 +3364,7 @@ function relabelExistingCards() {
         var textarea = card.querySelector('.i-text');
         if (textarea) textarea.placeholder = t('instructionPlaceholder');
         var hint = card.querySelector('.instruction-field-hint');
-        if (hint) hint.innerHTML = t('instructionHint');
+        if (hint) setI18nText(hint, t('instructionHint'));
         var removeBtn = card.querySelector('.remove-btn');
         if (removeBtn) removeBtn.textContent = t('removeBtn');
     });
@@ -3339,6 +3381,7 @@ function resetAll() {
     document.getElementById('sms_sender').value = '';
     document.getElementById('sms_autofill_domain').value = '';
     document.getElementById('shares_required').value = '3';
+    document.getElementById('secret_password').value = '';
     document.getElementById('download-heading-text').value = '';
     document.getElementById('download-intro-text').value = '';
     document.getElementById('alert-box-text').value = '';
@@ -3649,7 +3692,7 @@ function collectUsers() {
     return users;
 }
 
-function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain, sharesRequired, downloads, instructions, downloadHeading, downloadIntro, alertBoxText, emailNotify) {
+function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain, sharesRequired, secretHash, downloads, instructions, downloadHeading, downloadIntro, alertBoxText, emailNotify) {
     function ve(v) { return "'" + String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"; }
     function vb(v) { return v ? 'true' : 'false'; }
     function vi(v) { return String(parseInt(v, 10) || 0); }
@@ -3673,6 +3716,15 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
     lines.push('// ' + t('phpSharesRequiredComment2'));
     lines.push("define('SHARES_REQUIRED', " + vi(sharesRequired) + ');');
     lines.push('');
+    // SECRET_HASH jest opcjonalny — puste pole celowo NIE generuje pustej linii define(''),
+    // bo password_verify() przeciwko pustemu haszowi zawsze zwraca false i całkowicie
+    // zablokowałoby to odzyskiwanie hasła w panelu.
+    if (secretHash) {
+        lines.push('// ' + t('phpSecretHashComment1'));
+        lines.push('// ' + t('phpSecretHashComment2'));
+        lines.push("define('SECRET_HASH', " + ve(secretHash) + ');');
+        lines.push('');
+    }
     lines.push('// ' + t('phpPeopleComment'));
     lines.push('$people = [');
     users.forEach(function(u, i) {
@@ -3731,7 +3783,7 @@ function buildFileContent(users, hashes, smsToken, smsSender, smsAutofillDomain,
 function rebuildResultsView(skipScroll) {
     var d = window._lastGenerateData;
     if (!d) return;
-    var fileContent = buildFileContent(d.users, d.hashes, d.smsToken, d.smsSender, d.smsAutofillDomain, d.sharesRequired, d.downloads, d.instructions, d.downloadHeading, d.downloadIntro, d.alertBoxText, d.emailNotify);
+    var fileContent = buildFileContent(d.users, d.hashes, d.smsToken, d.smsSender, d.smsAutofillDomain, d.sharesRequired, d.secretHash, d.downloads, d.instructions, d.downloadHeading, d.downloadIntro, d.alertBoxText, d.emailNotify);
     renderResults({ users: d.users.map(function(u,j){
         return {
             login: u.login,
@@ -3760,6 +3812,7 @@ function doGenerate() {
     var smsAutofillDomain = document.getElementById('sms_autofill_domain').value.trim().replace(/^@+/, '');
     if (smsAutofillDomain) smsAutofillDomain = '@' + smsAutofillDomain;
     var sharesRequired = parseInt(document.getElementById('shares_required').value, 10);
+    var secretPassword = document.getElementById('secret_password').value;
     var downloadHeading = document.getElementById('download-heading-text').value.trim();
     var downloadIntro = document.getElementById('download-intro-text').value.trim();
     var alertBoxText  = document.getElementById('alert-box-text').value.trim();
@@ -3784,19 +3837,32 @@ function doGenerate() {
     // Hashuj bcrypt asynchronicznie kolejno — żeby loading screen był widoczny
     var hashes = [];
     var i = 0;
+    var secretHash = '';
+    function finalizeGenerate() {
+        hideLoading(function() {
+            window._lastGenerateData = {
+                users: users, hashes: hashes.slice(),
+                smsToken: smsToken, smsSender: smsSender, smsAutofillDomain: smsAutofillDomain,
+                sharesRequired: sharesRequired, secretHash: secretHash,
+                downloads: downloads, instructions: instructions,
+                downloadHeading: downloadHeading, downloadIntro: downloadIntro, alertBoxText: alertBoxText,
+                emailNotify: emailNotify
+            };
+            rebuildResultsView();
+        });
+    }
     function hashNext() {
         if (i >= users.length) {
-            hideLoading(function() {
-                window._lastGenerateData = {
-                    users: users, hashes: hashes.slice(),
-                    smsToken: smsToken, smsSender: smsSender, smsAutofillDomain: smsAutofillDomain,
-                    sharesRequired: sharesRequired,
-                    downloads: downloads, instructions: instructions,
-                    downloadHeading: downloadHeading, downloadIntro: downloadIntro, alertBoxText: alertBoxText,
-                    emailNotify: emailNotify
-                };
-                rebuildResultsView();
-            });
+            // Hasła użytkowników gotowe — teraz (jeśli podano) haszujemy hasło główne
+            // dokładnie tym samym mechanizmem, tylko jako osobny, opcjonalny krok na końcu.
+            if (secretPassword) {
+                bcrypt.hash(secretPassword, 10, function(err, hash) {
+                    secretHash = hash ? hash.replace('$2b$', '$2y$') : '';
+                    finalizeGenerate();
+                });
+            } else {
+                finalizeGenerate();
+            }
             return;
         }
         bcrypt.hash(users[i].pw, 10, function(err, hash) {
@@ -3863,7 +3929,9 @@ document.addEventListener('DOMContentLoaded', function() {
     addUser();
     addDownload();
     addInstruction();
-    registerInputCursor(document.querySelector('.sms-grid'));
+    // Dwie osobne siatki (.sms-grid) — Konfiguracja SMS i Weryfikacja odzyskiwania hasła —
+    // każda dostaje ten sam efekt kursora przy najechaniu na pole.
+    document.querySelectorAll('.sms-grid').forEach(function(grid) { registerInputCursor(grid); });
 
     // addUser/addDownload/addInstruction każde na końcu robią focus() na swoim
     // nowym polu — przy starcie strony wygrywa ten wywołany jako ostatni

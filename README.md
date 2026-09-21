@@ -277,10 +277,10 @@ System łączy **dziewięć niezależnych warstw ochrony** — kompromitacja jed
 | ⏱️ **Sesja** | Auto-logout | Ciasteczko sesji z jawnymi flagami HttpOnly + Secure + SameSite=Strict; 30 min timeout, odnowienie identyfikatora sesji po każdej weryfikacji |
 | 🖥️ **Ochrona interfejsu** | DevTools detect | Detekcja narzędzi deweloperskich, fizyczne usunięcie DOM, rejestracja incydentu w logach z IP, REF# i czasem trwania |
 | 📥 **Bramkowane pobieranie** | `download.php` + biała lista | Pliki do pobrania leżą poza `public_html`; wymagana aktywna sesja, brak bezpośredniego URL, log zawsze po stronie serwera |
-| 🚨 **Ochrona przed zmową powierników** | Timelock 48h + Panic Button | Pierwsza udana rekonstrukcja hasła blokuje pobieranie plików na 48h i wysyła alert e-mail z jednorazowym linkiem do natychmiastowego, trwałego zablokowania dostępu — patrz niżej |
+| 🚨 **Ochrona przed zmową powierników** | Timelock 48h + Panic Button + weryfikacja serwerowa | Pierwsza udana rekonstrukcja hasła (opcjonalnie zweryfikowana po stronie serwera przez `SECRET_HASH`) blokuje pobieranie plików na 48h i wysyła alert e-mail z jednorazowym linkiem do natychmiastowego, trwałego zablokowania dostępu — patrz niżej |
 
 > [!TIP]
-> **Ochrona przed zmową powierników za Twojego życia.** Algorytm Shamira matematycznie pozwala wyznaczonym osobom odtworzyć samo hasło główne, jeśli się w tym celu zmówią — to nieunikniona własność każdego systemu progowego dzielenia sekretu, nie tylko tego. System reaguje na to na dwóch poziomach: (1) **weryfikuje**, że odzyskane hasło jest prawdziwe, a nie przypadkowym śmieciem z błędnych udziałów (spójność matematyczna podzbiorów udziałów + analiza formatu wyniku), i (2) po potwierdzonej udanej rekonstrukcji **blokuje pobieranie plików na 48 godzin**, wysyłając Ci e-mail z jednorazowym linkiem „Panic Button" — jedno kliknięcie trwale odcina dostęp, zanim ktokolwiek zdąży cokolwiek pobrać. Sama znajomość hasła nic nie daje bez fizycznego pliku bazy. Dla maksymalnego poziomu ochrony zalecane jest dodatkowo stosowanie klucza sprzętowego (np. YubiKey/FIDO2) jako drugiego składnika samej bazy haseł.
+> **Ochrona przed zmową powierników za Twojego życia.** Algorytm Shamira matematycznie pozwala wyznaczonym osobom odtworzyć samo hasło główne, jeśli się w tym celu zmówią — to nieunikniona własność każdego systemu progowego dzielenia sekretu, nie tylko tego. System reaguje na to na trzech poziomach: (1) w przeglądarce **sprawdza spójność** złożonych udziałów (matematyczna spójność podzbiorów + analiza formatu wyniku) — to odsiewa literówki i przypadkowy szum, ale samo w sobie **nie potwierdza**, że złożony sekret to prawdziwe hasło (ktoś zalogowany mógłby wkleić w pełni spójne, ale zmyślone udziały z zupełnie innym „hasłem"); (2) jeśli w configu ustawisz opcjonalny, ale mocno zalecany `SECRET_HASH` (bcrypt hash prawdziwego hasła, liczony automatycznie w dashboardzie), serwer **realnie weryfikuje** złożony sekret przez `password_verify()`, zanim cokolwiek uzbroi; (3) dopiero po tej weryfikacji **blokuje pobieranie plików na 48 godzin**, wysyłając Ci e-mail z jednorazowym linkiem „Panic Button" — jedno kliknięcie trwale odcina dostęp, zanim ktokolwiek zdąży cokolwiek pobrać. Sama znajomość hasła nic nie daje bez fizycznego pliku bazy. Dla maksymalnego poziomu ochrony zalecane jest dodatkowo stosowanie klucza sprzętowego (np. YubiKey/FIDO2) jako drugiego składnika samej bazy haseł.
 
 ---
 
@@ -301,11 +301,12 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 
 **Konfiguracja** — generuje plik `secret-key.php`:
 1. Token API SMSPlanet, nazwa nadawcy SMS oraz domena do autouzupełniania kodu (Android/iOS) — sama domena, bez `@` i bez `https://`
-2. Dla każdej wyznaczonej osoby: login, hasło, imię, nazwisko, numer telefonu i czy ma być widoczna na liście posiadaczy w panelu
-3. Pliki do pobrania (baza haseł, baza 2FA, instalator programu) — klucz, etykieta przycisku, nazwa pliku
-4. Kroki instrukcji dla panelu (formatowanie `**pogrubienie**` / `*kursywa*`)
-5. Opcjonalnie: powiadomienie email o każdym logowaniu (adres odbiorcy, nadawca, link do panelu) — *wskazówka: niektóre powiadomienia mogą trafiać do spamu, warto dodać adres nadawcy do białej listy na skrzynce odbiorczej*
-6. Kliknij „Generuj konfigurację" i pobierz wygenerowany plik `secret-key.php`
+2. Próg (K) wymaganych kodów w panelu odzyskiwania — musi być zgodny z progiem ustawionym w zakładce Szyfrowanie — oraz opcjonalnie, ale zalecane: prawdziwe hasło główne (to samo co w zakładce Szyfrowanie), z którego dashboard sam liczy hasz do weryfikacji po stronie serwera (patrz [Ochrona przed zmową powierników](#bezpieczeństwo))
+3. Dla każdej wyznaczonej osoby: login, hasło, imię, nazwisko, numer telefonu i czy ma być widoczna na liście posiadaczy w panelu
+4. Pliki do pobrania (baza haseł, baza 2FA, instalator programu) — klucz, etykieta przycisku, nazwa pliku
+5. Kroki instrukcji dla panelu (formatowanie `**pogrubienie**` / `*kursywa*`)
+6. Opcjonalnie: powiadomienie email o każdym logowaniu (adres odbiorcy, nadawca, link do panelu) — *wskazówka: niektóre powiadomienia mogą trafiać do spamu, warto dodać adres nadawcy do białej listy na skrzynce odbiorczej*
+7. Kliknij „Generuj konfigurację" i pobierz wygenerowany plik `secret-key.php`
 
 **Szyfrowanie** — dzieli hasło główne na udziały Shamira:
 1. Wpisz hasło główne do bazy haseł
@@ -462,7 +463,7 @@ Nie. Rekonstrukcja hasła z udziałów Shamira odbywa się **całkowicie po stro
 <details>
 <summary><strong>Co jeśli powiernicy zmówią się i odzyskają hasło za mojego życia, bez mojej wiedzy?</strong></summary>
 
-Samo hasło im nie wystarczy. Pliki bazy danych leżą poza katalogiem publicznym serwera, a dostęp do nich kontroluje `download.php`. W momencie pierwszej udanej rekonstrukcji hasła w panelu system automatycznie blokuje pobieranie plików na 48 godzin i wysyła Ci e-mail z alertem oraz jednorazowym linkiem „Panic Button" — jedno kliknięcie trwale odcina dostęp, dając Ci czas na zmianę hasła głównego w spokoju. Jeśli dodatkowo zabezpieczasz bazę haseł kluczem sprzętowym (np. YubiKey), sama znajomość hasła nie wystarczy do jej otwarcia nawet po odblokowaniu plików.
+Samo hasło im nie wystarczy. Pliki bazy danych leżą poza katalogiem publicznym serwera, a dostęp do nich kontroluje `download.php`. W momencie pierwszej udanej rekonstrukcji hasła w panelu — opcjonalnie, ale zdecydowanie zalecane: zweryfikowanej dodatkowo po stronie serwera przez `SECRET_HASH`, żeby sama spójność złożonych udziałów (bez znajomości prawdziwego hasła) nie wystarczała do wymuszenia blokady — system automatycznie blokuje pobieranie plików na 48 godzin i wysyła Ci e-mail z alertem oraz jednorazowym linkiem „Panic Button" — jedno kliknięcie trwale odcina dostęp, dając Ci czas na zmianę hasła głównego w spokoju. Jeśli dodatkowo zabezpieczasz bazę haseł kluczem sprzętowym (np. YubiKey), sama znajomość hasła nie wystarczy do jej otwarcia nawet po odblokowaniu plików.
 
 </details>
 

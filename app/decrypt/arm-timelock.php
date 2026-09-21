@@ -19,6 +19,14 @@ require_once '../auth.php';
 require_once 'timelock.php';
 requireLogin();
 
+// Osobny, niezależny od logowania rate-limit — per-konto (nie per-IP), żeby jedna
+// zablokowana osoba nie blokowała innej logującej się z tej samej sieci w trakcie
+// kryzysu. 5 prób / 30 minut — na tyle wyrozumiałe, żeby nie karać literówek przy
+// przepisywaniu prawdziwych kart, na tyle ciasne, żeby uczynić zgadywanie hasła
+// przez ten kanał praktycznie bezużytecznym.
+define('SECRET_VERIFY_MAX_ATTEMPTS', 5);
+define('SECRET_VERIFY_WINDOW', 1800); // 30 minut
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit;
@@ -40,6 +48,39 @@ if ($status['state'] !== 'none') {
     // Już uzbrojony (albo trwa odliczanie, albo minęło, albo zablokowany) — nic nie robimy.
     echo json_encode(['armed' => false, 'state' => $status['state']]);
     exit;
+}
+
+// ─── Weryfikacja hasła po stronie serwera (jeśli skonfigurowana w configu) ───
+// Bez tego panel ufałby bezkrytycznie klientowi, że złożony sekret jest prawdziwy —
+// zalogowany powiernik mógłby wywołać ten endpoint z dowolnym, samodzielnie
+// spreparowanym (ale wewnętrznie spójnym) sekretem — np. wygenerowanym na zewnętrznej
+// stronie do dzielenia sekretu Shamira z zupełnie innym hasłem — i wymusić odliczanie
+// oraz odblokowanie plików do pobrania, mimo że wcale nie zna prawdziwego hasła.
+// SECRET_HASH jest opcjonalny (fallback = stare zachowanie, bez weryfikacji) dla
+// wstecznej kompatybilności ze starymi configami — patrz dokumentacja.
+if (defined('SECRET_HASH')) {
+    $vUsername = $_SESSION['username']   ?? 'unknown';
+    $vIp       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $vKey      = 'secretverify_' . md5($vUsername);
+
+    $rl = rateLimitCheckAndIncrement($vKey, SECRET_VERIFY_MAX_ATTEMPTS, SECRET_VERIFY_WINDOW);
+
+    if ($rl['blocked']) {
+        sk_log("TIMELOCK ARM RATE LIMITED: $vUsername IP: $vIp");
+        echo json_encode(['armed' => false, 'rate_limited' => true]);
+        exit;
+    }
+
+    $secret = (string) ($data['secret'] ?? '');
+    if (!password_verify($secret, SECRET_HASH)) {
+        sk_log("TIMELOCK ARM REJECTED: $vUsername IP: $vIp attempt: {$rl['count']}/" . SECRET_VERIFY_MAX_ATTEMPTS);
+        echo json_encode(['armed' => false, 'rejected' => true]);
+        exit;
+    }
+
+    // Poprawne hasło — zerujemy licznik, żeby nie "zużywać" przyszłego budżetu prób
+    // (i tak endpoint stanie się od teraz idempotentny dzięki guardowi state!=='none' wyżej).
+    rateLimitReset($vKey);
 }
 
 $display = $_SESSION['display_name'] ?? $_SESSION['username'] ?? 'nieznany';
