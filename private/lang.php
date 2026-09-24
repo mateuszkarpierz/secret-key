@@ -120,6 +120,7 @@ $lang = [
     'panel_empty_instructions'    => 'Brak skonfigurowanych kroków instrukcji — uzupełnij $instructions w private/secret-key.php.',
     'panel_empty_persons'         => 'Brak widocznych posiadaczy — sprawdź show_in_panel w $people (private/secret-key.php).',
     'panel_empty_downloads'       => 'Sekcja niekompletna — wymagany jest tytuł ($download_heading) oraz przynajmniej jeden wpis w $downloads (private/secret-key.php).',
+    'panel_downloads_no_title'    => '(brak tytułu sekcji)',
 
     // ── DECRYPT/INDEX.PHP — panel odszyfrowywania ──
     'panel_decrypt_title'         => 'Odszyfrowywanie',
@@ -130,6 +131,7 @@ $lang = [
     'panel_key_counter_required'  => 'wymagane',
     'panel_key_counter_required_many' => 'wymaganych',
     'panel_password_title_prefix' => 'Hasło do bazy ',
+    'panel_password_title_program_fallback' => 'programu',
     'panel_decrypt_waiting'       => 'Czekam na kody… wpisz co najmniej %d, a hasło pojawi się w tym miejscu.',
     'panel_decrypt_error_prefix'  => 'Błąd: ',
     'panel_secret_rejected'       => 'Kody złożyły się poprawnie, ale to nie jest prawidłowe hasło. Sprawdź, czy każdy kod wpisano dokładnie tak jak na karcie.',
@@ -182,7 +184,7 @@ $lang = [
     'tl_panic_invalid_body'       => 'Ten link do zablokowania dostępu jest nieprawidłowy, wygasł, lub dostęp został już wcześniej zablokowany.',
 
     // ── DECRYPT/INDEX.PHP — stany blokady sekcji pobierania (Stan A/B/C) ──
-    'tl_state_a_tooltip'          => 'Wprowadź poprawny Secret key, aby odblokować pliki',
+    'tl_state_a_tooltip'          => 'Wprowadź w panelu poprawne kody Secret Key, aby odblokować plik',
     'tl_state_b_label'            => 'Do odblokowania plików pozostało',
     'tl_state_b_note'             => 'Wysłano alert e-mail do właściciela systemu',
     'tl_state_c_message'          => '❌ Dostęp do plików został permanentnie zablokowany przez właściciela systemu.',

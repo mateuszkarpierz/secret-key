@@ -45,7 +45,7 @@ $programEntry = null;
 foreach ($downloads as $d) {
     if (!empty($d['name'])) { $programEntry = $d; break; }
 }
-$programName = $programEntry['name'] ?? 'programu';
+$programName = $programEntry['name'] ?? t('panel_password_title_program_fallback');
 
 // ─── Kroki instrukcji — markdown-lite, patrz $instructions w secret-key.php ───
 $instructions = $instructions ?? [];
@@ -761,7 +761,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             position: fixed;
             background: #1e2230; border: 1px solid var(--border-glow);
             color: var(--text); font-family: var(--sans); font-size: 0.74rem; line-height: 1.45;
-            padding: 9px 13px; border-radius: 8px; width: 210px;
+            padding: 9px 13px; border-radius: 8px; width: 230px;
             box-shadow: 0 10px 28px rgba(0,0,0,0.6);
             z-index: 9999; pointer-events: none;
             opacity: 0; transform: translateY(-4px);
@@ -1200,7 +1200,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             <div id="dl-inner-content"<?= in_array($tlStatus['state'], ['pending', 'blocked'], true) ? ' class="dl-blurred"' : '' ?>>
                 <div class="section-label">
                     <span class="icon">💾</span>
-                    <h3><?= trim($download_heading) !== '' ? htmlspecialchars($download_heading) : '<span style="color:var(--text-muted); font-weight:400;">(brak tytułu sekcji)</span>' ?></h3>
+                    <h3><?= trim($download_heading) !== '' ? htmlspecialchars($download_heading) : '<span style="color:var(--text-muted); font-weight:400;">' . htmlspecialchars(t('panel_downloads_no_title')) . '</span>' ?></h3>
                 </div>
                 <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:16px;">
                     <?= htmlspecialchars($download_intro) ?>
@@ -1248,7 +1248,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v3.0.0</div>
+        <div class="footer-version">WERSJA SYSTEMU: v3.1.0</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
@@ -1422,6 +1422,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     function startDlCountdown(el, unlockAtSeconds) {
         var unlockAt = unlockAtSeconds * 1000;
         var lastText = '';
+        var lastH = null, lastM = null;
 
         function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -1436,7 +1437,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
                 // równolegle startDlStatusPoll() — on pyta SERWER (autorytatywny zegar), więc
                 // przeładuje dopiero gdy stan naprawdę się zmieni, bez ryzyka pętli.
                 clearInterval(intervalId);
-                el.innerHTML = '0h 00m <span class="dl-tick">00s</span>';
+                el.innerHTML = '<span class="dl-tick">0h</span> <span class="dl-tick">00m</span> <span class="dl-tick">00s</span>';
                 return;
             }
             var h = Math.floor(remaining / 3600000);
@@ -1446,8 +1447,17 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 
             if (text !== lastText) {
                 lastText = text;
-                // Owijamy same sekundy w span z animacją "tick", żeby każda zmiana subtelnie mrugnęła
-                el.innerHTML = h + 'h ' + pad(m) + 'm <span class="dl-tick">' + pad(s) + 's</span>';
+                // Owijamy każdą jednostkę (h/m/s) w span z animacją "tick", ale tylko gdy jej
+                // wartość faktycznie się zmieniła od poprzedniego renderu — sekundy tikają co
+                // sekundę (bo zmieniają się zawsze), minuty i godziny mrugają tylko przy własnym
+                // "przeskoku" (np. 59 → 00 minut), zamiast pulsować na sztywno co sekundę.
+                var hChanged = h !== lastH;
+                var mChanged = m !== lastM;
+                lastH = h;
+                lastM = m;
+                var hPart = hChanged ? '<span class="dl-tick">' + h + 'h</span>' : (h + 'h');
+                var mPart = mChanged ? '<span class="dl-tick">' + pad(m) + 'm</span>' : (pad(m) + 'm');
+                el.innerHTML = hPart + ' ' + mPart + ' <span class="dl-tick">' + pad(s) + 's</span>';
             }
         }
 

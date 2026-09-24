@@ -76,7 +76,7 @@ function tl_arm(array $people, string $armedBy, string $armedIp): array {
     $data = [
         'status'      => 'pending',
         'armed_at'    => time(),
-        'unlock_at'   => time() + (1 * 60),
+        'unlock_at'   => time() + (48 * 3600),
         'config_hash' => tl_config_hash($people),
         'panic_token' => bin2hex(random_bytes(32)),
         'armed_by'    => $armedBy,
