@@ -279,9 +279,9 @@ The system combines **nine independent layers of protection** — compromising o
 | 📥 **Gated downloads** | `download.php` + whitelist | Downloadable files live outside `public_html`; an active session is required, no direct URL, always logged server-side |
 
 > [!TIP]
-| 🚨 **Trustee-collusion protection** | 48h timelock + Panic Button | The first successful password reconstruction blocks file downloads for 48h and sends an alert email with a one-time link to immediately and permanently block access — see below |
+| 🚨 **Trustee-collusion protection** | 48h timelock + Panic Button + server-side verification | The first successful password reconstruction (optionally verified server-side via `SECRET_HASH`) blocks file downloads for 48h and sends an alert email with a one-time link to immediately and permanently block access — see below |
 
-> **Protection against trustee collusion during your lifetime.** Shamir's algorithm mathematically allows designated trustees to reconstruct the master password itself if they collude to do so — this is an unavoidable property of any threshold secret-sharing scheme, not just this one. The system responds to this on two levels: (1) it **verifies** that the recovered password is genuine rather than cryptographic garbage from bad shares (mathematical consistency across share subsets + result-format analysis), and (2) after a confirmed successful reconstruction it **blocks file downloads for 48 hours**, sending you an email with a one-time "Panic Button" link — one click permanently cuts off access before anyone can download anything. Knowing the password alone is worthless without the physical database file. For maximum protection, it's additionally recommended to use a hardware key (e.g. YubiKey/FIDO2) as a second factor for the password database itself.
+> **Protection against trustee collusion during your lifetime.** Shamir's algorithm mathematically allows designated trustees to reconstruct the master password itself if they collude to do so — this is an unavoidable property of any threshold secret-sharing scheme, not just this one. The system responds to this on three levels: (1) in the browser it **checks consistency** of the combined shares (mathematical consistency across share subsets + result-format analysis) — this filters out typos and random noise, but on its own it **does not confirm** the combined secret is the real password (a logged-in person could paste fully consistent, but made-up, shares with a completely different "password"); (2) if you set the optional, but strongly recommended, `SECRET_HASH` in the config (a bcrypt hash of the real password, computed automatically by the dashboard), the server **genuinely verifies** the combined secret via `password_verify()` before arming anything; (3) only after that verification does it **block file downloads for 48 hours**, sending you an email with a one-time "Panic Button" link — one click permanently cuts off access before anyone can download anything. Knowing the password alone is worthless without the physical database file. For maximum protection, it's additionally recommended to use a hardware key (e.g. YubiKey/FIDO2) as a second factor for the password database itself.
 
 ---
 
@@ -302,11 +302,12 @@ Open `dashboard.html` locally in your browser. It has three tabs:
 
 **Configuration** — generates the `secret-key.php` file:
 1. The SMSPlanet API token, the SMS sender name, and the domain for autofilling the code (Android/iOS) — just the domain, without `@` and without `https://`
-2. For each designated person: login, password, first name, last name, phone number, and whether they should be visible on the holder list in the panel
-3. Downloadable files (password database, 2FA database, program installer) — key, button label, filename
-4. The instruction steps for the panel (formatting: `**bold**` / `*italic*`)
-5. Optional: an email notification for every login (recipient address, sender, panel link)
-6. Click "Generate configuration" and download the generated `secret-key.php` file
+2. The threshold (K) of required codes for the recovery panel — must match the threshold set in the Encryption tab — and, optionally but recommended, the real master password (the same one used in the Encryption tab), from which the dashboard computes a hash for server-side verification (see [Collusion risk protection](#security))
+3. For each designated person: login, password, first name, last name, phone number, and whether they should be visible on the holder list in the panel
+4. Downloadable files (password database, 2FA database, program installer) — key, button label, filename
+5. The instruction steps for the panel (formatting: `**bold**` / `*italic*`)
+6. Optional: an email notification for every login (recipient address, sender, panel link)
+7. Click "Generate configuration" and download the generated `secret-key.php` file
 
 **Encryption** — splits the master password into Shamir shares:
 1. Enter the master password to the password database
@@ -463,7 +464,7 @@ No. Reconstructing the password from the Shamir shares happens **entirely on the
 <details>
 <summary><strong>What if the trustees collude and recover the password during my lifetime, without my knowledge?</strong></summary>
 
-The password alone isn't enough for them. The database files live outside the server's public directory, and access to them is controlled by `download.php`. The moment the password is first successfully reconstructed in the panel, the system automatically blocks file downloads for 48 hours and sends you an alert email with a one-time "Panic Button" link — one click permanently cuts off access, giving you time to change the master password in peace. If you additionally protect the password database with a hardware key (e.g. YubiKey), knowing the password alone isn't enough to open it even after the files are unlocked.
+The password alone isn't enough for them. The database files live outside the server's public directory, and access to them is controlled by `download.php`. The moment the password is first successfully reconstructed in the panel — optionally, but strongly recommended, also verified server-side via `SECRET_HASH`, so that mere consistency of the combined shares (without knowing the real password) isn't enough to force the lock — the system automatically blocks file downloads for 48 hours and sends you an alert email with a one-time "Panic Button" link — one click permanently cuts off access, giving you time to change the master password in peace. If you additionally protect the password database with a hardware key (e.g. YubiKey), knowing the password alone isn't enough to open it even after the files are unlocked.
 
 </details>
 

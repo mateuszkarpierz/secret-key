@@ -279,9 +279,9 @@ El sistema combina **nueve capas de protección independientes** — comprometer
 | 📥 **Descargas controladas** | `download.php` + lista blanca | Los archivos descargables están fuera de `public_html`; se requiere una sesión activa, sin URL directa, siempre registrado del lado del servidor |
 
 > [!TIP]
-| 🚨 **Protección contra connivencia de fiduciarios** | Timelock 48h + Panic Button | La primera reconstrucción exitosa de la contraseña bloquea las descargas de archivos durante 48h y envía un correo de alerta con un enlace de un solo uso para bloquear el acceso de forma inmediata y permanente — ver más abajo |
+| 🚨 **Protección contra connivencia de fiduciarios** | Timelock 48h + Panic Button + verificación en servidor | La primera reconstrucción exitosa de la contraseña (opcionalmente verificada en el servidor mediante `SECRET_HASH`) bloquea las descargas de archivos durante 48h y envía un correo de alerta con un enlace de un solo uso para bloquear el acceso de forma inmediata y permanente — ver más abajo |
 
-> **Protección contra la connivencia de los fiduciarios en vida.** El algoritmo de Shamir permite matemáticamente que las personas designadas reconstruyan la contraseña maestra si se coluden para ello — es una propiedad inevitable de cualquier esquema de reparto de secretos por umbral, no solo de este. El sistema responde a esto en dos niveles: (1) **verifica** que la contraseña recuperada sea auténtica y no basura criptográfica de fragmentos erróneos (consistencia matemática entre subconjuntos de fragmentos + análisis del formato del resultado), y (2) tras una reconstrucción exitosa confirmada, **bloquea las descargas de archivos durante 48 horas**, enviándote un correo con un enlace de un solo uso «Panic Button» — un clic corta el acceso de forma permanente antes de que nadie pueda descargar nada. Conocer solo la contraseña no sirve de nada sin el archivo físico de la base de datos. Para máxima protección, se recomienda además usar una llave de seguridad física (p. ej. YubiKey/FIDO2) como segundo factor de la propia base de contraseñas.
+> **Protección contra la connivencia de los fiduciarios en vida.** El algoritmo de Shamir permite matemáticamente que las personas designadas reconstruyan la contraseña maestra si se coluden para ello — es una propiedad inevitable de cualquier esquema de reparto de secretos por umbral, no solo de este. El sistema responde a esto en tres niveles: (1) en el navegador **comprueba la consistencia** de los fragmentos combinados (consistencia matemática entre subconjuntos + análisis del formato del resultado) — esto filtra errores tipográficos y ruido aleatorio, pero por sí solo **no confirma** que el secreto combinado sea la contraseña real (alguien con sesión iniciada podría pegar fragmentos totalmente consistentes, pero inventados, con una «contraseña» completamente distinta); (2) si defines el `SECRET_HASH` opcional, pero muy recomendado, en la configuración (un hash bcrypt de la contraseña real, calculado automáticamente por el panel), el servidor **verifica de verdad** el secreto combinado mediante `password_verify()` antes de activar nada; (3) solo después de esa verificación **bloquea las descargas de archivos durante 48 horas**, enviándote un correo con un enlace de un solo uso «Panic Button» — un clic corta el acceso de forma permanente antes de que nadie pueda descargar nada. Conocer solo la contraseña no sirve de nada sin el archivo físico de la base de datos. Para máxima protección, se recomienda además usar una llave de seguridad física (p. ej. YubiKey/FIDO2) como segundo factor de la propia base de contraseñas.
 
 ---
 
@@ -302,11 +302,12 @@ Abre `dashboard.html` localmente en tu navegador. Tiene tres pestañas:
 
 **Configuración** — genera el archivo `secret-key.php`:
 1. El token de la API de SMSPlanet, el nombre del remitente del SMS y el dominio para autocompletar el código (Android/iOS) — solo el dominio, sin `@` ni `https://`
-2. Para cada persona designada: usuario, contraseña, nombre, apellido, número de teléfono y si debe ser visible en la lista de titulares en el panel
-3. Archivos descargables (base de contraseñas, base 2FA, instalador del programa) — clave, etiqueta del botón, nombre de archivo
-4. Los pasos de instrucciones para el panel (formato: `**negrita**` / `*cursiva*`)
-5. Opcional: una notificación por correo en cada inicio de sesión (dirección del destinatario, remitente, enlace al panel)
-6. Haz clic en «Generar configuración» y descarga el archivo `secret-key.php` generado
+2. El umbral (K) de códigos requeridos en el panel de recuperación — debe coincidir con el umbral definido en la pestaña Encriptación — y, opcionalmente pero recomendado, la contraseña maestra real (la misma usada en la pestaña Encriptación), a partir de la cual el panel calcula un hash para la verificación del lado del servidor (ver [Protección contra colusión](#seguridad))
+3. Para cada persona designada: usuario, contraseña, nombre, apellido, número de teléfono y si debe ser visible en la lista de titulares en el panel
+4. Archivos descargables (base de contraseñas, base 2FA, instalador del programa) — clave, etiqueta del botón, nombre de archivo
+5. Los pasos de instrucciones para el panel (formato: `**negrita**` / `*cursiva*`)
+6. Opcional: una notificación por correo en cada inicio de sesión (dirección del destinatario, remitente, enlace al panel)
+7. Haz clic en «Generar configuración» y descarga el archivo `secret-key.php` generado
 
 **Encriptación** — divide la contraseña maestra en fragmentos Shamir:
 1. Introduce la contraseña maestra de la base de contraseñas
@@ -463,7 +464,7 @@ No. La reconstrucción de la contraseña a partir de los fragmentos Shamir ocurr
 <details>
 <summary><strong>¿Qué pasa si los fiduciarios se coluden y recuperan la contraseña en vida, sin que yo lo sepa?</strong></summary>
 
-La contraseña por sí sola no les basta. Los archivos de la base de datos están fuera del directorio público del servidor, y el acceso a ellos lo controla `download.php`. En el momento en que la contraseña se reconstruye correctamente por primera vez en el panel, el sistema bloquea automáticamente las descargas de archivos durante 48 horas y te envía un correo de alerta con un enlace de un solo uso «Panic Button» — un clic corta el acceso de forma permanente, dándote tiempo para cambiar la contraseña maestra con calma. Si además proteges la base de contraseñas con una llave de seguridad física (p. ej. YubiKey), con solo conocer la contraseña no bastará para abrirla, incluso después de desbloquear los archivos.
+La contraseña por sí sola no les basta. Los archivos de la base de datos están fuera del directorio público del servidor, y el acceso a ellos lo controla `download.php`. En el momento en que la contraseña se reconstruye correctamente por primera vez en el panel — opcionalmente, pero muy recomendado, verificada también en el servidor mediante `SECRET_HASH`, para que la mera consistencia de los fragmentos combinados (sin conocer la contraseña real) no baste para forzar el bloqueo — el sistema bloquea automáticamente las descargas de archivos durante 48 horas y te envía un correo de alerta con un enlace de un solo uso «Panic Button» — un clic corta el acceso de forma permanente, dándote tiempo para cambiar la contraseña maestra con calma. Si además proteges la base de contraseñas con una llave de seguridad física (p. ej. YubiKey), con solo conocer la contraseña no bastará para abrirla, incluso después de desbloquear los archivos.
 
 </details>
 

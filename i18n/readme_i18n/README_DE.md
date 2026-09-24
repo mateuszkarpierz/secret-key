@@ -279,9 +279,9 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 | 📥 **Geschützte Downloads** | `download.php` + Whitelist | Herunterladbare Dateien liegen außerhalb von `public_html`; eine aktive Sitzung ist erforderlich, keine direkte URL, immer serverseitig protokolliert |
 
 > [!TIP]
-| 🚨 **Schutz vor Vertrauenspersonen-Absprachen** | 48h-Timelock + Panic Button | Die erste erfolgreiche Passwort-Rekonstruktion blockiert Datei-Downloads für 48h und sendet eine Alarm-E-Mail mit einem einmaligen Link, um den Zugriff sofort und dauerhaft zu blockieren — siehe unten |
+| 🚨 **Schutz vor Vertrauenspersonen-Absprachen** | 48h-Timelock + Panic Button + serverseitige Verifizierung | Die erste erfolgreiche Passwort-Rekonstruktion (optional serverseitig über `SECRET_HASH` verifiziert) blockiert Datei-Downloads für 48h und sendet eine Alarm-E-Mail mit einem einmaligen Link, um den Zugriff sofort und dauerhaft zu blockieren — siehe unten |
 
-> **Schutz vor Absprachen der Vertrauenspersonen zu Lebzeiten.** Der Shamir-Algorithmus erlaubt es den benannten Vertrauenspersonen mathematisch, das Master-Passwort selbst zu rekonstruieren, wenn sie sich dazu absprechen — das ist eine unvermeidliche Eigenschaft jedes Schwellenwert-Secret-Sharing-Verfahrens, nicht nur dieses. Das System reagiert darauf auf zwei Ebenen: (1) es **verifiziert**, dass das wiederhergestellte Passwort echt ist und nicht kryptografischer Müll aus falschen Anteilen (mathematische Konsistenz über Anteil-Teilmengen + Analyse des Ergebnisformats), und (2) nach einer bestätigten erfolgreichen Rekonstruktion **blockiert es Datei-Downloads für 48 Stunden** und sendet dir eine E-Mail mit einem einmaligen "Panic Button"-Link — ein Klick trennt den Zugriff dauerhaft, bevor irgendjemand etwas herunterladen kann. Die bloße Kenntnis des Passworts ist ohne die physische Datenbankdatei wertlos. Für maximalen Schutz wird zusätzlich empfohlen, einen Hardware-Schlüssel (z. B. YubiKey/FIDO2) als zweiten Faktor für die Passwortdatenbank selbst zu verwenden.
+> **Schutz vor Absprachen der Vertrauenspersonen zu Lebzeiten.** Der Shamir-Algorithmus erlaubt es den benannten Vertrauenspersonen mathematisch, das Master-Passwort selbst zu rekonstruieren, wenn sie sich dazu absprechen — das ist eine unvermeidliche Eigenschaft jedes Schwellenwert-Secret-Sharing-Verfahrens, nicht nur dieses. Das System reagiert darauf auf drei Ebenen: (1) im Browser wird die **Konsistenz** der kombinierten Anteile geprüft (mathematische Konsistenz über Anteil-Teilmengen + Analyse des Ergebnisformats) — das filtert Tippfehler und zufälliges Rauschen heraus, bestätigt aber für sich genommen **nicht**, dass das kombinierte Geheimnis das echte Passwort ist (eine angemeldete Person könnte vollständig konsistente, aber frei erfundene Anteile mit einem völlig anderen „Passwort" einfügen); (2) wenn du das optionale, aber dringend empfohlene `SECRET_HASH` in der Konfiguration setzt (ein Bcrypt-Hash des echten Passworts, automatisch vom Dashboard berechnet), **verifiziert** der Server das kombinierte Geheimnis tatsächlich über `password_verify()`, bevor irgendetwas scharf geschaltet wird; (3) erst nach dieser Verifizierung **blockiert es Datei-Downloads für 48 Stunden** und sendet dir eine E-Mail mit einem einmaligen "Panic Button"-Link — ein Klick trennt den Zugriff dauerhaft, bevor irgendjemand etwas herunterladen kann. Die bloße Kenntnis des Passworts ist ohne die physische Datenbankdatei wertlos. Für maximalen Schutz wird zusätzlich empfohlen, einen Hardware-Schlüssel (z. B. YubiKey/FIDO2) als zweiten Faktor für die Passwortdatenbank selbst zu verwenden.
 
 ---
 
@@ -302,11 +302,12 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 
 **Konfiguration** — generiert die Datei `secret-key.php`:
 1. Das SMSPlanet-API-Token, den SMS-Absendernamen und die Domain für das automatische Ausfüllen des Codes (Android/iOS) — nur die Domain, ohne `@` und ohne `https://`
-2. Für jede beauftragte Person: Login, Passwort, Vorname, Nachname, Telefonnummer und ob sie in der Inhaberliste im Panel sichtbar sein soll
-3. Herunterladbare Dateien (Passwortdatenbank, 2FA-Datenbank, Programm-Installer) — Schlüssel, Button-Beschriftung, Dateiname
-4. Die Anleitungsschritte für das Panel (Formatierung: `**fett**` / `*kursiv*`)
-5. Optional: eine E-Mail-Benachrichtigung bei jeder Anmeldung (Empfängeradresse, Absender, Link zum Panel)
-6. Klicken Sie auf „Konfiguration generieren" und laden Sie die generierte Datei `secret-key.php` herunter
+2. Den Schwellenwert (K) der erforderlichen Codes im Wiederherstellungs-Panel — muss mit dem im Tab Verschlüsselung festgelegten Schwellenwert übereinstimmen — sowie optional, aber empfohlen: das echte Master-Passwort (dasselbe wie im Tab Verschlüsselung), aus dem das Dashboard automatisch einen Hash für die serverseitige Verifizierung berechnet (siehe [Schutz vor Vertrauenspersonen-Absprachen](#sicherheit))
+3. Für jede beauftragte Person: Login, Passwort, Vorname, Nachname, Telefonnummer und ob sie in der Inhaberliste im Panel sichtbar sein soll
+4. Herunterladbare Dateien (Passwortdatenbank, 2FA-Datenbank, Programm-Installer) — Schlüssel, Button-Beschriftung, Dateiname
+5. Die Anleitungsschritte für das Panel (Formatierung: `**fett**` / `*kursiv*`)
+6. Optional: eine E-Mail-Benachrichtigung bei jeder Anmeldung (Empfängeradresse, Absender, Link zum Panel)
+7. Klicken Sie auf „Konfiguration generieren" und laden Sie die generierte Datei `secret-key.php` herunter
 
 **Verschlüsselung** — teilt das Master-Passwort in Shamir-Anteile auf:
 1. Geben Sie das Master-Passwort zur Passwortdatenbank ein
@@ -463,7 +464,7 @@ Nein. Die Rekonstruktion des Passworts aus den Shamir-Anteilen erfolgt **vollst�
 <details>
 <summary><strong>Was passiert, wenn sich die Vertrauenspersonen absprechen und zu meinen Lebzeiten ohne mein Wissen das Passwort wiederherstellen?</strong></summary>
 
-Das Passwort allein reicht ihnen nicht. Die Datenbankdateien liegen außerhalb des öffentlichen Verzeichnisses des Servers, und der Zugriff darauf wird von `download.php` kontrolliert. In dem Moment, in dem das Passwort im Panel zum ersten Mal erfolgreich rekonstruiert wird, blockiert das System automatisch die Datei-Downloads für 48 Stunden und sendet dir eine Alarm-E-Mail mit einem einmaligen „Panic Button"-Link — ein Klick trennt den Zugriff dauerhaft, sodass du in Ruhe das Master-Passwort ändern kannst. Wenn du die Passwortdatenbank zusätzlich mit einem Hardware-Schlüssel (z. B. YubiKey) schützt, reicht die bloße Kenntnis des Passworts auch nach der Freigabe der Dateien nicht aus, um sie zu öffnen.
+Das Passwort allein reicht ihnen nicht. Die Datenbankdateien liegen außerhalb des öffentlichen Verzeichnisses des Servers, und der Zugriff darauf wird von `download.php` kontrolliert. In dem Moment, in dem das Passwort im Panel zum ersten Mal erfolgreich rekonstruiert wird — optional, aber dringend empfohlen, auch serverseitig über `SECRET_HASH` verifiziert, damit die bloße Konsistenz der kombinierten Anteile (ohne Kenntnis des echten Passworts) nicht ausreicht, um die Sperre zu erzwingen — blockiert das System automatisch die Datei-Downloads für 48 Stunden und sendet dir eine Alarm-E-Mail mit einem einmaligen „Panic Button"-Link — ein Klick trennt den Zugriff dauerhaft, sodass du in Ruhe das Master-Passwort ändern kannst. Wenn du die Passwortdatenbank zusätzlich mit einem Hardware-Schlüssel (z. B. YubiKey) schützt, reicht die bloße Kenntnis des Passworts auch nach der Freigabe der Dateien nicht aus, um sie zu öffnen.
 
 </details>
 

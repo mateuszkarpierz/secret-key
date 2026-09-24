@@ -279,9 +279,9 @@ O sistema combina **nove camadas independentes de proteção** — comprometer u
 | 📥 **Downloads controlados** | `download.php` + lista branca | Arquivos para download ficam fora de `public_html`; sessão ativa exigida, sem URL direta, sempre registrado no lado do servidor |
 
 > [!TIP]
-| 🚨 **Proteção contra conluio de fiduciários** | Timelock 48h + Panic Button | A primeira reconstrução bem-sucedida da senha bloqueia os downloads de arquivos por 48h e envia um e-mail de alerta com um link de uso único para bloquear o acesso imediata e permanentemente — veja abaixo |
+| 🚨 **Proteção contra conluio de fiduciários** | Timelock 48h + Panic Button + verificação no servidor | A primeira reconstrução bem-sucedida da senha (opcionalmente verificada no servidor via `SECRET_HASH`) bloqueia os downloads de arquivos por 48h e envia um e-mail de alerta com um link de uso único para bloquear o acesso imediata e permanentemente — veja abaixo |
 
-> **Proteção contra conluio dos fiduciários em vida.** O algoritmo de Shamir permite, matematicamente, que as pessoas designadas reconstruam a própria senha mestra caso se conluiem para isso — essa é uma propriedade inevitável de qualquer esquema de compartilhamento de segredo por limiar, não só deste. O sistema reage a isso em dois níveis: (1) **verifica** se a senha recuperada é genuína, e não lixo criptográfico de partes erradas (consistência matemática entre subconjuntos de partes + análise do formato do resultado), e (2) após uma reconstrução bem-sucedida confirmada, **bloqueia os downloads de arquivos por 48 horas**, enviando um e-mail com um link de uso único "Panic Button" — um clique corta o acesso permanentemente antes que alguém consiga baixar qualquer coisa. Apenas conhecer a senha não vale nada sem o arquivo físico do banco de dados. Para o máximo de proteção, recomenda-se ainda usar uma chave de segurança física (ex.: YubiKey/FIDO2) como segundo fator do próprio banco de senhas.
+> **Proteção contra conluio dos fiduciários em vida.** O algoritmo de Shamir permite, matematicamente, que as pessoas designadas reconstruam a própria senha mestra caso se conluiem para isso — essa é uma propriedade inevitável de qualquer esquema de compartilhamento de segredo por limiar, não só deste. O sistema reage a isso em três níveis: (1) no navegador, **verifica a consistência** das partes combinadas (consistência matemática entre subconjuntos + análise do formato do resultado) — isso filtra erros de digitação e ruído aleatório, mas por si só **não confirma** que o segredo combinado é a senha real (alguém logado poderia colar partes totalmente consistentes, mas inventadas, com uma "senha" completamente diferente); (2) se você definir o `SECRET_HASH` opcional, mas fortemente recomendado, na configuração (um hash bcrypt da senha real, calculado automaticamente pelo painel), o servidor **verifica de fato** o segredo combinado via `password_verify()` antes de ativar qualquer coisa; (3) somente depois dessa verificação **bloqueia os downloads de arquivos por 48 horas**, enviando um e-mail com um link de uso único "Panic Button" — um clique corta o acesso permanentemente antes que alguém consiga baixar qualquer coisa. Apenas conhecer a senha não vale nada sem o arquivo físico do banco de dados. Para o máximo de proteção, recomenda-se ainda usar uma chave de segurança física (ex.: YubiKey/FIDO2) como segundo fator do próprio banco de senhas.
 
 ---
 
@@ -302,11 +302,12 @@ Abra o `dashboard.html` localmente no seu navegador. Ele tem três abas:
 
 **Configuração** — gera o arquivo `secret-key.php`:
 1. O token da API da SMSPlanet, o nome do remetente do SMS e o domínio para autopreenchimento do código (Android/iOS) — apenas o domínio, sem `@` e sem `https://`
-2. Para cada pessoa designada: login, senha, nome, sobrenome, número de telefone e se ela deve ficar visível na lista de titulares no painel
-3. Arquivos para download (banco de senhas, banco 2FA, instalador do programa) — chave, rótulo do botão, nome do arquivo
-4. As etapas de instrução para o painel (formatação: `**negrito**` / `*itálico*`)
-5. Opcional: uma notificação por e-mail a cada login (endereço do destinatário, remetente, link do painel)
-6. Clique em "Gerar configuração" e baixe o arquivo `secret-key.php` gerado
+2. O limiar (K) de códigos exigidos no painel de recuperação — deve corresponder ao limiar definido na aba Criptografia — e, opcionalmente mas recomendado, a senha mestra real (a mesma usada na aba Criptografia), a partir da qual o painel calcula um hash para verificação no lado do servidor (veja [Proteção contra conluio de fiduciários](#segurança))
+3. Para cada pessoa designada: login, senha, nome, sobrenome, número de telefone e se ela deve ficar visível na lista de titulares no painel
+4. Arquivos para download (banco de senhas, banco 2FA, instalador do programa) — chave, rótulo do botão, nome do arquivo
+5. As etapas de instrução para o painel (formatação: `**negrito**` / `*itálico*`)
+6. Opcional: uma notificação por e-mail a cada login (endereço do destinatário, remetente, link do painel)
+7. Clique em "Gerar configuração" e baixe o arquivo `secret-key.php` gerado
 
 **Criptografia** — divide a senha mestra em fragmentos Shamir:
 1. Digite a senha mestra do banco de senhas
@@ -463,7 +464,7 @@ Não. A reconstrução da senha a partir dos fragmentos Shamir ocorre **totalmen
 <details>
 <summary><strong>E se os fiduciários se conluiarem e recuperarem a senha em vida, sem o meu conhecimento?</strong></summary>
 
-A senha sozinha não é suficiente para eles. Os arquivos do banco de dados ficam fora do diretório público do servidor, e o acesso a eles é controlado pelo `download.php`. No momento em que a senha é reconstruída com sucesso pela primeira vez no painel, o sistema bloqueia automaticamente os downloads de arquivos por 48 horas e envia um e-mail de alerta com um link de uso único „Panic Button" — um clique corta o acesso permanentemente, dando tempo para você trocar a senha mestra com calma. Se você também proteger o banco de senhas com uma chave de segurança física (ex.: YubiKey), apenas conhecer a senha não será suficiente para abri-lo, mesmo depois de os arquivos serem desbloqueados.
+A senha sozinha não é suficiente para eles. Os arquivos do banco de dados ficam fora do diretório público do servidor, e o acesso a eles é controlado pelo `download.php`. No momento em que a senha é reconstruída com sucesso pela primeira vez no painel — opcionalmente, mas fortemente recomendado, também verificada no servidor via `SECRET_HASH`, para que a mera consistência das partes combinadas (sem conhecer a senha real) não seja suficiente para forçar o bloqueio — o sistema bloqueia automaticamente os downloads de arquivos por 48 horas e envia um e-mail de alerta com um link de uso único „Panic Button" — um clique corta o acesso permanentemente, dando tempo para você trocar a senha mestra com calma. Se você também proteger o banco de senhas com uma chave de segurança física (ex.: YubiKey), apenas conhecer a senha não será suficiente para abri-lo, mesmo depois de os arquivos serem desbloqueados.
 
 </details>
 
