@@ -58,6 +58,8 @@ if ($status['state'] !== 'none') {
 // oraz odblokowanie plików do pobrania, mimo że wcale nie zna prawdziwego hasła.
 // SECRET_HASH jest opcjonalny (fallback = stare zachowanie, bez weryfikacji) dla
 // wstecznej kompatybilności ze starymi configami — patrz dokumentacja.
+// Uwaga: gdy SECRET_HASH nie jest zdefiniowany, panel (index.php, SECRET_VERIFY_ENABLED)
+// w ogóle nie wysyła pola 'secret', a poniższy blok się nie wykonuje — hasło nie opuszcza przeglądarki.
 if (defined('SECRET_HASH')) {
     $vUsername = $_SESSION['username']   ?? 'unknown';
     $vIp       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';

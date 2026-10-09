@@ -111,7 +111,7 @@ W sytuacji kryzysowej wyznaczone osoby wykonują cztery kroki:
 │      ─────────       skanuje kod QR z karty                          │
 │                                                                      │
 │  04  DOSTĘP          Hasło odtworzone lokalnie w przeglądarce —      │
-│      ────────        nie trafia na serwer                            │
+│      ────────        przy SECRET_HASH weryfikowane na Twoim serwerze │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +199,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Format udziałów | `8` + 2-hex x-coord + data |
 | minPad | 1024 bitów |
 | Kodowanie | UTF-8 (str2hex) |
-| Rekonstrukcja | JavaScript po stronie przeglądarki — hasło nie trafia na serwer |
+| Rekonstrukcja | JavaScript (przeglądarka); hasło nie jest zapisywane — przy `SECRET_HASH` weryfikowane na serwerze przez HTTPS |
 
 ### Dobór parametrów podziału
 
@@ -456,7 +456,7 @@ System jest zaprojektowany z nadmiarowością — wystarczy zebrać minimalną w
 <details>
 <summary><strong>Czy hasło trafia na serwer podczas odszyfrowania?</strong></summary>
 
-Nie. Rekonstrukcja hasła z udziałów Shamira odbywa się **całkowicie po stronie przeglądarki** (JavaScript). Serwer służy tylko do uwierzytelnienia użytkownika — sam sekret nigdy go nie opuszcza.
+Rekonstrukcja odbywa się w przeglądarce. Jeśli w configu ustawiłeś `SECRET_HASH` (zalecane), po jej zakończeniu hasło jest przesyłane przez HTTPS do Twojego serwera tylko po to, by `password_verify()` mogło je porównać z `SECRET_HASH`. Serwer go nie zapisuje ani nie loguje. Bez `SECRET_HASH` hasło w ogóle nie opuszcza przeglądarki.
 
 </details>
 

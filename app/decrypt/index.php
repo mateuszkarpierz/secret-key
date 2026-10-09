@@ -1248,7 +1248,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v3.1.0</div>
+        <div class="footer-version">WERSJA SYSTEMU: v3.1.1</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
@@ -1393,7 +1393,13 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <!-- ═══════════════════════════════════════ -->
     <script>
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
+    // Czy serwer weryfikuje złożone hasło (SECRET_HASH w configu)? Jeśli nie — panel w ogóle
+    // nie wysyła hasła na serwer; arm-timelock.php dostaje tylko token CSRF.
+    var SECRET_VERIFY_ENABLED = <?= defined('SECRET_HASH') ? 'true' : 'false' ?>;
     var DL_INITIAL_STATE = <?= json_encode($tlStatus['state']) ?>;
+    // Czy blokada pobierania jest już uzbrojona/zablokowana? Wtedy serwer i tak nie sprawdza
+    // hasła (idempotentny guard w arm-timelock.php), więc nie ma po co go wysyłać (wariant 4B).
+    var dlLockEngaged = (DL_INITIAL_STATE !== 'none');
     var SHARES_REQUIRED = <?= $sharesRequired ?>;
 
     // ─── Żywy licznik odliczania 48h (Stan B — trwa timelock) ───
@@ -1467,6 +1473,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 
     // Dynamicznie przełącza sekcję pobierania w Stan B — bez przeładowania strony.
     function activateDlPendingState(unlockAtSeconds) {
+        dlLockEngaged = true;
         var inner = document.getElementById('dl-inner-content');
         var card  = document.getElementById('dl-card');
         if (!inner || !card || document.getElementById('dl-overlay')) return; // już aktywny albo brak sekcji
@@ -1847,8 +1854,13 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
 
                     fetch('log.php', { method: 'POST', headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ event: 'DECRYPT SUCCESS', keys: parts.length, verified_by: (verifiedSubsets ? 'subset_consistency' : 'format_check'), csrf_token: CSRF_TOKEN }) });
+                    // Hasło dołączamy do żądania WYŁĄCZNIE gdy serwer ma je z czym porównać
+                    // (SECRET_HASH) i blokada nie jest jeszcze uzbrojona. W pozostałych przypadkach nie ma
+                    // powodu wysyłać go poza przeglądarkę.
+                    var armBody = { csrf_token: CSRF_TOKEN };
+                    if (SECRET_VERIFY_ENABLED && !dlLockEngaged) { armBody.secret = combinedTrimmed; }
                     fetch('arm-timelock.php', { method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ secret: combinedTrimmed, csrf_token: CSRF_TOKEN }) })
+                        body: JSON.stringify(armBody) })
                         .then(function(r) { return r.json(); })
                         .then(function(res) {
                             if (!res || myAttemptId !== window._armAttemptSeq) return;
