@@ -111,7 +111,7 @@ Em uma situação de crise, as pessoas designadas executam quatro etapas:
 │      ─────────       escaneia o código QR do cartão                  │
 │                                                                      │
 │  04  ACESSO          Senha reconstruída localmente no navegador —     │
-│      ────────        nunca chega ao servidor                         │
+│      ────────        com SECRET_HASH, verificada no seu servidor      │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +199,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Formato do fragmento | `8` + coordenada x em 2 hex + dados |
 | minPad | 1024 bits |
 | Codificação | UTF-8 (str2hex) |
-| Reconstrução | JavaScript no lado do navegador — a senha nunca chega ao servidor |
+| Reconstrução | JavaScript (navegador); a senha não é armazenada — com `SECRET_HASH`, verificada no servidor via HTTPS |
 
 ### Escolha dos parâmetros de divisão
 
@@ -322,6 +322,9 @@ Abra o `dashboard.html` localmente no seu navegador. Ele tem três abas:
 4. Para cada pessoa: login, senha e fragmento Shamir (hex) — dados das duas abas anteriores
 5. Opcional: sangria de 2mm e linhas de corte para impressão em gráfica
 6. Clique em "Gerar cartões" — pré-visualização da frente e do verso de cada cartão, pronta para baixar como PDF
+
+> [!WARNING]
+> Se você não usa a verificação no servidor, remova a linha inteira `define('SECRET_HASH', …)` da configuração. Na v3.1.0, um valor vazio (`define('SECRET_HASH', '');`) fazia o painel rejeitar qualquer senha, até a correta. A partir da v3.1.1, um valor vazio é tratado como se a constante não estivesse definida, mas a configuração fica mais limpa sem a linha. O gerador do dashboard a omite quando o campo “Senha mestra real” está vazio.
 
 > [!TIP]
 > As três ferramentas funcionam **totalmente offline** — nenhum dado sai do navegador. O formulário de configuração gera `secret-key.php` do zero a cada execução — ele não carrega nem edita um arquivo existente.
@@ -457,7 +460,7 @@ O sistema foi projetado com redundância — basta reunir o número mínimo nece
 <details>
 <summary><strong>A senha chega ao servidor durante a descriptografia?</strong></summary>
 
-Não. A reconstrução da senha a partir dos fragmentos Shamir ocorre **totalmente no lado do navegador** (JavaScript). O servidor serve apenas para autenticar o usuário — o segredo em si nunca o deixa.
+A reconstrução ocorre no navegador. Se você definiu `SECRET_HASH` na configuração (recomendado), a senha é então enviada por HTTPS ao seu próprio servidor apenas para que `password_verify()` a compare com `SECRET_HASH`. O servidor não a armazena nem a registra em log. Sem `SECRET_HASH`, a senha nunca sai do navegador.
 
 </details>
 

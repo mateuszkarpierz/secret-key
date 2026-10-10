@@ -110,8 +110,8 @@ En una situación de crisis, las personas designadas realizan cuatro pasos:
 │  03  FRAGMENTOS      Cada persona introduce su fragmento o            │
 │      ─────────       escanea el código QR de la tarjeta              │
 │                                                                      │
-│  04  ACCESO          Contraseña reconstruida localmente en el         │
-│      ────────        navegador — nunca llega al servidor              │
+│  04  ACCESO          Contraseña reconstruida en el navegador —        │
+│      ────────        con SECRET_HASH, verificada en tu servidor       │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +199,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Formato de fragmento | `8` + coordenada x en 2 hex + datos |
 | minPad | 1024 bits |
 | Codificación | UTF-8 (str2hex) |
-| Reconstrucción | JavaScript en el lado del navegador — la contraseña nunca llega al servidor |
+| Reconstrucción | JavaScript (navegador); la contraseña no se almacena — con `SECRET_HASH`, se verifica en el servidor por HTTPS |
 
 ### Elección de los parámetros de división
 
@@ -322,6 +322,9 @@ Abre `dashboard.html` localmente en tu navegador. Tiene tres pestañas:
 4. Para cada persona: usuario, contraseña y fragmento Shamir (hex) — datos de las dos pestañas anteriores
 5. Opcional: sangrado de 2mm y líneas de corte para impresión en imprenta
 6. Haz clic en «Generar tarjetas» — vista previa del anverso y reverso de cada tarjeta, lista para descargar como PDF
+
+> [!WARNING]
+> Si no usas la verificación en el servidor, elimina toda la línea `define('SECRET_HASH', …)` de la configuración. En la v3.1.0 un valor vacío (`define('SECRET_HASH', '');`) hacía que el panel rechazara cualquier contraseña, incluso la correcta. Desde la v3.1.1 un valor vacío se trata como si la constante no estuviera definida, pero la configuración queda más limpia sin la línea. El generador del dashboard la omite cuando el campo «Contraseña maestra real» está vacío.
 
 > [!TIP]
 > Las tres herramientas funcionan **completamente sin conexión** — ningún dato sale del navegador. El formulario de configuración genera `secret-key.php` desde cero en cada ejecución — no carga ni edita un archivo existente.
@@ -457,7 +460,7 @@ El sistema está diseñado con redundancia — basta con reunir el número míni
 <details>
 <summary><strong>¿La contraseña llega al servidor durante el descifrado?</strong></summary>
 
-No. La reconstrucción de la contraseña a partir de los fragmentos Shamir ocurre **completamente en el lado del navegador** (JavaScript). El servidor solo se usa para autenticar al usuario — el secreto en sí nunca lo abandona.
+La reconstrucción ocurre en el navegador. Si configuraste `SECRET_HASH` (recomendado), la contraseña se envía después por HTTPS a tu propio servidor solo para que `password_verify()` la compare con `SECRET_HASH`. El servidor no la almacena ni la registra. Sin `SECRET_HASH`, la contraseña nunca sale del navegador.
 
 </details>
 

@@ -111,7 +111,7 @@ In einer Krisensituation führen die beauftragten Personen vier Schritte aus:
 │      ─────────       scannt den QR-Code von der Karte                │
 │                                                                      │
 │  04  ZUGRIFF         Passwort wird lokal im Browser rekonstruiert —   │
-│      ────────        erreicht nie den Server                         │
+│      ────────        mit SECRET_HASH auf dem eigenen Server geprüft   │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +199,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Anteilsformat | `8` + 2-Hex-x-Koordinate + Daten |
 | minPad | 1024 Bit |
 | Kodierung | UTF-8 (str2hex) |
-| Rekonstruktion | JavaScript auf der Browserseite — das Passwort erreicht nie den Server |
+| Rekonstruktion | JavaScript (Browser); das Passwort wird nicht gespeichert — mit `SECRET_HASH` auf dem Server per HTTPS geprüft |
 
 ### Wahl der Aufteilungsparameter
 
@@ -322,6 +322,9 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 4. Für jede Person: Login, Passwort und Shamir-Anteil (hex) — Daten aus den beiden vorherigen Registerkarten
 5. Optional: 2mm Beschnitt und Schnittlinien für den Druck in einer Druckerei
 6. Klicken Sie auf „Karten generieren" — Vorschau von Vorder- und Rückseite jeder Karte, bereit zum Herunterladen als PDF
+
+> [!WARNING]
+> Wenn Sie die serverseitige Prüfung nicht nutzen, entfernen Sie die gesamte Zeile `define('SECRET_HASH', …)` aus der Konfiguration. In v3.1.0 führte ein leerer Wert (`define('SECRET_HASH', '');`) dazu, dass das Panel jedes Passwort ablehnte, auch das richtige. Ab v3.1.1 wird ein leerer Wert wie eine nicht gesetzte Konstante behandelt, die Konfiguration ist ohne die Zeile aber sauberer. Der Dashboard-Generator lässt sie weg, wenn das Feld „Echtes Master-Passwort“ leer ist.
 
 > [!TIP]
 > Alle drei Werkzeuge arbeiten **vollständig offline** — es verlassen keine Daten den Browser. Das Konfigurationsformular generiert `secret-key.php` bei jedem Durchlauf von Grund auf neu — es lädt oder bearbeitet keine bestehende Datei.
@@ -457,7 +460,7 @@ Das System ist mit Redundanz konzipiert — es genügt, die minimal erforderlich
 <details>
 <summary><strong>Erreicht das Passwort während der Entschlüsselung den Server?</strong></summary>
 
-Nein. Die Rekonstruktion des Passworts aus den Shamir-Anteilen erfolgt **vollständig auf der Browserseite** (JavaScript). Der Server dient nur zur Authentifizierung des Benutzers — das Geheimnis selbst verlässt ihn niemals.
+Die Rekonstruktion erfolgt im Browser. Wenn Sie `SECRET_HASH` in der Konfiguration setzen (empfohlen), wird das Passwort danach per HTTPS an Ihren eigenen Server gesendet, nur damit `password_verify()` es mit `SECRET_HASH` vergleichen kann. Der Server speichert oder protokolliert es nicht. Ohne `SECRET_HASH` verlässt das Passwort den Browser nie.
 
 </details>
 

@@ -60,7 +60,7 @@ if ($status['state'] !== 'none') {
 // wstecznej kompatybilności ze starymi configami — patrz dokumentacja.
 // Uwaga: gdy SECRET_HASH nie jest zdefiniowany, panel (index.php, SECRET_VERIFY_ENABLED)
 // w ogóle nie wysyła pola 'secret', a poniższy blok się nie wykonuje — hasło nie opuszcza przeglądarki.
-if (defined('SECRET_HASH')) {
+if (defined('SECRET_HASH') && SECRET_HASH !== '') { // pusty hash = brak weryfikacji (jak niezdefiniowany)
     $vUsername = $_SESSION['username']   ?? 'unknown';
     $vIp       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $vKey      = 'secretverify_' . md5($vUsername);

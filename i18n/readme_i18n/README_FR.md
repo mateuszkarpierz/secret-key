@@ -110,8 +110,8 @@ En situation de crise, les personnes désignées effectuent quatre étapes :
 │  03  FRAGMENTS       Chaque personne saisit son fragment ou          │
 │      ─────────       scanne le code QR de la carte                   │
 │                                                                      │
-│  04  ACCÈS           Mot de passe reconstitué localement dans le     │
-│      ────────        navigateur — n'atteint jamais le serveur        │
+│  04  ACCÈS           Mot de passe reconstitué dans le navigateur —   │
+│      ────────        avec SECRET_HASH, vérifié sur votre serveur     │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +199,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Format des fragments | `8` + coordonnée x sur 2 hex + données |
 | minPad | 1024 bits |
 | Encodage | UTF-8 (str2hex) |
-| Reconstitution | JavaScript côté navigateur — le mot de passe n'atteint jamais le serveur |
+| Reconstitution | JavaScript (navigateur) ; le mot de passe n'est pas stocké — avec `SECRET_HASH`, vérifié sur le serveur via HTTPS |
 
 ### Choix des paramètres de division
 
@@ -322,6 +322,9 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois ongl
 4. Pour chaque personne : identifiant, mot de passe et fragment Shamir (hex) — données des deux onglets précédents
 5. Optionnel : fond perdu de 2 mm et traits de coupe pour une impression en imprimerie
 6. Cliquez sur « Générer les cartes » — aperçu du recto et du verso de chaque carte, prête à télécharger au format PDF
+
+> [!WARNING]
+> Si vous n'utilisez pas la vérification côté serveur, supprimez toute la ligne `define('SECRET_HASH', …)` de la configuration. En v3.1.0, une valeur vide (`define('SECRET_HASH', '');`) faisait rejeter tous les mots de passe par le panneau, même le bon. Depuis la v3.1.1, une valeur vide est traitée comme si la constante n'était pas définie, mais la configuration est plus propre sans cette ligne. Le générateur du dashboard l'omet lorsque le champ « Vrai mot de passe principal » est vide.
 
 > [!TIP]
 > Les trois outils fonctionnent **entièrement hors ligne** — aucune donnée ne quitte le navigateur. Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
@@ -457,7 +460,7 @@ Le système est conçu avec de la redondance — il suffit de réunir le nombre 
 <details>
 <summary><strong>Le mot de passe atteint-il le serveur pendant le déchiffrement ?</strong></summary>
 
-Non. La reconstitution du mot de passe à partir des fragments Shamir se fait **entièrement côté navigateur** (JavaScript). Le serveur ne sert qu'à authentifier l'utilisateur — le secret lui-même ne le quitte jamais.
+La reconstitution se fait dans le navigateur. Si vous avez défini `SECRET_HASH` dans la configuration (recommandé), le mot de passe est ensuite envoyé via HTTPS à votre propre serveur uniquement pour que `password_verify()` le compare à `SECRET_HASH`. Le serveur ne le stocke ni ne le journalise. Sans `SECRET_HASH`, le mot de passe ne quitte jamais le navigateur.
 
 </details>
 

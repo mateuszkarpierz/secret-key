@@ -322,6 +322,9 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 5. Opcjonalnie: spad 2mm i linie cięcia do druku w drukarni
 6. Kliknij „Generuj karty" — podgląd przodu i tyłu każdej karty, gotowy do pobrania jako PDF
 
+> [!WARNING]
+> Jeśli nie korzystasz z weryfikacji po stronie serwera, usuń całą linię `define('SECRET_HASH', …)` z configu. W v3.1.0 pusta wartość (`define('SECRET_HASH', '');`) powodowała, że panel odrzucał każde hasło, nawet poprawne. Od v3.1.1 pusta wartość jest traktowana jak brak stałej, ale czytelniej jest usunąć linię. Generator w dashboardzie pomija ją, gdy pole „Prawdziwe hasło główne” jest puste.
+
 > [!TIP]
 > Wszystkie trzy narzędzia działają **całkowicie offline** — żadne dane nie opuszczają przeglądarki. Formularz konfiguracji generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
 

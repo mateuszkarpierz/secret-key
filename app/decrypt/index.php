@@ -1393,9 +1393,10 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <!-- ═══════════════════════════════════════ -->
     <script>
     var CSRF_TOKEN = '<?= generateCsrfToken() ?>';
-    // Czy serwer weryfikuje złożone hasło (SECRET_HASH w configu)? Jeśli nie — panel w ogóle
+    // Czy serwer weryfikuje złożone hasło (niepusty SECRET_HASH w configu)? Pusty hash traktujemy
+    // jak brak stałej. Jeśli weryfikacji nie ma — panel w ogóle
     // nie wysyła hasła na serwer; arm-timelock.php dostaje tylko token CSRF.
-    var SECRET_VERIFY_ENABLED = <?= defined('SECRET_HASH') ? 'true' : 'false' ?>;
+    var SECRET_VERIFY_ENABLED = <?= (defined('SECRET_HASH') && SECRET_HASH !== '') ? 'true' : 'false' ?>;
     var DL_INITIAL_STATE = <?= json_encode($tlStatus['state']) ?>;
     // Czy blokada pobierania jest już uzbrojona/zablokowana? Wtedy serwer i tak nie sprawdza
     // hasła (idempotentny guard w arm-timelock.php), więc nie ma po co go wysyłać (wariant 4B).

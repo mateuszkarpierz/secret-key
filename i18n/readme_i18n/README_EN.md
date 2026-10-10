@@ -111,7 +111,7 @@ In a crisis situation, the designated people carry out four steps:
 │      ─────────       scans the QR code from the card                 │
 │                                                                      │
 │  04  ACCESS          Password reconstructed locally in the browser — │
-│      ────────        never reaches the server                        │
+│      ────────        with SECRET_HASH, verified on your server       │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +199,7 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Share format | `8` + 2-hex x-coord + data |
 | minPad | 1024 bits |
 | Encoding | UTF-8 (str2hex) |
-| Reconstruction | JavaScript on the browser side — the password never reaches the server |
+| Reconstruction | JavaScript (browser); the password is not stored — with `SECRET_HASH`, verified on the server over HTTPS |
 
 ### Choosing the split parameters
 
@@ -322,6 +322,9 @@ Open `dashboard.html` locally in your browser. It has three tabs:
 4. For each person: login, password, and Shamir share (hex) — data from the two previous tabs
 5. Optional: 2mm bleed and cut lines for print-shop printing
 6. Click "Generate cards" — preview of the front and back of each card, ready to download as a PDF
+
+> [!WARNING]
+> If you don't use server-side verification, remove the whole `define('SECRET_HASH', …)` line from the config. In v3.1.0 an empty value (`define('SECRET_HASH', '');`) made the panel reject every password, even the correct one. As of v3.1.1 an empty value is treated as if the constant were not set, but the config is cleaner without the line. The dashboard generator omits it when the “Real master password” field is empty.
 
 > [!TIP]
 > All three tools work **entirely offline** — no data leaves the browser. The configuration form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
@@ -457,7 +460,7 @@ The system is designed with redundancy — it's enough to gather the minimum req
 <details>
 <summary><strong>Does the password reach the server during decryption?</strong></summary>
 
-No. Reconstructing the password from the Shamir shares happens **entirely on the browser side** (JavaScript). The server is only used to authenticate the user — the secret itself never leaves it.
+Reconstruction happens in the browser. If you set `SECRET_HASH` in the config (recommended), the password is then sent over HTTPS to your own server only so that `password_verify()` can compare it with `SECRET_HASH`. The server does not store or log it. Without `SECRET_HASH` the password never leaves the browser.
 
 </details>
 
