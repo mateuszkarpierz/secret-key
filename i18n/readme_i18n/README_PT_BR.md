@@ -494,6 +494,27 @@ Indefinidamente — desde que o proprietário não gere uma nova configuração 
 
 </details>
 
+<details>
+<summary><strong>O Secret Key substitui o testamento ou o inventário?</strong></summary>
+
+Não. O Secret Key não é uma ferramenta jurídica. O dinheiro de uma conta bancária a família recupera pela via formal do inventário, e o Secret Key a complementa onde a lei não ajuda: acesso a e-mail, nuvem com fotos, códigos 2FA ou criptomoedas guardadas em chave própria. Não é aconselhamento jurídico, e os termos de alguns serviços podem restringir o compartilhamento de senhas.
+
+</details>
+
+<details>
+<summary><strong>Minha família verá toda a minha correspondência privada?</strong></summary>
+
+O Secret Key não descriptografa nada e não tem acesso ao seu e-mail nem aos seus mensageiros. Ele apenas divide a senha mestra do seu banco de senhas (p. ex. KeePass, Bitwarden), e o arquivo do banco fica no seu servidor. Depois de atingir o quórum, confirmar por SMS e aguardar o bloqueio de 48 horas, seus entes queridos baixam esse arquivo, e o que há nele é você quem decide. Você pode preparar um banco de emergência separado, só com as contas destinadas à família.
+
+</details>
+
+<details>
+<summary><strong>Isso não é complicado demais? Um pendrive criptografado e um bilhete com a senha não bastam?</strong></summary>
+
+Para muita gente um pendrive com um bilhete basta e é mais simples. O Secret Key é para quem não quer guardar tudo em um só lugar com uma só pessoa: a senha é dividida entre várias pessoas de confiança, e o acesso é protegido por SMS e um bloqueio de 48 horas que você pode cancelar. A configuração é técnica (servidor próprio; o dashboard offline e a documentação a simplificam), enquanto seus entes queridos recebem apenas cartões e instruções.
+
+</details>
+
 ---
 
 <div align="center">

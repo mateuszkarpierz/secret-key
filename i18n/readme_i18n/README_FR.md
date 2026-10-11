@@ -494,6 +494,27 @@ Indéfiniment — tant que le propriétaire ne génère pas une nouvelle configu
 
 </details>
 
+<details>
+<summary><strong>Secret Key remplace-t-il un testament ou la procédure successorale ?</strong></summary>
+
+Non. Secret Key n'est pas un outil juridique. L'argent d'un compte bancaire, la famille le récupère par la voie successorale formelle, et Secret Key la complète là où le droit ne peut pas aider : accès à la messagerie, au cloud de photos, aux codes 2FA ou aux cryptomonnaies détenues avec une clé personnelle. Ce n'est pas un conseil juridique, et les conditions de certains services peuvent restreindre le partage de mots de passe.
+
+</details>
+
+<details>
+<summary><strong>Ma famille verra-t-elle toute ma correspondance privée ?</strong></summary>
+
+Secret Key ne déchiffre rien et n'a aucun accès à votre messagerie ni à vos applications de messagerie instantanée. Il ne fait que répartir le mot de passe maître de votre base de mots de passe (p. ex. KeePass, Bitwarden), et le fichier de la base reste sur votre serveur. Après le quorum, la confirmation par SMS et le verrou de 48 heures, vos proches téléchargent ce fichier, et ce qu'il contient, c'est vous qui le décidez. Vous pouvez préparer une base d'urgence distincte avec seulement les comptes destinés à la famille.
+
+</details>
+
+<details>
+<summary><strong>N'est-ce pas trop compliqué ? Une clé USB chiffrée et un papier avec le mot de passe ne suffisent-ils pas ?</strong></summary>
+
+Pour beaucoup, une clé USB avec un papier suffit et c'est plus simple. Secret Key s'adresse à ceux qui ne veulent pas tout garder au même endroit chez une seule personne : le mot de passe est réparti entre plusieurs personnes de confiance, et l'accès est protégé par SMS et un verrou de 48 heures que vous pouvez annuler. La configuration est technique (serveur personnel ; le dashboard hors ligne et la documentation la simplifient), tandis que vos proches ne reçoivent que des cartes et des instructions.
+
+</details>
+
 ---
 
 <div align="center">

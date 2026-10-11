@@ -494,6 +494,27 @@ Indefinitely — as long as the owner doesn't generate a new configuration and r
 
 </details>
 
+<details>
+<summary><strong>Does Secret Key replace a will or the inheritance process?</strong></summary>
+
+No. Secret Key is not a legal tool. Money in a bank account is recovered by the family through the formal inheritance process, and Secret Key complements it where the law cannot help: access to email, cloud photos, 2FA codes or cryptocurrency held on your own key. This is not legal advice, and the terms of some services may restrict sharing passwords.
+
+</details>
+
+<details>
+<summary><strong>Will my family see all my private correspondence?</strong></summary>
+
+Secret Key does not decrypt anything and has no access to your email or messengers. It only splits the master password of your password database (e.g. KeePass, Bitwarden), and the database file stays on your own server. After reaching the quorum, confirming by SMS and waiting out the 48-hour lock, your loved ones download that file, and what is in it is up to you. You can prepare a separate emergency database containing only the accounts meant for your family.
+
+</details>
+
+<details>
+<summary><strong>Isn't this too complicated? Wouldn't an encrypted USB stick and a note with the password be enough?</strong></summary>
+
+For many people a USB stick with a note is enough and simpler. Secret Key is for those who do not want to keep everything in one place with one person: the password is split among several trusted people, and access is protected by SMS and a 48-hour lock you can cancel. Setup is technical (your own server; the offline dashboard and documentation simplify it), while your loved ones only get cards and instructions.
+
+</details>
+
 ---
 
 <div align="center">

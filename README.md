@@ -493,6 +493,27 @@ Bezterminowo — o ile właściciel nie wygeneruje nowej konfiguracji i nie zast
 
 </details>
 
+<details>
+<summary><strong>Czy Secret Key zastępuje testament lub postępowanie spadkowe?</strong></summary>
+
+Nie. Secret Key nie jest narzędziem prawnym. Pieniądze z konta bankowego rodzina odzyska formalną drogą spadkową, a Secret Key uzupełnia ją tam, gdzie prawo nie pomoże: dostęp do poczty, chmury ze zdjęciami, kodów 2FA czy kryptowalut trzymanych na własnym kluczu. To nie jest porada prawna, a regulaminy niektórych usług mogą ograniczać udostępnianie haseł.
+
+</details>
+
+<details>
+<summary><strong>Czy rodzina zobaczy całą moją prywatną korespondencję?</strong></summary>
+
+Secret Key niczego nie odszyfrowuje i nie ma dostępu do Twojej poczty ani komunikatorów. Dzieli tylko hasło główne do Twojej bazy haseł (np. KeePass, Bitwarden), a plik bazy leży na Twoim serwerze. Bliscy po zebraniu kworum, potwierdzeniu SMS i 48-godzinnej blokadzie pobierają ten plik, a to, co w nim jest, wybierasz Ty. Możesz przygotować osobną bazę awaryjną tylko z kontami, które mają trafić do rodziny.
+
+</details>
+
+<details>
+<summary><strong>Czy to nie jest za skomplikowane? Czy nie wystarczy zaszyfrowany pendrive i kartka z hasłem?</strong></summary>
+
+Dla wielu osób pendrive z kartką wystarczy i jest prostszy. Secret Key jest dla tych, którzy nie chcą trzymać wszystkiego w jednym miejscu u jednej osoby: hasło jest dzielone między kilku zaufanych, a dostęp chroni SMS i 48-godzinna blokada, którą możesz anulować. Konfiguracja jest techniczna (własny serwer; dashboard offline i dokumentacja ją upraszczają), a Twoi bliscy dostają tylko karty i instrukcję.
+
+</details>
+
 ---
 
 <div align="center">

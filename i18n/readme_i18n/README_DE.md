@@ -494,6 +494,27 @@ Unbegrenzt — solange der Besitzer keine neue Konfiguration generiert und die D
 
 </details>
 
+<details>
+<summary><strong>Ersetzt Secret Key ein Testament oder das Nachlassverfahren?</strong></summary>
+
+Nein. Secret Key ist kein Rechtsinstrument. Geld auf einem Bankkonto erhält die Familie auf dem förmlichen Erbweg; Secret Key ergänzt diesen dort, wo das Recht nicht hilft: Zugriff auf E-Mail, Foto-Cloud, 2FA-Codes oder Kryptowährungen auf einem eigenen Schlüssel. Das ist keine Rechtsberatung, und die Bedingungen mancher Dienste können die Weitergabe von Passwörtern einschränken.
+
+</details>
+
+<details>
+<summary><strong>Sieht meine Familie meine gesamte private Korrespondenz?</strong></summary>
+
+Secret Key entschlüsselt nichts und hat keinen Zugriff auf Ihre E-Mails oder Messenger. Es teilt nur das Master-Passwort Ihrer Passwortdatenbank (z. B. KeePass, Bitwarden); die Datenbankdatei bleibt auf Ihrem Server. Nach Erreichen des Quorums, SMS-Bestätigung und 48-Stunden-Sperre laden Ihre Angehörigen diese Datei herunter, und was darin ist, bestimmen Sie. Sie können eine separate Notfalldatenbank nur mit den Konten für die Familie vorbereiten.
+
+</details>
+
+<details>
+<summary><strong>Ist das nicht zu kompliziert? Reicht nicht ein verschlüsselter USB-Stick mit einem Zettel?</strong></summary>
+
+Für viele reicht ein USB-Stick mit Zettel und ist einfacher. Secret Key ist für alle, die nicht alles an einem Ort bei einer Person halten wollen: Das Passwort wird unter mehreren Vertrauenspersonen aufgeteilt, und der Zugriff ist durch SMS und eine 48-Stunden-Sperre geschützt, die Sie abbrechen können. Die Einrichtung ist technisch (eigener Server; Offline-Dashboard und Dokumentation vereinfachen sie), Ihre Angehörigen erhalten nur Karten und eine Anleitung.
+
+</details>
+
 ---
 
 <div align="center">

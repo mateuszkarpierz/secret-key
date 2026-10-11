@@ -494,6 +494,27 @@ Indefinidamente — mientras el propietario no genere una nueva configuración n
 
 </details>
 
+<details>
+<summary><strong>¿Secret Key sustituye al testamento o a la sucesión?</strong></summary>
+
+No. Secret Key no es una herramienta jurídica. El dinero de una cuenta bancaria la familia lo recupera por la vía sucesoria formal, y Secret Key la complementa donde la ley no ayuda: acceso al correo, a la nube con fotos, a códigos 2FA o a criptomonedas guardadas con una clave propia. No es asesoramiento legal, y las condiciones de algunos servicios pueden limitar el uso compartido de contraseñas.
+
+</details>
+
+<details>
+<summary><strong>¿Mi familia verá toda mi correspondencia privada?</strong></summary>
+
+Secret Key no descifra nada y no tiene acceso a tu correo ni a tus mensajerías. Solo divide la contraseña maestra de tu base de contraseñas (p. ej. KeePass, Bitwarden), y el archivo de la base permanece en tu servidor. Tras alcanzar el quórum, confirmar por SMS y esperar el bloqueo de 48 horas, tus allegados descargan ese archivo, y lo que contiene lo decides tú. Puedes preparar una base de emergencia aparte solo con las cuentas destinadas a la familia.
+
+</details>
+
+<details>
+<summary><strong>¿No es demasiado complicado? ¿No basta con un pendrive cifrado y una nota con la contraseña?</strong></summary>
+
+Para mucha gente un pendrive con una nota basta y es más sencillo. Secret Key es para quien no quiere tenerlo todo en un solo lugar con una sola persona: la contraseña se divide entre varias personas de confianza, y el acceso está protegido por SMS y un bloqueo de 48 horas que puedes cancelar. La configuración es técnica (servidor propio; el dashboard offline y la documentación la simplifican), mientras que tus allegados solo reciben tarjetas e instrucciones.
+
+</details>
+
 ---
 
 <div align="center">
