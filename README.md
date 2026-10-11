@@ -72,14 +72,16 @@ Nikt nie zna go samodzielnie — dopiero razem, w uzgodnionym momencie, mogą je
 
 ## Idea
 
-Każdy z nas przechowuje dziesiątki haseł — do banków, poczty, mediów społecznościowych, subskrypcji. **Co się z nimi stanie po naszej śmierci?** Rodzina zostaje odcięta od kont, nie może anulować subskrypcji, zamknąć kont, odzyskać pieniędzy.
+Każdy z nas ma dziesiątki haseł — do poczty, chmury ze zdjęciami, kodów 2FA, kryptowalut. **Co się z nimi stanie po naszej śmierci?** Banki i spadek mają własną drogę prawną, ale poczta, chmura czy krypto trzymane na własnym kluczu często zostają zamknięte na zawsze.
+
+Secret Key niczego nie przechowuje i nie odszyfrowuje sam: dzieli hasło główne do Twojej bazy haseł (np. KeePass, Bitwarden) między zaufane osoby. Plik bazy leży na Twoim serwerze, a bliscy mogą go pobrać dopiero po zebraniu kworum, potwierdzeniu SMS-em i 48-godzinnej blokadzie. Co jest w bazie, decydujesz Ty. Secret Key nie jest narzędziem prawnym i nie zastępuje testamentu ani postępowania spadkowego; uzupełnia je tam, gdzie prawo nie pomoże.
 
 Secret Key rozwiązuje ten problem, tworząc bezpieczny plan awaryjny z dwoma gwarancjami:
 
 | &nbsp; | Problem | Rozwiązanie |
 |---|---|---|
 | 🔐 | Nieautoryzowany dostęp **za życia** właściciela | Każda próba dostępu wymaga hasła + kodu SMS |
-| 💀 | Utrata dostępu do kont **po śmierci** | Wyznaczone osoby odtwarzają hasło algorytmem Shamira |
+| 💀 | Bliscy bez dostępu do Twojej bazy haseł **po śmierci** | Wyznaczone osoby odtwarzają hasło główne algorytmem Shamira i pobierają plik bazy |
 
 System jest **w pełni self-hosted** — dane nigdy nie opuszczają Twojego serwera. Żadnej centralnej bazy danych, żadnej chmury, żadnych zewnętrznych zależności poza wysyłką SMS.
 

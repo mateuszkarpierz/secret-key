@@ -72,14 +72,16 @@ Personne ne le connaît seul — ce n'est qu'ensemble, à un moment convenu, qu'
 
 ## Idée
 
-Chacun de nous stocke des dizaines de mots de passe — pour les banques, les e-mails, les réseaux sociaux, les abonnements. **Qu'advient-il d'eux après notre décès ?** La famille se retrouve coupée des comptes, incapable de résilier des abonnements, de fermer des comptes, de récupérer de l'argent.
+Chacun de nous possède des dizaines de mots de passe — pour la messagerie, le cloud de photos, les codes 2FA, les cryptomonnaies. **Qu'advient-il d'eux après notre décès ?** Les banques et la succession ont leur propre voie légale, mais la messagerie, le cloud ou les cryptos détenues avec une clé personnelle restent souvent verrouillés pour toujours.
+
+Secret Key ne stocke ni ne déchiffre rien lui-même : il répartit le mot de passe maître de votre base de mots de passe (p. ex. KeePass, Bitwarden) entre des personnes de confiance. Le fichier de la base reste sur votre propre serveur, et vos proches ne peuvent le télécharger qu'après avoir atteint le quorum, confirmé par SMS et attendu le verrou de 48 heures. Ce que contient la base, c'est vous qui le décidez. Secret Key n'est pas un outil juridique et ne remplace ni le testament ni la procédure successorale ; il les complète là où le droit ne peut pas aider.
 
 Secret Key résout ce problème en créant un plan d'urgence sécurisé avec deux garanties :
 
 | &nbsp; | Problème | Solution |
 |---|---|---|
 | 🔐 | Accès non autorisé **du vivant** du propriétaire | Chaque tentative d'accès nécessite un mot de passe + un code SMS |
-| 💀 | Perte d'accès aux comptes **après le décès** | Les personnes désignées reconstituent le mot de passe avec l'algorithme de Shamir |
+| 💀 | Proches sans accès à votre base de mots de passe **après le décès** | Les personnes désignées reconstituent le mot de passe maître avec l'algorithme de Shamir et téléchargent le fichier de la base |
 
 Le système est **entièrement autohébergé** — les données ne quittent jamais votre serveur. Aucune base de données centrale, aucun cloud, aucune dépendance externe hormis l'envoi des SMS.
 

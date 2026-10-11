@@ -72,14 +72,16 @@ Nadie la conoce por sí sola — solo juntas, en un momento acordado, pueden rec
 
 ## Idea
 
-Cada uno de nosotros guarda docenas de contraseñas — de bancos, correo, redes sociales, suscripciones. **¿Qué pasa con ellas tras nuestra muerte?** La familia queda excluida de las cuentas, sin poder cancelar suscripciones, cerrar cuentas ni recuperar dinero.
+Cada uno de nosotros tiene decenas de contraseñas — del correo, de la nube con fotos, de códigos 2FA, de criptomonedas. **¿Qué pasa con ellas tras nuestra muerte?** Los bancos y la herencia tienen su propia vía legal, pero el correo, la nube o las criptos guardadas con una clave propia suelen quedar cerrados para siempre.
+
+Secret Key no almacena ni descifra nada por sí mismo: divide la contraseña maestra de tu base de contraseñas (p. ej. KeePass, Bitwarden) entre personas de confianza. El archivo de la base está en tu propio servidor y tus allegados solo pueden descargarlo tras alcanzar el quórum, confirmar por SMS y esperar el bloqueo de 48 horas. Lo que contiene la base lo decides tú. Secret Key no es una herramienta jurídica y no sustituye al testamento ni a la sucesión; los complementa donde la ley no ayuda.
 
 Secret Key resuelve este problema creando un plan de emergencia seguro con dos garantías:
 
 | &nbsp; | Problema | Solución |
 |---|---|---|
 | 🔐 | Acceso no autorizado **en vida** del propietario | Cada intento de acceso requiere una contraseña + un código SMS |
-| 💀 | Pérdida de acceso a las cuentas **tras la muerte** | Las personas designadas reconstruyen la contraseña con el algoritmo de Shamir |
+| 💀 | Allegados sin acceso a tu base de contraseñas **tras la muerte** | Las personas designadas reconstruyen la contraseña maestra con el algoritmo de Shamir y descargan el archivo de la base |
 
 El sistema es **totalmente autoalojado** — los datos nunca salen de tu servidor. Sin base de datos central, sin nube, sin dependencias externas salvo el envío de SMS.
 

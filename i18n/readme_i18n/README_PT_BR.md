@@ -72,14 +72,16 @@ Ninguém a conhece por conta própria — apenas juntas, em um momento acordado,
 
 ## Ideia
 
-Cada um de nós guarda dezenas de senhas — de bancos, e-mail, redes sociais, assinaturas. **O que acontece com elas depois que morremos?** A família fica sem acesso às contas, incapaz de cancelar assinaturas, encerrar contas ou recuperar dinheiro.
+Cada um de nós tem dezenas de senhas — do e-mail, da nuvem com fotos, de códigos 2FA, de criptomoedas. **O que acontece com elas depois que morremos?** Bancos e herança têm seu próprio caminho jurídico, mas e-mail, nuvem ou cripto guardada em chave própria muitas vezes ficam trancados para sempre.
+
+O Secret Key não armazena nem descriptografa nada por conta própria: ele divide a senha mestra do seu banco de senhas (p. ex. KeePass, Bitwarden) entre pessoas de confiança. O arquivo do banco fica no seu próprio servidor, e seus entes queridos só podem baixá-lo depois de atingir o quórum, confirmar por SMS e aguardar o bloqueio de 48 horas. O que vai no banco, você decide. O Secret Key não é uma ferramenta jurídica e não substitui o testamento nem o inventário; ele os complementa onde a lei não ajuda.
 
 O Secret Key resolve esse problema criando um plano de emergência seguro com duas garantias:
 
 | &nbsp; | Problema | Solução |
 |---|---|---|
 | 🔐 | Acesso não autorizado **durante a vida** do proprietário | Toda tentativa de acesso exige uma senha + um código SMS |
-| 💀 | Perda de acesso às contas **após a morte** | Pessoas designadas reconstroem a senha usando o algoritmo de Shamir |
+| 💀 | Entes queridos sem acesso ao seu banco de senhas **após a morte** | Pessoas designadas reconstroem a senha mestra usando o algoritmo de Shamir e baixam o arquivo do banco |
 
 O sistema é **totalmente auto-hospedado** — os dados nunca saem do seu servidor. Nenhum banco de dados central, nenhuma nuvem, nenhuma dependência externa além do envio de SMS.
 

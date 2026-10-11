@@ -72,14 +72,16 @@ No one knows it on their own — only together, at an agreed moment, can they re
 
 ## Idea
 
-Each of us stores dozens of passwords — for banks, email, social media, subscriptions. **What happens to them after we die?** The family gets cut off from accounts, unable to cancel subscriptions, close accounts, or recover money.
+Each of us has dozens of passwords — for email, photo cloud storage, 2FA codes, crypto. **What happens to them after we die?** Banks and inheritance have their own legal route, but email, cloud accounts or crypto held on your own key often stay locked forever.
+
+Secret Key doesn't store or decrypt anything itself: it splits the master password of your password database (e.g. KeePass, Bitwarden) among trusted people. The database file stays on your own server, and your loved ones can download it only after reaching the quorum, confirming by SMS and waiting out the 48-hour lock. You decide what goes into the database. Secret Key is not a legal tool and does not replace a will or probate; it complements them where the law cannot help.
 
 Secret Key solves this problem by creating a secure emergency plan with two guarantees:
 
 | &nbsp; | Problem | Solution |
 |---|---|---|
 | 🔐 | Unauthorized access **during** the owner's lifetime | Every access attempt requires a password + an SMS code |
-| 💀 | Loss of account access **after death** | Designated people reconstruct the password using Shamir's algorithm |
+| 💀 | Loved ones without access to your password database **after death** | Designated people reconstruct the master password using Shamir's algorithm and download the database file |
 
 The system is **fully self-hosted** — data never leaves your server. No central database, no cloud, no external dependencies apart from sending SMS.
 

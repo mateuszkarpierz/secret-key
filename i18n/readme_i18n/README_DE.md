@@ -72,14 +72,16 @@ Niemand kennt es allein — nur gemeinsam, zu einem vereinbarten Zeitpunkt, kön
 
 ## Idee
 
-Jeder von uns speichert Dutzende von Passwörtern — für Banken, E-Mail, soziale Medien, Abonnements. **Was passiert damit nach unserem Tod?** Die Familie wird von den Konten abgeschnitten, kann Abonnements nicht kündigen, Konten nicht schließen, kein Geld zurückholen.
+Jeder von uns hat Dutzende Passwörter — für E-Mail, die Foto-Cloud, 2FA-Codes, Kryptowährungen. **Was passiert damit nach unserem Tod?** Banken und Erbschaft haben ihren eigenen Rechtsweg, aber E-Mail, Cloud oder Krypto auf einem eigenen Schlüssel bleiben oft für immer verschlossen.
+
+Secret Key speichert und entschlüsselt selbst nichts: Es teilt das Master-Passwort Ihrer Passwortdatenbank (z. B. KeePass, Bitwarden) unter vertrauenswürdigen Personen auf. Die Datenbankdatei liegt auf Ihrem eigenen Server, und Ihre Angehörigen können sie erst nach Erreichen des Quorums, SMS-Bestätigung und 48-Stunden-Sperre herunterladen. Was in der Datenbank steht, entscheiden Sie. Secret Key ist kein Rechtsinstrument und ersetzt weder Testament noch Nachlassverfahren; es ergänzt sie dort, wo das Recht nicht hilft.
 
 Secret Key löst dieses Problem, indem es einen sicheren Notfallplan mit zwei Garantien schafft:
 
 | &nbsp; | Problem | Lösung |
 |---|---|---|
 | 🔐 | Unbefugter Zugriff **zu Lebzeiten** des Besitzers | Jeder Zugriffsversuch erfordert ein Passwort + einen SMS-Code |
-| 💀 | Verlust des Kontozugriffs **nach dem Tod** | Beauftragte Personen rekonstruieren das Passwort mit dem Shamir-Algorithmus |
+| 💀 | Angehörige ohne Zugriff auf Ihre Passwortdatenbank **nach dem Tod** | Beauftragte Personen rekonstruieren das Master-Passwort mit dem Shamir-Algorithmus und laden die Datenbankdatei herunter |
 
 Das System ist **vollständig selbst gehostet** — Daten verlassen niemals Ihren Server. Keine zentrale Datenbank, keine Cloud, keine externen Abhängigkeiten außer dem SMS-Versand.
 
