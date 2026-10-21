@@ -353,11 +353,22 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 
 ### Krok 3 — Ścieżka do konfiguracji
 
-W pliku `auth.php` zaktualizuj ścieżkę do pliku konfiguracyjnego:
+W pliku `auth.php` (folder `app/`) ścieżka do folderu `/private/` występuje w **7 miejscach**. Trzeba poprawić wszystkie, nie tylko pierwszy `require_once`:
 
 ```php
-require_once '/home/user/private/secret-key.php';
+// app/auth.php
+require_once __DIR__ . '/../../../private/secret-key.php';
+require_once __DIR__ . '/../../../private/rate-limit.php';
+require_once __DIR__ . '/../../../private/lang.php';
+
+define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
+define('PRIVATE_DIR', __DIR__ . '/../../../private');
+
+// ×2 (rememberDevice() i sprawdzanie zaufanego urządzenia)
+$file = __DIR__ . '/../../../private/trusted_devices.json';
 ```
+
+Domyślnie w każdym z tych miejsc stoi fragment `/../../../private`. Ścieżka jest liczona od folderu, w którym leży `auth.php`, więc dopasuj ją do swojej struktury katalogów. Przykład: `auth.php` leży w `/public_html/twoja-domena/`, a `/private/` obok `/public_html/`, więc zmieniasz `/../../../private` na `/../../private` we wszystkich siedmiu miejscach (w edytorze użyj „Zamień wszystko”).
 
 ---
 

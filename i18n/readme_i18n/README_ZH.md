@@ -354,11 +354,22 @@ PHP 系统     →  验证验证码，创建会话，可选择记住设备
 
 ### 第 3 步 —— 配置文件路径
 
-在 `auth.php` 文件中，更新配置文件的路径：
+在 `auth.php` 文件（`app/` 文件夹）中，指向 `/private/` 文件夹的路径出现在 **7 个位置**。请全部修改，而不只是第一个 `require_once`：
 
 ```php
-require_once '/home/user/private/secret-key.php';
+// app/auth.php
+require_once __DIR__ . '/../../../private/secret-key.php';
+require_once __DIR__ . '/../../../private/rate-limit.php';
+require_once __DIR__ . '/../../../private/lang.php';
+
+define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
+define('PRIVATE_DIR', __DIR__ . '/../../../private');
+
+// ×2 (rememberDevice() + trusted-device check)
+$file = __DIR__ . '/../../../private/trusted_devices.json';
 ```
+
+默认情况下，这些位置都包含片段 `/../../../private`。路径是从 `auth.php` 所在的文件夹开始计算的，因此请按服务器的目录结构调整。示例：`auth.php` 位于 `/public_html/你的域名/`，而 `/private/` 与 `/public_html/` 并列，则把全部七处的 `/../../../private` 改为 `/../../private`（在编辑器中使用“全部替换”）。
 
 ---
 

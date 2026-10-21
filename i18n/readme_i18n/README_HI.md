@@ -354,11 +354,22 @@ PHP सिस्टम   →  कोड सत्यापित करता �
 
 ### चरण 3 — कॉन्फ़िगरेशन का पथ
 
-`auth.php` फ़ाइल में, कॉन्फ़िगरेशन फ़ाइल का पथ अपडेट करें:
+`auth.php` फ़ाइल (`app/` फ़ोल्डर) में `/private/` फ़ोल्डर का पथ **7 जगहों** पर आता है। केवल पहला `require_once` नहीं, सभी को ठीक करें:
 
 ```php
-require_once '/home/user/private/secret-key.php';
+// app/auth.php
+require_once __DIR__ . '/../../../private/secret-key.php';
+require_once __DIR__ . '/../../../private/rate-limit.php';
+require_once __DIR__ . '/../../../private/lang.php';
+
+define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
+define('PRIVATE_DIR', __DIR__ . '/../../../private');
+
+// ×2 (rememberDevice() + trusted-device check)
+$file = __DIR__ . '/../../../private/trusted_devices.json';
 ```
+
+डिफ़ॉल्ट रूप से इन सभी जगहों पर `/../../../private` अंश लिखा होता है। पथ उस फ़ोल्डर से गिना जाता है जिसमें `auth.php` रखा है, इसलिए इसे अपने सर्वर की डायरेक्टरी संरचना के अनुसार बदलें। उदाहरण: `auth.php` `/public_html/आपका-डोमेन/` में है और `/private/` `/public_html/` के बगल में है, तो सातों जगहों पर `/../../../private` को `/../../private` कर दें (एडिटर में “Replace all” का उपयोग करें)।
 
 ---
 

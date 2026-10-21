@@ -354,11 +354,22 @@ SMS / 2FA    →  отправляет одноразовый код на при
 
 ### Шаг 3 — Путь к конфигурации
 
-В файле `auth.php` обновите путь к файлу конфигурации:
+В файле `auth.php` (папка `app/`) путь к папке `/private/` встречается в **7 местах**. Исправьте все, а не только первый `require_once`:
 
 ```php
-require_once '/home/user/private/secret-key.php';
+// app/auth.php
+require_once __DIR__ . '/../../../private/secret-key.php';
+require_once __DIR__ . '/../../../private/rate-limit.php';
+require_once __DIR__ . '/../../../private/lang.php';
+
+define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
+define('PRIVATE_DIR', __DIR__ . '/../../../private');
+
+// ×2 (rememberDevice() + trusted-device check)
+$file = __DIR__ . '/../../../private/trusted_devices.json';
 ```
+
+По умолчанию в каждом из этих мест стоит фрагмент `/../../../private`. Путь отсчитывается от папки, в которой лежит `auth.php`, поэтому подгоните его под структуру каталогов вашего сервера. Пример: `auth.php` лежит в `/public_html/ваш-домен/`, а `/private/` рядом с `/public_html/`, значит, во всех семи местах меняйте `/../../../private` на `/../../private` (в редакторе используйте «Заменить все»).
 
 ---
 

@@ -354,11 +354,22 @@ SMS / 2FA       →  يُرسل رمزًا لمرة واحدة إلى الرقم
 
 ### الخطوة 3 — مسار الإعدادات
 
-في ملف `auth.php`، حدّث المسار إلى ملف الإعدادات:
+في ملف `auth.php` (مجلد `app/`) يظهر المسار إلى مجلد `/private/` في **7 مواضع**. صحّحها جميعًا، وليس أول `require_once` فقط:
 
 ```php
-require_once '/home/user/private/secret-key.php';
+// app/auth.php
+require_once __DIR__ . '/../../../private/secret-key.php';
+require_once __DIR__ . '/../../../private/rate-limit.php';
+require_once __DIR__ . '/../../../private/lang.php';
+
+define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
+define('PRIVATE_DIR', __DIR__ . '/../../../private');
+
+// ×2 (rememberDevice() + trusted-device check)
+$file = __DIR__ . '/../../../private/trusted_devices.json';
 ```
+
+افتراضيًا يحتوي كل موضع من هذه المواضع على الجزء `/../../../private`. يُحسب المسار من المجلد الذي يوجد فيه `auth.php`، لذا عدّله بما يناسب بنية المجلدات على خادمك. مثال: إذا كان `auth.php` في `/public_html/نطاقك/` وكان `/private/` بجوار `/public_html/`، فغيّر `/../../../private` إلى `/../../private` في المواضع السبعة كلها (استخدم «استبدال الكل» في المحرر).
 
 ---
 

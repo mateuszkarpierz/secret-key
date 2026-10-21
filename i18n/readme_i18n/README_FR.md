@@ -354,11 +354,22 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois ongl
 
 ### Étape 3 — Chemin vers la configuration
 
-Dans le fichier `auth.php`, mettez à jour le chemin vers le fichier de configuration :
+Dans le fichier `auth.php` (dossier `app/`), le chemin vers le dossier `/private/` apparaît à **7 endroits**. Corrigez-les tous, pas seulement le premier `require_once` :
 
 ```php
-require_once '/home/user/private/secret-key.php';
+// app/auth.php
+require_once __DIR__ . '/../../../private/secret-key.php';
+require_once __DIR__ . '/../../../private/rate-limit.php';
+require_once __DIR__ . '/../../../private/lang.php';
+
+define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
+define('PRIVATE_DIR', __DIR__ . '/../../../private');
+
+// ×2 (rememberDevice() + trusted-device check)
+$file = __DIR__ . '/../../../private/trusted_devices.json';
 ```
+
+Par défaut, chacun de ces endroits contient le fragment `/../../../private`. Le chemin est calculé à partir du dossier où se trouve `auth.php` ; adaptez-le donc à l’arborescence de votre serveur. Exemple : `auth.php` se trouve dans `/public_html/votre-domaine/` et `/private/` à côté de `/public_html/`, donc remplacez `/../../../private` par `/../../private` aux sept endroits (utilisez « Tout remplacer » dans votre éditeur).
 
 ---
 
