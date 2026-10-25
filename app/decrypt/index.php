@@ -1248,7 +1248,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version">WERSJA SYSTEMU: v3.1.1</div>
+        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.2</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
@@ -1618,7 +1618,8 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         // Locked placeholder
         var info = document.createElement('span');
         info.className = 'person-info person-locked';
-        info.innerHTML = '<span class="lock-icon">&#128274;</span> zaszyfrowane';
+        info.innerHTML = '<span class="lock-icon">&#128274;</span> ';
+        info.appendChild(document.createTextNode(<?= json_encode(t('person_locked')) ?>));
 
         // Reveal button
         var btn = document.createElement('button');

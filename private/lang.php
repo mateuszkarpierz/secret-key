@@ -146,6 +146,10 @@ $lang = [
     'modal_secret_key_title'      => 'Co to jest Secret key?',
     'modal_secret_key_note'       => 'Secret key to specjalny ciąg znaków kryptograficznych, który znajduje się na odwrocie karty w miejscu zaznaczonym czerwoną obramówką. Jest on również umieszczony w kodzie QR.',
 
+    // ── DECRYPT/INDEX.PHP — lista posiadaczy i stopka ──
+    'person_locked'               => 'zaszyfrowane',
+    'footer_system_version'       => 'WERSJA SYSTEMU:',
+
     // ── DECRYPT/INDEX.PHP — pasek informacji o sesji (stopka) ──
     'session_info_ip'             => 'IP',
     'session_info_browser'        => 'PRZEGLĄDARKA',
