@@ -1987,7 +1987,7 @@
             </div>
             <div class="mini-stepper">
                 <button type="button" class="mini-stepper-btn" onclick="changeSharesRequired(-1)">−</button>
-                <input type="number" id="shares_required" min="2" max="255" step="1" value="3" inputmode="numeric" autocomplete="off">
+                <input type="number" id="shares_required" min="2" max="20" step="1" value="3" inputmode="numeric" autocomplete="off">
                 <button type="button" class="mini-stepper-btn" onclick="changeSharesRequired(1)">+</button>
             </div>
         </div>
@@ -2129,7 +2129,7 @@ var I18N = {
         secretHashFieldLabel: 'Prawdziwe hasło główne',
         secretHashPlaceholder: 'to samo hasło co w zakładce Szyfrowanie',
         secretHashFieldHint: 'Opcjonalne, ale zalecane — utrudnia wymuszenie odzyskania hasła bez jego znajomości. Wpisz to samo hasło co w zakładce Szyfrowanie, dashboard sam policzy hasz. Szczegóły w dokumentacji.',
-        errSharesRequired: 'Próg odzyskiwania hasła musi być liczbą całkowitą od 2 do 255.',
+        errSharesRequired: 'Próg odzyskiwania hasła musi być liczbą całkowitą od 2 do 20.',
 
         emailNotifyLabel: 'Powiadomienie e-mail o logowaniu',
         notifySettingsLabel: 'Ustawienia powiadomień',
@@ -2267,7 +2267,7 @@ var I18N = {
         secretHashFieldLabel: 'Real master password',
         secretHashPlaceholder: 'the same password as in the Encryption tab',
         secretHashFieldHint: 'Optional, but recommended — makes it harder to force password recovery without actually knowing it. Enter the same password as in the Encryption tab; the dashboard computes the hash for you. Details in the documentation.',
-        errSharesRequired: 'The password recovery threshold must be a whole number between 2 and 255.',
+        errSharesRequired: 'The password recovery threshold must be a whole number between 2 and 20.',
 
         emailNotifyLabel: 'Login e-mail notification',
         notifySettingsLabel: 'Notification settings',
@@ -3500,14 +3500,14 @@ function changeSharesRequired(delta) {
     var input = document.getElementById('shares_required');
     var val = (parseInt(input.value, 10) || 0) + delta;
     if (val < 2) val = 2;
-    if (val > 255) val = 255;
+    if (val > 20) val = 20;
     input.value = val;
 }
 
 function validateSharesRequired() {
     var input = document.getElementById('shares_required');
     var val = Number(input.value);
-    if (!Number.isInteger(val) || val < 2 || val > 255) {
+    if (!Number.isInteger(val) || val < 2 || val > 20) {
         showError(t('errSharesRequired'));
         input.focus();
         return false;

@@ -1248,7 +1248,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.2</div>
+        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.3</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
@@ -2320,7 +2320,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     console.clear();
     console.log('%c⛔ SECRET KEY · PROTECTED','color:#c084fc;font-size:16px;font-weight:bold;font-family:monospace;');
     console.log('%cTen zasób jest chroniony. Nieautoryzowany dostęp jest zabroniony.','color:#94a3b8;font-size:12px;font-family:monospace;');
-    try{fetch('/key/decrypt/devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS OPEN',ref:refEl.textContent,page:window.location.pathname})});}catch(e){}
+    try{fetch('devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS OPEN',ref:refEl.textContent,page:window.location.pathname})});}catch(e){}
   }
 
   function hideJoker(){
@@ -2338,7 +2338,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     joker.setAttribute('aria-hidden','true');
     var _dur=timerSecs;timerSecs=0;
     timerEl.textContent='00:00';
-    try{fetch('/key/decrypt/devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS CLOSE',ref:refEl.textContent,page:window.location.pathname,duration:_dur})});}catch(e){}
+    try{fetch('devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS CLOSE',ref:refEl.textContent,page:window.location.pathname,duration:_dur})});}catch(e){}
   }
 
   function init(){
