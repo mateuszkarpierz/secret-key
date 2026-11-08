@@ -1604,7 +1604,7 @@ $timedOut  = isset($_GET['timeout']);
     console.clear();
     console.log('%c⛔ SECRET KEY · PROTECTED','color:#c084fc;font-size:16px;font-weight:bold;font-family:monospace;');
     console.log('%cTen zasób jest chroniony. Nieautoryzowany dostęp jest zabroniony.','color:#94a3b8;font-size:12px;font-family:monospace;');
-    try{fetch('/key/decrypt/devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS OPEN',ref:refEl.textContent,page:window.location.pathname})});}catch(e){}
+    try{fetch('decrypt/devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS OPEN',csrf_token:(typeof CSRF_TOKEN!=='undefined'?CSRF_TOKEN:''),ref:refEl.textContent,page:window.location.pathname})});}catch(e){}
   }
 
   function hideJoker(){
@@ -1622,7 +1622,7 @@ $timedOut  = isset($_GET['timeout']);
     joker.setAttribute('aria-hidden','true');
     var _dur=timerSecs;timerSecs=0;
     timerEl.textContent='00:00';
-    try{fetch('/key/decrypt/devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS CLOSE',ref:refEl.textContent,page:window.location.pathname,duration:_dur})});}catch(e){}
+    try{fetch('decrypt/devtools-log.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'DEVTOOLS CLOSE',csrf_token:(typeof CSRF_TOKEN!=='undefined'?CSRF_TOKEN:''),ref:refEl.textContent,page:window.location.pathname,duration:_dur})});}catch(e){}
   }
 
   function init(){

@@ -32,6 +32,10 @@ RewriteRule ^index\.html?$ login.php [R=301,L]
     # CSP z obsługą Google Fonts
     Header always set Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'"
 
+    # Nagłówki dodane w v3.1.4 (wzmocnienie; identyczne wartości w głównym .htaccess nie szkodzą)
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "no-referrer"
+
     # Wymusza brak cache'owania dla panelu logowania — może zawierać dane
     # osobowe i sesyjne, więc nie powinien być przechowywany przez żadnego
     # pośrednika (przeglądarkę, CDN, proxy). Jeśli masz też ogólną regułę

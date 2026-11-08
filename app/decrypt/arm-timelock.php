@@ -90,7 +90,20 @@ $username = $_SESSION['username'] ?? '—';
 $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 $armedBy = $display . ' (' . $username . ')';
 
-$tlData = tl_arm($people, $armedBy, $ip);
+// Ponowne sprawdzenie stanu i uzbrojenie pod wspólną blokadą pliku: gdy dwóch powierników
+// uzbroi jednocześnie, tylko pierwszy tworzy timelock i wysyła mail (jeden ważny token).
+$armResult = tl_with_lock(function () use ($people, $armedBy, $ip) {
+    $st = tl_status($people);
+    if ($st['state'] !== 'none') {
+        return ['already' => $st['state']];
+    }
+    return ['data' => tl_arm($people, $armedBy, $ip)];
+});
+if (isset($armResult['already'])) {
+    echo json_encode(['armed' => false, 'state' => $armResult['already']]);
+    exit;
+}
+$tlData = $armResult['data'];
 
 sk_log("TIMELOCK ARMED: $armedBy IP: $ip unlock_at: " . date('d.m.Y H:i:s', $tlData['unlock_at']));
 

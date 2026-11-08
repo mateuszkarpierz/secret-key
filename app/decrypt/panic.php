@@ -11,6 +11,11 @@
 require_once '../auth.php'; // sesja, config ($people, $lang przez t()), sk_log() — celowo bez requireLogin()
 require_once 'timelock.php';
 
+// Token w URL — nie wysyłaj go dalej w Referer, nie cache'uj odpowiedzi (v3.1.4)
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Cache-Control: no-store');
+
 $people = $people ?? [];
 $token  = trim($_GET['token'] ?? '');
 $ip     = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
@@ -27,7 +32,12 @@ if ($token !== '') {
     }
 }
 if (!$success) {
-    sk_log("PANIC BUTTON FAILED: próba użycia nieprawidłowego/nieaktualnego tokena. IP: $ip");
+    // Endpoint jest publiczny (bez logowania), więc wpisy o błędnych tokenach limitujemy per IP —
+    // za limitem strona odpowiada tak samo, ale nic nie trafia do logu (poprawny token działa zawsze).
+    $failLimit = rateLimitCheckAndIncrement('panic_fail_' . md5($ip), PANIC_FAIL_LOG_MAX, PANIC_FAIL_LOG_WINDOW);
+    if (!$failLimit['blocked']) {
+        sk_log("PANIC BUTTON FAILED: próba użycia nieprawidłowego/nieaktualnego tokena. IP: $ip");
+    }
 }
 ?><!DOCTYPE html>
 <html lang="<?= htmlspecialchars($lang['_html_lang'] ?? 'pl') ?>">

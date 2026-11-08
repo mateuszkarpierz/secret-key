@@ -43,6 +43,23 @@ function rlWithLock(callable $mutator): array {
 
     $data = $mutator($data);
 
+    // Czyszczenie wygasłych wpisów przy każdym zapisie — bez tego plik rośnie o jeden
+    // klucz na każdy IP/login, który kiedykolwiek wykonał próbę (a każde żądanie czyta
+    // i zapisuje cały plik pod LOCK_EX). Wpis wygasł, gdy minęło jego okno ('win');
+    // dla starszych wpisów bez 'win' przyjmujemy 3600 s (najdłuższe okno w aplikacji).
+    // To ten sam warunek, po którym i tak liczenie zaczynałoby się od zera.
+    $now = time();
+    foreach ($data as $k => $e) {
+        if (!is_array($e) || !isset($e['since'])) {
+            unset($data[$k]);
+            continue;
+        }
+        $win = isset($e['win']) ? (int) $e['win'] : 3600;
+        if ($now - (int) $e['since'] > $win) {
+            unset($data[$k]);
+        }
+    }
+
     ftruncate($fp, 0);
     rewind($fp);
     fwrite($fp, json_encode($data));
@@ -75,6 +92,7 @@ function rateLimitCheckAndIncrement(string $key, int $maxAttempts, int $windowSe
         if ($now - $entry['since'] > $windowSeconds) {
             $entry = ['count' => 0, 'since' => $now];
         }
+        $entry['win'] = $windowSeconds; // długość okna — potrzebna do czyszczenia wygasłych wpisów
 
         if ($entry['count'] >= $maxAttempts) {
             $result['blocked'] = true;

@@ -41,6 +41,18 @@ define('LOGIN_WINDOW',       900); // 15 minut
 define('DEVTOOLS_LOG_MAX_ATTEMPTS', 30);
 define('DEVTOOLS_LOG_WINDOW',       300); // 5 minut
 
+// Wspólny (globalny) limit zdarzeń DEVTOOLS dla całego serwera — ten endpoint jest
+// publiczny, więc bez niego ruch z wielu adresów IP tworzyłby nieograniczoną liczbę
+// liczników per IP. Sprawdzany PRZED licznikiem per IP.
+define('DEVTOOLS_LOG_GLOBAL_MAX',    300);
+define('DEVTOOLS_LOG_GLOBAL_WINDOW', 300); // 5 minut
+
+// Panic Button: ile błędnych/nieaktualnych tokenów z jednego IP jest jeszcze zapisywanych
+// w logu (po przekroczeniu strona odpowiada tak samo, ale bez wpisu — chroni log przed
+// zaśmiecaniem; poprawny token działa zawsze).
+define('PANIC_FAIL_LOG_MAX',    10);
+define('PANIC_FAIL_LOG_WINDOW', 900); // 15 minut
+
 // Maksymalna liczba błędnych prób weryfikacji per sesja
 define('TWO_FA_MAX_ATTEMPTS', 3);
 

@@ -29,9 +29,24 @@ if (!in_array($data['event'], $allowed)) {
     exit;
 }
 
+// Wymagany token CSRF z sesji (v3.1.4) — strona login/panel zawsze go ma; zwykły skrypt
+// bez sesji nie zaśmieci logu ani nie zużyje limitów.
+if (!validateCsrfToken(trim((string)($data['csrf_token'] ?? '')))) {
+    http_response_code(403);
+    exit;
+}
+
 // Rate limiting per IP — endpoint jest publiczny (działa też przed logowaniem),
 // więc chronimy go przed zaśmiecaniem logu masowymi fałszywymi zdarzeniami.
 $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+// Limit globalny (wspólny licznik) — najpierw, żeby przy zalewie żądań nie tworzyć kolejnych kluczy per IP
+$devtoolsGlobal = rateLimitCheckAndIncrement('devtools_global', DEVTOOLS_LOG_GLOBAL_MAX, DEVTOOLS_LOG_GLOBAL_WINDOW);
+if ($devtoolsGlobal['blocked']) {
+    http_response_code(429);
+    exit;
+}
+
 $devtoolsLimit = rateLimitCheckAndIncrement('devtools_' . md5($ip), DEVTOOLS_LOG_MAX_ATTEMPTS, DEVTOOLS_LOG_WINDOW);
 if ($devtoolsLimit['blocked']) {
     http_response_code(429);
