@@ -257,6 +257,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 - `rate_limits.json` — liczniki prób logowania per IP/konto *(tworzy się automatycznie)*
 - `trusted_devices.json` — tokeny zaufanych urządzeń *(tworzy się automatycznie)*
 - `timelock.json` — stan 48h blokady po zmowie powierników *(tworzy się automatycznie, patrz [Bezpieczeństwo](#bezpieczeństwo))*
+- `timelock.lock` — pusty plik pomocniczy blokady zapisu *(tworzy się automatycznie)*
 - `secret-key.log` — logi zdarzeń
 - `moja-baza-hasel.kdbx` *(i inne pliki do pobrania)* — serwowane wyłącznie przez `download.php`, nigdy bezpośrednio przez HTTP
 
