@@ -83,7 +83,7 @@ Secret Key rozwiązuje ten problem, tworząc bezpieczny plan awaryjny z dwoma gw
 | 🔐 | Nieautoryzowany dostęp **za życia** właściciela | Każda próba dostępu wymaga hasła + kodu SMS |
 | 💀 | Bliscy bez dostępu do Twojej bazy haseł **po śmierci** | Wyznaczone osoby odtwarzają hasło główne algorytmem Shamira i pobierają plik bazy |
 
-System jest **w pełni self-hosted** — dane nigdy nie opuszczają Twojego serwera. Żadnej centralnej bazy danych, żadnej chmury, żadnych zewnętrznych zależności poza wysyłką SMS.
+System jest **w pełni self-hosted** — hasła, udziały i pliki nie opuszczają Twojego serwera. Żadnej centralnej bazy danych ani chmury; poza własnym serwerem korzysta tylko z wysyłki SMS i z czcionek Google Fonts.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ System jest **w pełni self-hosted** — dane nigdy nie opuszczają Twojego serw
 Backend       PHP 8+, pliki flat (JSON + PHP config), zero SQL
 Autoryzacja   bcrypt cost=10, 2FA SMS via SMSPlanet API
 Kryptografia  Shamir Secret Sharing (secrets.js)
-Frontend      Czysty HTML + JS, zero zewnętrznych zależności (offline)
+Frontend      Czysty HTML + JS, zero zależności JS (offline); czcionki z Google Fonts
 ```
 
 ---
@@ -307,7 +307,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 3. Dla każdej wyznaczonej osoby: login, hasło, imię, nazwisko, numer telefonu i czy ma być widoczna na liście posiadaczy w panelu
 4. Pliki do pobrania (baza haseł, baza 2FA, instalator programu) — klucz, etykieta przycisku, nazwa pliku
 5. Kroki instrukcji dla panelu (formatowanie `**pogrubienie**` / `*kursywa*`)
-6. Opcjonalnie: powiadomienie email o każdym logowaniu (adres odbiorcy, nadawca, link do panelu) — *wskazówka: niektóre powiadomienia mogą trafiać do spamu, warto dodać adres nadawcy do białej listy na skrzynce odbiorczej*
+6. Opcjonalnie: powiadomienie email o każdym logowaniu (adres odbiorcy, nadawca, `panel_url` — adres domeny panelu z subdomeną, np. `https://moja-domena.pl`; od v3.1.4 ma znaczenie dla bezpieczeństwa, więc wpisz dokładnie swoją domenę) — *wskazówka: niektóre powiadomienia mogą trafiać do spamu, warto dodać adres nadawcy do białej listy na skrzynce odbiorczej*
 7. Kliknij „Generuj konfigurację" i pobierz wygenerowany plik `secret-key.php`
 
 **Szyfrowanie** — dzieli hasło główne na udziały Shamira:
@@ -328,7 +328,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 > Jeśli nie korzystasz z weryfikacji po stronie serwera, usuń całą linię `define('SECRET_HASH', …)` z configu. W v3.1.0 pusta wartość (`define('SECRET_HASH', '');`) powodowała, że panel odrzucał każde hasło, nawet poprawne. Od v3.1.1 pusta wartość jest traktowana jak brak stałej, ale czytelniej jest usunąć linię. Generator w dashboardzie pomija ją, gdy pole „Prawdziwe hasło główne” jest puste.
 
 > [!TIP]
-> Wszystkie trzy narzędzia działają **całkowicie offline** — żadne dane nie opuszczają przeglądarki. Formularz konfiguracji generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
+> Wszystkie trzy narzędzia działają **offline** — dane z formularzy nie opuszczają przeglądarki (strony pobierają tylko czcionki z Google Fonts). Formularz konfiguracji generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
 
 ---
 
