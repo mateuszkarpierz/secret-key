@@ -83,7 +83,7 @@ Secret Key löst dieses Problem, indem es einen sicheren Notfallplan mit zwei Ga
 | 🔐 | Unbefugter Zugriff **zu Lebzeiten** des Besitzers | Jeder Zugriffsversuch erfordert ein Passwort + einen SMS-Code |
 | 💀 | Angehörige ohne Zugriff auf Ihre Passwortdatenbank **nach dem Tod** | Beauftragte Personen rekonstruieren das Master-Passwort mit dem Shamir-Algorithmus und laden die Datenbankdatei herunter |
 
-Das System ist **vollständig selbst gehostet** — Daten verlassen niemals Ihren Server. Keine zentrale Datenbank, keine Cloud, keine externen Abhängigkeiten außer dem SMS-Versand.
+Das System ist **vollständig selbst gehostet** — Passwörter, Anteile und Dateien verlassen niemals Ihren Server. Keine zentrale Datenbank, keine Cloud; außerhalb Ihres Servers nutzt das System nur den SMS-Versand und Google Fonts.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ Das System ist **vollständig selbst gehostet** — Daten verlassen niemals Ihre
 Backend       PHP 8+, flache Dateien (JSON + PHP-Konfig), kein SQL
 Autorisierung bcrypt cost=10, 2FA per SMS über die SMSPlanet-API
 Kryptografie  Shamir Secret Sharing (secrets.js)
-Frontend      Reines HTML + JS, keine externen Abhängigkeiten (offline)
+Frontend      Reines HTML + JS, keine JS-Abhängigkeiten (offline); Schriftarten von Google Fonts
 ```
 
 ---
@@ -257,6 +257,7 @@ Browser      →  nimmt die Shamir-Anteile entgegen, rekonstruiert das Geheimnis
 - `rate_limits.json` — Anmeldeversuch-Zähler pro IP/Konto *(wird automatisch erstellt)*
 - `trusted_devices.json` — Tokens für vertrauenswürdige Geräte *(wird automatisch erstellt)*
 - `timelock.json` — Zustand der 48h-Sperre nach Vertrauenspersonen-Absprache *(wird automatisch erstellt, siehe [Sicherheit](#sicherheit))*
+- `timelock.lock` — leere Hilfsdatei für die Schreibsperre *(wird automatisch erstellt)*
 - `secret-key.log` — Ereignisprotokolle
 - `moja-baza-hasel.kdbx` *(und weitere herunterladbare Dateien)* — werden ausschließlich über `download.php` ausgeliefert, nie direkt über HTTP
 
@@ -308,7 +309,7 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 3. Für jede beauftragte Person: Login, Passwort, Vorname, Nachname, Telefonnummer und ob sie in der Inhaberliste im Panel sichtbar sein soll
 4. Herunterladbare Dateien (Passwortdatenbank, 2FA-Datenbank, Programm-Installer) — Schlüssel, Button-Beschriftung, Dateiname
 5. Die Anleitungsschritte für das Panel (Formatierung: `**fett**` / `*kursiv*`)
-6. Optional: eine E-Mail-Benachrichtigung bei jeder Anmeldung (Empfängeradresse, Absender, Link zum Panel)
+6. Optional: eine E-Mail-Benachrichtigung bei jeder Anmeldung (Empfängeradresse, Absender, `panel_url` — die Domain-Adresse des Panels inkl. Subdomain, z. B. `https://meine-domain.de`; seit v3.1.4 sicherheitsrelevant, tragen Sie daher genau Ihre eigene Domain ein)
 7. Klicken Sie auf „Konfiguration generieren" und laden Sie die generierte Datei `secret-key.php` herunter
 
 **Verschlüsselung** — teilt das Master-Passwort in Shamir-Anteile auf:
@@ -329,7 +330,7 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 > Wenn Sie die serverseitige Prüfung nicht nutzen, entfernen Sie die gesamte Zeile `define('SECRET_HASH', …)` aus der Konfiguration. In v3.1.0 führte ein leerer Wert (`define('SECRET_HASH', '');`) dazu, dass das Panel jedes Passwort ablehnte, auch das richtige. Ab v3.1.1 wird ein leerer Wert wie eine nicht gesetzte Konstante behandelt, die Konfiguration ist ohne die Zeile aber sauberer. Der Dashboard-Generator lässt sie weg, wenn das Feld „Echtes Master-Passwort“ leer ist.
 
 > [!TIP]
-> Alle drei Werkzeuge arbeiten **vollständig offline** — es verlassen keine Daten den Browser. Das Konfigurationsformular generiert `secret-key.php` bei jedem Durchlauf von Grund auf neu — es lädt oder bearbeitet keine bestehende Datei.
+> Alle drei Werkzeuge arbeiten **offline** — Formulardaten verlassen den Browser nicht (die Seiten laden lediglich Schriftarten von Google Fonts). Das Konfigurationsformular generiert `secret-key.php` bei jedem Durchlauf von Grund auf neu — es lädt oder bearbeitet keine bestehende Datei.
 
 ---
 

@@ -83,7 +83,7 @@ Secret Key solves this problem by creating a secure emergency plan with two guar
 | 🔐 | Unauthorized access **during** the owner's lifetime | Every access attempt requires a password + an SMS code |
 | 💀 | Loved ones without access to your password database **after death** | Designated people reconstruct the master password using Shamir's algorithm and download the database file |
 
-The system is **fully self-hosted** — data never leaves your server. No central database, no cloud, no external dependencies apart from sending SMS.
+The system is **fully self-hosted** — passwords, shares and files never leave your server. No central database and no cloud; beyond your own server it only uses SMS delivery and Google Fonts.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ The system is **fully self-hosted** — data never leaves your server. No centra
 Backend       PHP 8+, flat files (JSON + PHP config), zero SQL
 Authorization bcrypt cost=10, 2FA SMS via SMSPlanet API
 Cryptography  Shamir Secret Sharing (secrets.js)
-Frontend      Plain HTML + JS, zero external dependencies (offline)
+Frontend      Plain HTML + JS, zero JS dependencies (offline); fonts from Google Fonts
 ```
 
 ---
@@ -257,6 +257,7 @@ Browser      →  accepts the Shamir shares, reconstructs the secret locally in 
 - `rate_limits.json` — login-attempt counters per IP/account *(created automatically)*
 - `trusted_devices.json` — trusted-device tokens *(created automatically)*
 - `timelock.json` — 48h lock state after trustee collusion *(created automatically, see [Security](#security))*
+- `timelock.lock` — empty helper file for write locking *(created automatically)*
 - `secret-key.log` — event logs
 - `moja-baza-hasel.kdbx` *(and other downloadable files)* — served only through `download.php`, never directly over HTTP
 
@@ -308,7 +309,7 @@ Open `dashboard.html` locally in your browser. It has three tabs:
 3. For each designated person: login, password, first name, last name, phone number, and whether they should be visible on the holder list in the panel
 4. Downloadable files (password database, 2FA database, program installer) — key, button label, filename
 5. The instruction steps for the panel (formatting: `**bold**` / `*italic*`)
-6. Optional: an email notification for every login (recipient address, sender, panel link)
+6. Optional: an email notification for every login (recipient address, sender, `panel_url` — the panel's domain address with subdomain, e.g. `https://my-domain.com`; since v3.1.4 it matters for security, so enter exactly your own domain)
 7. Click "Generate configuration" and download the generated `secret-key.php` file
 
 **Encryption** — splits the master password into Shamir shares:
@@ -329,7 +330,7 @@ Open `dashboard.html` locally in your browser. It has three tabs:
 > If you don't use server-side verification, remove the whole `define('SECRET_HASH', …)` line from the config. In v3.1.0 an empty value (`define('SECRET_HASH', '');`) made the panel reject every password, even the correct one. As of v3.1.1 an empty value is treated as if the constant were not set, but the config is cleaner without the line. The dashboard generator omits it when the “Real master password” field is empty.
 
 > [!TIP]
-> All three tools work **entirely offline** — no data leaves the browser. The configuration form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
+> All three tools work **offline** — form data does not leave the browser (the pages only fetch fonts from Google Fonts). The configuration form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
 
 ---
 

@@ -83,7 +83,7 @@ Secret Key résout ce problème en créant un plan d'urgence sécurisé avec deu
 | 🔐 | Accès non autorisé **du vivant** du propriétaire | Chaque tentative d'accès nécessite un mot de passe + un code SMS |
 | 💀 | Proches sans accès à votre base de mots de passe **après le décès** | Les personnes désignées reconstituent le mot de passe maître avec l'algorithme de Shamir et téléchargent le fichier de la base |
 
-Le système est **entièrement autohébergé** — les données ne quittent jamais votre serveur. Aucune base de données centrale, aucun cloud, aucune dépendance externe hormis l'envoi des SMS.
+Le système est **entièrement autohébergé** — les mots de passe, les fragments et les fichiers ne quittent jamais votre serveur. Aucune base de données centrale ni cloud ; en dehors de votre serveur, il n'utilise que l'envoi des SMS et Google Fonts.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ Le système est **entièrement autohébergé** — les données ne quittent jama
 Backend         PHP 8+, fichiers plats (JSON + config PHP), zéro SQL
 Autorisation    bcrypt cost=10, 2FA par SMS via l'API SMSPlanet
 Cryptographie   Shamir Secret Sharing (secrets.js)
-Frontend        HTML + JS pur, zéro dépendance externe (hors ligne)
+Frontend        HTML + JS pur, zéro dépendance JS (hors ligne) ; polices Google Fonts
 ```
 
 ---
@@ -257,6 +257,7 @@ Navigateur   →  reçoit les fragments Shamir, reconstitue le secret localement
 - `rate_limits.json` — compteurs de tentatives de connexion par IP/compte *(créé automatiquement)*
 - `trusted_devices.json` — jetons des appareils de confiance *(créé automatiquement)*
 - `timelock.json` — état du blocage de 48h après collusion des tiers de confiance *(créé automatiquement, voir [Sécurité](#sécurité))*
+- `timelock.lock` — fichier auxiliaire vide pour le verrouillage en écriture *(créé automatiquement)*
 - `secret-key.log` — journaux d'événements
 - `moja-baza-hasel.kdbx` *(et autres fichiers téléchargeables)* — servis uniquement via `download.php`, jamais directement via HTTP
 
@@ -308,7 +309,7 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois ongl
 3. Pour chaque personne désignée : identifiant, mot de passe, prénom, nom, numéro de téléphone et si elle doit être visible sur la liste des détenteurs dans le panneau
 4. Fichiers téléchargeables (base de mots de passe, base 2FA, installateur du programme) — clé, libellé du bouton, nom de fichier
 5. Les étapes d'instructions pour le panneau (mise en forme : `**gras**` / `*italique*`)
-6. Optionnel : une notification e-mail à chaque connexion (adresse du destinataire, expéditeur, lien vers le panneau)
+6. Optionnel : une notification e-mail à chaque connexion (adresse du destinataire, expéditeur, `panel_url` — l'adresse du domaine du panneau avec sous-domaine, p. ex. `https://mon-domaine.fr` ; depuis la v3.1.4 elle compte pour la sécurité, saisissez donc exactement votre domaine)
 7. Cliquez sur « Générer la configuration » et téléchargez le fichier `secret-key.php` généré
 
 **Chiffrement** — divise le mot de passe principal en fragments Shamir :
@@ -329,7 +330,7 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois ongl
 > Si vous n'utilisez pas la vérification côté serveur, supprimez toute la ligne `define('SECRET_HASH', …)` de la configuration. En v3.1.0, une valeur vide (`define('SECRET_HASH', '');`) faisait rejeter tous les mots de passe par le panneau, même le bon. Depuis la v3.1.1, une valeur vide est traitée comme si la constante n'était pas définie, mais la configuration est plus propre sans cette ligne. Le générateur du dashboard l'omet lorsque le champ « Vrai mot de passe principal » est vide.
 
 > [!TIP]
-> Les trois outils fonctionnent **entièrement hors ligne** — aucune donnée ne quitte le navigateur. Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
+> Les trois outils fonctionnent **hors ligne** — les données des formulaires ne quittent pas le navigateur (les pages ne téléchargent que des polices depuis Google Fonts). Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
 
 ---
 

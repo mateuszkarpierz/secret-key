@@ -83,7 +83,7 @@ Secret Key resuelve este problema creando un plan de emergencia seguro con dos g
 | 🔐 | Acceso no autorizado **en vida** del propietario | Cada intento de acceso requiere una contraseña + un código SMS |
 | 💀 | Allegados sin acceso a tu base de contraseñas **tras la muerte** | Las personas designadas reconstruyen la contraseña maestra con el algoritmo de Shamir y descargan el archivo de la base |
 
-El sistema es **totalmente autoalojado** — los datos nunca salen de tu servidor. Sin base de datos central, sin nube, sin dependencias externas salvo el envío de SMS.
+El sistema es **totalmente autoalojado** — las contraseñas, los fragmentos y los archivos nunca salen de tu servidor. Sin base de datos central ni nube; fuera de tu servidor solo usa el envío de SMS y Google Fonts.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ El sistema es **totalmente autoalojado** — los datos nunca salen de tu servido
 Backend         PHP 8+, archivos planos (JSON + config PHP), cero SQL
 Autorización    bcrypt cost=10, 2FA por SMS vía la API de SMSPlanet
 Criptografía    Shamir Secret Sharing (secrets.js)
-Frontend        HTML + JS puro, cero dependencias externas (sin conexión)
+Frontend        HTML + JS puro, cero dependencias JS (sin conexión); fuentes de Google Fonts
 ```
 
 ---
@@ -257,6 +257,7 @@ Navegador     →  recibe los fragmentos Shamir, reconstruye el secreto localmen
 - `rate_limits.json` — contadores de intentos de inicio de sesión por IP/cuenta *(se crea automáticamente)*
 - `trusted_devices.json` — tokens de dispositivos de confianza *(se crea automáticamente)*
 - `timelock.json` — estado del bloqueo de 48h tras connivencia de fiduciarios *(se crea automáticamente, ver [Seguridad](#seguridad))*
+- `timelock.lock` — archivo auxiliar vacío para el bloqueo de escritura *(se crea automáticamente)*
 - `secret-key.log` — registros de eventos
 - `moja-baza-hasel.kdbx` *(y otros archivos descargables)* — servidos únicamente a través de `download.php`, nunca directamente por HTTP
 
@@ -308,7 +309,7 @@ Abre `dashboard.html` localmente en tu navegador. Tiene tres pestañas:
 3. Para cada persona designada: usuario, contraseña, nombre, apellido, número de teléfono y si debe ser visible en la lista de titulares en el panel
 4. Archivos descargables (base de contraseñas, base 2FA, instalador del programa) — clave, etiqueta del botón, nombre de archivo
 5. Los pasos de instrucciones para el panel (formato: `**negrita**` / `*cursiva*`)
-6. Opcional: una notificación por correo en cada inicio de sesión (dirección del destinatario, remitente, enlace al panel)
+6. Opcional: una notificación por correo en cada inicio de sesión (dirección del destinatario, remitente, `panel_url` — la dirección del dominio del panel con subdominio, p. ej. `https://mi-dominio.es`; desde la v3.1.4 es relevante para la seguridad, así que introduce exactamente tu dominio)
 7. Haz clic en «Generar configuración» y descarga el archivo `secret-key.php` generado
 
 **Encriptación** — divide la contraseña maestra en fragmentos Shamir:
@@ -329,7 +330,7 @@ Abre `dashboard.html` localmente en tu navegador. Tiene tres pestañas:
 > Si no usas la verificación en el servidor, elimina toda la línea `define('SECRET_HASH', …)` de la configuración. En la v3.1.0 un valor vacío (`define('SECRET_HASH', '');`) hacía que el panel rechazara cualquier contraseña, incluso la correcta. Desde la v3.1.1 un valor vacío se trata como si la constante no estuviera definida, pero la configuración queda más limpia sin la línea. El generador del dashboard la omite cuando el campo «Contraseña maestra real» está vacío.
 
 > [!TIP]
-> Las tres herramientas funcionan **completamente sin conexión** — ningún dato sale del navegador. El formulario de configuración genera `secret-key.php` desde cero en cada ejecución — no carga ni edita un archivo existente.
+> Las tres herramientas funcionan **sin conexión** — los datos de los formularios no salen del navegador (las páginas solo descargan fuentes de Google Fonts). El formulario de configuración genera `secret-key.php` desde cero en cada ejecución — no carga ni edita un archivo existente.
 
 ---
 

@@ -83,7 +83,7 @@ O Secret Key resolve esse problema criando um plano de emergência seguro com du
 | 🔐 | Acesso não autorizado **durante a vida** do proprietário | Toda tentativa de acesso exige uma senha + um código SMS |
 | 💀 | Entes queridos sem acesso ao seu banco de senhas **após a morte** | Pessoas designadas reconstroem a senha mestra usando o algoritmo de Shamir e baixam o arquivo do banco |
 
-O sistema é **totalmente auto-hospedado** — os dados nunca saem do seu servidor. Nenhum banco de dados central, nenhuma nuvem, nenhuma dependência externa além do envio de SMS.
+O sistema é **totalmente auto-hospedado** — as senhas, os fragmentos e os arquivos nunca saem do seu servidor. Nenhum banco de dados central nem nuvem; fora do seu servidor, usa apenas o envio de SMS e o Google Fonts.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ O sistema é **totalmente auto-hospedado** — os dados nunca saem do seu servid
 Backend         PHP 8+, arquivos planos (JSON + config PHP), zero SQL
 Autorização     bcrypt cost=10, 2FA por SMS via API da SMSPlanet
 Criptografia    Shamir Secret Sharing (secrets.js)
-Frontend        HTML + JS puro, zero dependências externas (offline)
+Frontend        HTML + JS puro, zero dependências JS (offline); fontes do Google Fonts
 ```
 
 ---
@@ -257,6 +257,7 @@ Navegador     →  recebe os fragmentos Shamir, reconstrói o segredo localmente
 - `rate_limits.json` — contadores de tentativas de login por IP/conta *(criado automaticamente)*
 - `trusted_devices.json` — tokens de dispositivos confiáveis *(criado automaticamente)*
 - `timelock.json` — estado do bloqueio de 48h após conluio de fiduciários *(criado automaticamente, veja [Segurança](#segurança))*
+- `timelock.lock` — arquivo auxiliar vazio para o bloqueio de escrita *(criado automaticamente)*
 - `secret-key.log` — logs de eventos
 - `moja-baza-hasel.kdbx` *(e outros arquivos para download)* — servidos apenas via `download.php`, nunca diretamente via HTTP
 
@@ -308,7 +309,7 @@ Abra o `dashboard.html` localmente no seu navegador. Ele tem três abas:
 3. Para cada pessoa designada: login, senha, nome, sobrenome, número de telefone e se ela deve ficar visível na lista de titulares no painel
 4. Arquivos para download (banco de senhas, banco 2FA, instalador do programa) — chave, rótulo do botão, nome do arquivo
 5. As etapas de instrução para o painel (formatação: `**negrito**` / `*itálico*`)
-6. Opcional: uma notificação por e-mail a cada login (endereço do destinatário, remetente, link do painel)
+6. Opcional: uma notificação por e-mail a cada login (endereço do destinatário, remetente, `panel_url` — o endereço do domínio do painel com subdomínio, p. ex. `https://meu-dominio.com.br`; desde a v3.1.4 ele importa para a segurança, então informe exatamente o seu domínio)
 7. Clique em "Gerar configuração" e baixe o arquivo `secret-key.php` gerado
 
 **Criptografia** — divide a senha mestra em fragmentos Shamir:
@@ -329,7 +330,7 @@ Abra o `dashboard.html` localmente no seu navegador. Ele tem três abas:
 > Se você não usa a verificação no servidor, remova a linha inteira `define('SECRET_HASH', …)` da configuração. Na v3.1.0, um valor vazio (`define('SECRET_HASH', '');`) fazia o painel rejeitar qualquer senha, até a correta. A partir da v3.1.1, um valor vazio é tratado como se a constante não estivesse definida, mas a configuração fica mais limpa sem a linha. O gerador do dashboard a omite quando o campo “Senha mestra real” está vazio.
 
 > [!TIP]
-> As três ferramentas funcionam **totalmente offline** — nenhum dado sai do navegador. O formulário de configuração gera `secret-key.php` do zero a cada execução — ele não carrega nem edita um arquivo existente.
+> As três ferramentas funcionam **offline** — os dados dos formulários não saem do navegador (as páginas apenas baixam fontes do Google Fonts). O formulário de configuração gera `secret-key.php` do zero a cada execução — ele não carrega nem edita um arquivo existente.
 
 ---
 
