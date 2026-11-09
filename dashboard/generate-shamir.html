@@ -1112,6 +1112,7 @@
             color: var(--text-muted); cursor: pointer; transition: color 0.2s;
         }
         .lang-btn.active { color: var(--accent); }
+        html.sk-embedded .lang-switch { display: none !important; } /* w dashboardzie język przełącza się w belce */
 
         /* ── CARD ── */
         .card {
@@ -1676,6 +1677,21 @@ function setLang(lang) {
     saveLang(lang);
     applyLang();
 }
+
+// ── Osadzenie w dashboard.html (iframe): językiem steruje przełącznik w belce dashboardu ──
+// Wersja uruchomiona samodzielnie (poza ramką) zachowuje własny przełącznik PL/EN.
+(function () {
+    var embedded = false;
+    try { embedded = window.parent !== window; } catch (e) { embedded = true; }
+    if (!embedded) return;
+    document.documentElement.classList.add('sk-embedded');
+    window.addEventListener('message', function (e) {
+        if (e.source !== window.parent) return; // tylko od okna nadrzędnego (dashboard.html)
+        var d = e.data;
+        if (d && d.type === 'sk-lang' && typeof d.lang === 'string') setLang(d.lang);
+    });
+    try { window.parent.postMessage({ type: 'sk-lang-request' }, '*'); } catch (e) { /* brak okna nadrzędnego */ }
+})();
 
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('#lang-switch .lang-btn').forEach(function(btn) {

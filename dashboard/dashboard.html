@@ -449,7 +449,29 @@ function setLang(lang) {
     currentLang = lang;
     saveLang(lang);
     applyLang();
+    broadcastLang();
 }
+
+// Wspólny przełącznik języka: dashboard przekazuje wybrany język do narzędzi osadzonych w ramkach
+// (postMessage działa także przy otwieraniu plików lokalnie, gdzie localStorage nie jest współdzielony).
+var LANG_FRAMES = ['frame-hash', 'frame-shamir', 'frame-card'];
+function postLangTo(win) {
+    try { if (win) win.postMessage({ type: 'sk-lang', lang: currentLang }, '*'); } catch (e) { /* ramka niedostępna */ }
+}
+function broadcastLang() {
+    LANG_FRAMES.forEach(function(id) {
+        var f = document.getElementById(id);
+        if (f) postLangTo(f.contentWindow);
+    });
+}
+window.addEventListener('message', function(e) {
+    // ramka prosi o aktualny język zaraz po załadowaniu
+    if (e.data && e.data.type === 'sk-lang-request') postLangTo(e.source);
+});
+LANG_FRAMES.forEach(function(id) {
+    var f = document.getElementById(id);
+    if (f) f.addEventListener('load', function() { postLangTo(f.contentWindow); });
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('#lang-switch .lang-btn').forEach(function(btn) {
