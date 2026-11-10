@@ -355,22 +355,20 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 
 ### Schritt 3 — Pfad zur Konfiguration
 
-In der Datei `auth.php` (Ordner `app/`) kommt der Pfad zum Ordner `/private/` an **7 Stellen** vor. Passen Sie alle an, nicht nur das erste `require_once`:
+In `auth.php` (Ordner `app/`) ist der Pfad zum Ordner `/private/` an **einer einzigen Stelle** festgelegt — in der Konstante `PRIVATE_DIR` am Dateianfang. Alle anderen Pfade verwenden diese Konstante, Sie ändern also nur diese eine Zeile:
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← die einzige Stelle, die geändert werden muss
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() + trusted-device check)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE und trusted_devices.json verwenden ebenfalls PRIVATE_DIR
 ```
 
-Standardmäßig steht an jeder dieser Stellen das Fragment `/../../../private`. Der Pfad wird ab dem Ordner gezählt, in dem `auth.php` liegt; passen Sie ihn also an Ihre Verzeichnisstruktur an. Beispiel: `auth.php` liegt in `/public_html/ihre-domain/` und `/private/` neben `/public_html/`; dann ändern Sie `/../../../private` an allen sieben Stellen in `/../../private` (im Editor „Alle ersetzen“ verwenden).
+Standardmäßig steht dort das Fragment `/../../../private`. Der Pfad wird ab dem Ordner gezählt, in dem `auth.php` liegt, passen Sie ihn also an Ihre Verzeichnisstruktur an. Beispiel: `auth.php` liegt in `/public_html/ihre-domain/` und `/private/` neben `/public_html/`, dann ändern Sie `/../../../private` in dieser einen Zeile zu `/../../private`.
 
 ---
 

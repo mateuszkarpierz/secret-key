@@ -355,22 +355,20 @@ Abra o `dashboard.html` localmente no seu navegador. Ele tem três abas:
 
 ### Etapa 3 — Caminho para a configuração
 
-No arquivo `auth.php` (pasta `app/`), o caminho para a pasta `/private/` aparece em **7 lugares**. Corrija todos, não apenas o primeiro `require_once`:
+No `auth.php` (pasta `app/`), o caminho para a pasta `/private/` está definido em **um único lugar**: a constante `PRIVATE_DIR` no início do arquivo. Todos os outros caminhos usam essa constante, então você altera apenas esta linha:
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← o único lugar a alterar
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() + trusted-device check)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE e trusted_devices.json também usam PRIVATE_DIR
 ```
 
-Por padrão, cada um desses lugares contém o trecho `/../../../private`. O caminho é contado a partir da pasta onde o `auth.php` está, então ajuste-o à estrutura de diretórios do seu servidor. Exemplo: o `auth.php` está em `/public_html/seu-dominio/` e `/private/` fica ao lado de `/public_html/`, então troque `/../../../private` por `/../../private` nos sete lugares (use “Substituir tudo” no editor).
+Por padrão, ali está o trecho `/../../../private`. O caminho é contado a partir da pasta em que o `auth.php` está, então ajuste-o à sua estrutura de diretórios. Exemplo: o `auth.php` está em `/public_html/seu-dominio/` e `/private/` fica ao lado de `/public_html/`, então você troca `/../../../private` por `/../../private` nessa única linha.
 
 ---
 

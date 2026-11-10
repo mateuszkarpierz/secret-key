@@ -355,22 +355,20 @@ Abre `dashboard.html` localmente en tu navegador. Tiene tres pestañas:
 
 ### Paso 3 — Ruta a la configuración
 
-En el archivo `auth.php` (carpeta `app/`) la ruta a la carpeta `/private/` aparece en **7 lugares**. Corrígelos todos, no solo el primer `require_once`:
+En `auth.php` (carpeta `app/`) la ruta a la carpeta `/private/` está definida en **un solo lugar**: la constante `PRIVATE_DIR` al inicio del archivo. Todas las demás rutas usan esa constante, así que solo cambias esta línea:
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← el único lugar que hay que cambiar
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() + trusted-device check)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE y trusted_devices.json también usan PRIVATE_DIR
 ```
 
-De forma predeterminada, cada uno de estos lugares contiene el fragmento `/../../../private`. La ruta se cuenta desde la carpeta donde está `auth.php`, así que ajústala a la estructura de directorios de tu servidor. Ejemplo: `auth.php` está en `/public_html/tu-dominio/` y `/private/` junto a `/public_html/`, así que cambia `/../../../private` por `/../../private` en los siete lugares (usa «Reemplazar todo» en tu editor).
+Por defecto contiene el fragmento `/../../../private`. La ruta se cuenta desde la carpeta donde está `auth.php`, así que ajústala a tu estructura de directorios. Ejemplo: `auth.php` está en `/public_html/tu-dominio/` y `/private/` junto a `/public_html/`, así que cambias `/../../../private` por `/../../private` en esa única línea.
 
 ---
 

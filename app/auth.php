@@ -17,14 +17,17 @@ session_start();
 
 // ── KONFIGURACJA ─────────────────────────────────────────
 
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+// Ścieżka do folderu /private/ (poza public_html) — JEDYNE miejsce, które trzeba zmienić.
+// Liczona od folderu, w którym leży ten plik; wszystkie pozostałe ścieżki korzystają z tej stałej.
+define('PRIVATE_DIR',    __DIR__ . '/../../../private');
+
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
 define('PROTECTED_PAGE', 'decrypt');
 define('LOGIN_PAGE',     'login.php');
-define('LOG_FILE',       __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR',    __DIR__ . '/../../../private');
+define('LOG_FILE',       PRIVATE_DIR . '/secret-key.log');
 
 // Czas ważności kodu 2FA w sekundach (10 minut)
 define('TWO_FA_TTL',          600);
@@ -418,7 +421,7 @@ function sendSmsCode(string $phone, string $code) {
 function rememberDevice(string $username): void {
     $token   = bin2hex(random_bytes(32)); // 64-znakowy losowy token
     $expires = time() + DEVICE_TOKEN_TTL;
-    $file    = __DIR__ . '/../../../private/trusted_devices.json';
+    $file    = PRIVATE_DIR . '/trusted_devices.json';
 
     // Wczytaj istniejące tokeny
     $devices = [];
@@ -455,7 +458,7 @@ function isTrustedDevice(string $username): bool {
     $token = $_COOKIE['sk_device'] ?? '';
     if ($token === '') return false;
 
-    $file = __DIR__ . '/../../../private/trusted_devices.json';
+    $file = PRIVATE_DIR . '/trusted_devices.json';
     if (!file_exists($file)) return false;
 
     $devices = json_decode(file_get_contents($file), true) ?? [];

@@ -1248,7 +1248,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.4</div>
+        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.5</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>

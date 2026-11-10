@@ -355,22 +355,20 @@ SMS / 2FA    →  отправляет одноразовый код на при
 
 ### Шаг 3 — Путь к конфигурации
 
-В файле `auth.php` (папка `app/`) путь к папке `/private/` встречается в **7 местах**. Исправьте все, а не только первый `require_once`:
+В `auth.php` (папка `app/`) путь к папке `/private/` задан в **одном месте** — в константе `PRIVATE_DIR` в начале файла. Все остальные пути используют эту константу, поэтому нужно изменить только эту строку:
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← единственное место для изменения
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() + trusted-device check)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE и trusted_devices.json тоже используют PRIVATE_DIR
 ```
 
-По умолчанию в каждом из этих мест стоит фрагмент `/../../../private`. Путь отсчитывается от папки, в которой лежит `auth.php`, поэтому подгоните его под структуру каталогов вашего сервера. Пример: `auth.php` лежит в `/public_html/ваш-домен/`, а `/private/` рядом с `/public_html/`, значит, во всех семи местах меняйте `/../../../private` на `/../../private` (в редакторе используйте «Заменить все»).
+По умолчанию там стоит фрагмент `/../../../private`. Путь считается от папки, в которой лежит `auth.php`, поэтому подстройте его под свою структуру каталогов. Пример: `auth.php` лежит в `/public_html/ваш-домен/`, а `/private/` рядом с `/public_html/`, значит, в этой единственной строке меняете `/../../../private` на `/../../private`.
 
 ---
 

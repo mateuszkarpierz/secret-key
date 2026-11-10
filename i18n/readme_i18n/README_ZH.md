@@ -355,22 +355,20 @@ PHP 系统     →  验证验证码，创建会话，可选择记住设备
 
 ### 第 3 步 —— 配置文件路径
 
-在 `auth.php` 文件（`app/` 文件夹）中，指向 `/private/` 文件夹的路径出现在 **7 个位置**。请全部修改，而不只是第一个 `require_once`：
+在 `auth.php`（`app/` 文件夹）中，`/private/` 文件夹的路径只在**一个地方**设置——文件开头的常量 `PRIVATE_DIR`。其余所有路径都使用这个常量，所以你只需修改这一行：
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← 唯一需要修改的地方
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() + trusted-device check)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE 和 trusted_devices.json 也使用 PRIVATE_DIR
 ```
 
-默认情况下，这些位置都包含片段 `/../../../private`。路径是从 `auth.php` 所在的文件夹开始计算的，因此请按服务器的目录结构调整。示例：`auth.php` 位于 `/public_html/你的域名/`，而 `/private/` 与 `/public_html/` 并列，则把全部七处的 `/../../../private` 改为 `/../../private`（在编辑器中使用“全部替换”）。
+默认情况下这里是 `/../../../private`。路径是从 `auth.php` 所在文件夹开始计算的，请根据你的目录结构调整。例如：`auth.php` 位于 `/public_html/你的域名/`，而 `/private/` 在 `/public_html/` 旁边，那么只需在这一行把 `/../../../private` 改为 `/../../private`。
 
 ---
 

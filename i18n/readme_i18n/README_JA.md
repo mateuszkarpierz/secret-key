@@ -355,22 +355,20 @@ PHPシステム  →  コードを検証、セッションを作成、必要に�
 
 ### ステップ3 — 設定へのパス
 
-`auth.php` ファイル（`app/` フォルダ）では、`/private/` フォルダへのパスが **7 か所** に出てきます。最初の `require_once` だけでなく、すべて修正してください。
+`auth.php`（`app/` フォルダ）では、`/private/` フォルダへのパスは**1か所**、ファイル冒頭の定数 `PRIVATE_DIR` で指定されています。その他のパスはすべてこの定数を使うため、変更するのはこの1行だけです：
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← 変更するのはここだけ
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() + trusted-device check)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE と trusted_devices.json も PRIVATE_DIR を使います
 ```
 
-デフォルトでは、これらすべての場所に `/../../../private` という部分が入っています。パスは `auth.php` があるフォルダを基準に数えるため、サーバーのディレクトリ構成に合わせて調整してください。例：`auth.php` が `/public_html/あなたのドメイン/` にあり、`/private/` が `/public_html/` の隣にある場合は、7 か所すべてで `/../../../private` を `/../../private` に変更します（エディターの「すべて置換」を使用）。
+デフォルトでは `/../../../private` となっています。パスは `auth.php` があるフォルダを基準に数えるため、ディレクトリ構成に合わせて調整してください。例：`auth.php` が `/public_html/あなたのドメイン/` にあり、`/private/` が `/public_html/` の隣にある場合は、この1行で `/../../../private` を `/../../private` に変更します。
 
 ---
 

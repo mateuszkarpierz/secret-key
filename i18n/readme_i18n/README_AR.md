@@ -355,22 +355,20 @@ SMS / 2FA       →  يُرسل رمزًا لمرة واحدة إلى الرقم
 
 ### الخطوة 3 — مسار الإعدادات
 
-في ملف `auth.php` (مجلد `app/`) يظهر المسار إلى مجلد `/private/` في **7 مواضع**. صحّحها جميعًا، وليس أول `require_once` فقط:
+في `auth.php` (المجلد `app/`) يُحدَّد مسار المجلد `/private/` في **مكان واحد** فقط — الثابت `PRIVATE_DIR` في بداية الملف. تستخدم جميع المسارات الأخرى هذا الثابت، لذا تغيّر هذا السطر الواحد فقط:
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← المكان الوحيد الذي يجب تغييره
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() + trusted-device check)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE و trusted_devices.json يستخدمان PRIVATE_DIR أيضًا
 ```
 
-افتراضيًا يحتوي كل موضع من هذه المواضع على الجزء `/../../../private`. يُحسب المسار من المجلد الذي يوجد فيه `auth.php`، لذا عدّله بما يناسب بنية المجلدات على خادمك. مثال: إذا كان `auth.php` في `/public_html/نطاقك/` وكان `/private/` بجوار `/public_html/`، فغيّر `/../../../private` إلى `/../../private` في المواضع السبعة كلها (استخدم «استبدال الكل» في المحرر).
+افتراضيًا يوجد هناك الجزء `/../../../private`. يُحسب المسار انطلاقًا من المجلد الذي يوجد فيه `auth.php`، لذا عدّله بما يناسب بنية المجلدات لديك. مثال: إذا كان `auth.php` في `/public_html/your-domain/` وكان `/private/` بجوار `/public_html/`، فغيّر `/../../../private` إلى `/../../private` في هذا السطر الواحد.
 
 ---
 

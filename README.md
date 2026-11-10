@@ -354,22 +354,20 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 
 ### Krok 3 — Ścieżka do konfiguracji
 
-W pliku `auth.php` (folder `app/`) ścieżka do folderu `/private/` występuje w **7 miejscach**. Trzeba poprawić wszystkie, nie tylko pierwszy `require_once`:
+W pliku `auth.php` (folder `app/`) ścieżka do folderu `/private/` jest zapisana w **jednym miejscu** — w stałej `PRIVATE_DIR` na początku pliku. Wszystkie pozostałe ścieżki korzystają z tej stałej, więc zmieniasz tylko tę jedną linię:
 
 ```php
 // app/auth.php
-require_once __DIR__ . '/../../../private/secret-key.php';
-require_once __DIR__ . '/../../../private/rate-limit.php';
-require_once __DIR__ . '/../../../private/lang.php';
+define('PRIVATE_DIR', __DIR__ . '/../../../private');   // ← jedyne miejsce do zmiany
 
-define('LOG_FILE',    __DIR__ . '/../../../private/secret-key.log');
-define('PRIVATE_DIR', __DIR__ . '/../../../private');
+require_once PRIVATE_DIR . '/secret-key.php';
+require_once PRIVATE_DIR . '/rate-limit.php';
+require_once PRIVATE_DIR . '/lang.php';
 
-// ×2 (rememberDevice() i sprawdzanie zaufanego urządzenia)
-$file = __DIR__ . '/../../../private/trusted_devices.json';
+// LOG_FILE i trusted_devices.json też korzystają z PRIVATE_DIR
 ```
 
-Domyślnie w każdym z tych miejsc stoi fragment `/../../../private`. Ścieżka jest liczona od folderu, w którym leży `auth.php`, więc dopasuj ją do swojej struktury katalogów. Przykład: `auth.php` leży w `/public_html/twoja-domena/`, a `/private/` obok `/public_html/`, więc zmieniasz `/../../../private` na `/../../private` we wszystkich siedmiu miejscach (w edytorze użyj „Zamień wszystko”).
+Domyślnie stoi tam fragment `/../../../private`. Ścieżka jest liczona od folderu, w którym leży `auth.php`, więc dopasuj ją do swojej struktury katalogów. Przykład: `auth.php` leży w `/public_html/twoja-domena/`, a `/private/` obok `/public_html/`, więc zmieniasz `/../../../private` na `/../../private` w tej jednej linii.
 
 ---
 
