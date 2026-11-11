@@ -272,14 +272,6 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .header h2 {
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            font-weight: 400;
-        }
 
         /* ─── SCROLLBAR ─── */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -1106,7 +1098,6 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         </div>
         <img src="key.svg" class="header-logo" alt="Key Logo">
         <h1>Secret Key</h1>
-        <h2>by Mateusz Karpierz</h2>
     </header>
 
     <!-- MAIN GRID -->
@@ -1248,7 +1239,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.5</div>
+        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.6</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>

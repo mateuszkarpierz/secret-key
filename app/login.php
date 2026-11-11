@@ -221,19 +221,10 @@ $timedOut  = isset($_GET['timeout']);
             position: relative;
             z-index: 1;
         }
-        .card-subtitle {
-            font-family: var(--mono);
-            font-size: 0.62rem;
-            color: var(--text-muted);
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            margin-bottom: 28px;
-            position: relative;
-            z-index: 1;
-        }
 
         .divider {
             height: 1px;
+            margin-top: 28px;
             background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
             margin-bottom: 24px;
             position: relative;
@@ -792,7 +783,6 @@ $timedOut  = isset($_GET['timeout']);
 
             <img src="key.svg" class="card-logo" alt="Key">
             <h1 class="card-title">Secret Key</h1>
-            <p class="card-subtitle">by Mateusz Karpierz</p>
 
             <div class="divider"></div>
 
