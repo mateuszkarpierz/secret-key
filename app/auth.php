@@ -412,6 +412,15 @@ function sendSmsCode(string $phone, string $code) {
         return true;
     }
 
+    // 103 / 113 = niepoprawne (np. jeszcze niezaakceptowane) pole nadawcy.
+    // SMSPlanet nie podmienia go na TEST, więc dodajemy wskazówkę do logu.
+    $errCode = (int)($data['errorCode'] ?? 0);
+    if ($errCode === 103 || $errCode === 113) {
+        return 'SMSPlanet ' . $errCode . ': pole nadawcy "' . SMS_SENDER . '" jest niepoprawne lub czeka na akceptację. '
+             . 'Do czasu akceptacji ustaw SMS_SENDER na \'TEST\' w secret-key.php. '
+             . '(API: ' . ($data['errorMsg'] ?? 'brak opisu') . ')';
+    }
+
     return $data['errorMsg'] ?? ('API error: ' . $response);
 }
 
