@@ -333,6 +333,36 @@
         .cc-item .cc-name { flex: 1; }
         .cc-item .cc-code { font-family: var(--mono); font-size: 0.76rem; color: var(--text-dim); }
         .cc-item.selected .cc-code { color: var(--accent); }
+        .cc-item.unsupported { opacity: 0.6; }
+        .cc-item .cc-warn-ico { font-size: 0.72rem; color: #fbbf24; cursor: help; }
+        /* Dymek ⚠ w liście krajów — ten sam styl co dymek przycisków akcji pola (.field-action-btn[data-tip]).
+           Lista ma overflow, więc dymek jest jednym elementem doczepionym do <body> i pozycjonowanym z JS. */
+        .cc-tip {
+            position: fixed; z-index: 10000; top: 0; left: 0;
+            background: var(--surface3); border: 1px solid var(--border-glow);
+            color: var(--text-dim);
+            font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.01em; font-weight: 400;
+            padding: 8px 12px; border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+            white-space: nowrap; text-align: left; line-height: 1.45;
+            opacity: 0; pointer-events: none;
+            transform: translateY(-4px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .cc-tip::before {
+            content: ''; position: absolute; top: -8px; right: 14px;
+            border: 5px solid transparent; border-top-color: var(--border-glow);
+        }
+        .cc-tip.above::before { top: auto; bottom: -8px; border-top-color: transparent; border-bottom-color: var(--border-glow); }
+        .cc-tip.show { opacity: 1; transform: translateY(0); }
+        .cc-legend {
+            display: flex; align-items: center; gap: 7px; padding: 7px 12px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--sans); font-size: 0.68rem; color: var(--text-muted); line-height: 1.3;
+        }
+        .cc-legend .cc-warn-ico { font-size: 0.72rem; cursor: default; }
+        .cc-unsupported-note { display: none; margin-top: 6px; font-family: var(--sans); font-size: 0.68rem; color: #fbbf24; line-height: 1.5; }
+        .cc-unsupported-note.show { display: block; }
         .cc-empty { padding: 16px; text-align: center; font-family: var(--mono); font-size: 0.75rem; color: var(--text-muted); }
         .user-field input, .download-field input {
             background: transparent; border: none; outline: none;
@@ -2163,6 +2193,9 @@ var I18N = {
         phonePlaceholder: 'np. 123456789',
         ccSearchPlaceholder: 'Szukaj kraju lub numeru…',
         ccEmptyResults: 'Brak wyników',
+        ccUnsupportedTitle: 'Kraj poza listą SMSPlanet',
+        ccUnsupportedNote: '⚠ SMSPlanet nie ma tego kraju na liście obsługiwanych. Kod 2FA może nie zostać wysłany. Wybierz numer z kraju z listy (dokumentacja: Wymagania → Numery zagraniczne).',
+        ccLegend: 'Kraj poza listą SMSPlanet',
         visibleInPanelLabel: 'Widoczny w panelu',
         visibleInPanelHint: 'Lista posiadaczy Secret Key. Wyłącz dla kont bez fizycznej karty (np. serwisowych) — logowanie działa tak samo.',
 
@@ -2301,6 +2334,9 @@ var I18N = {
         phonePlaceholder: 'e.g. 123456789',
         ccSearchPlaceholder: 'Search country or number…',
         ccEmptyResults: 'No results',
+        ccUnsupportedTitle: 'Country not on the SMSPlanet list',
+        ccUnsupportedNote: '⚠ SMSPlanet does not list this country as supported. The 2FA code may not be sent. Pick a number from a listed country (documentation: Requirements → Foreign numbers).',
+        ccLegend: 'Country not on the SMSPlanet list',
         visibleInPanelLabel: 'Visible in panel',
         visibleInPanelHint: 'Secret Key holder list. Turn off for accounts without a physical card (e.g. service accounts) — login still works the same way.',
 
@@ -2657,8 +2693,13 @@ var PHONE_COUNTRIES = [
     {cc:'GB',name:'Wielka Brytania',en:'United Kingdom',dial:'+44'}, {cc:'VN',name:'Wietnam',en:'Vietnam',dial:'+84'},
     {cc:'IT',name:'Włochy',en:'Italy',dial:'+39'}, {cc:'CI',name:'Wybrzeże Kości Słoniowej',en:'Ivory Coast',dial:'+225'},
     {cc:'ZM',name:'Zambia',en:'Zambia',dial:'+260'}, {cc:'ZW',name:'Zimbabwe',en:'Zimbabwe',dial:'+263'},
-    {cc:'AE',name:'Zjednoczone Emiraty Arabskie',en:'United Arab Emirates',dial:'+971'}
+    {cc:'AE',name:'Zjednoczone Emiraty Arabskie',en:'United Arab Emirates',dial:'+971'}, {cc:'HK',name:'Hongkong',en:'Hong Kong',dial:'+852'}
 ];
+
+// Kraje, do których SMSPlanet wysyła SMS-y (lista z panelu SMSPlanet, stan z 17.11.2026).
+// Pozostałe kraje na liście są oznaczone ⚠ — kod 2FA może tam nie dojść.
+var SMS_SUPPORTED_ISO = ['PL','AD','AR','AU','AT','AZ','BE','BG','HR','CY','CZ','DK','EE','FI','FR','GR','GE','ES','NL','HK','IN','IE','IS','JP','KZ','KR','LT','LU','LV','MT','MX','MC','MZ','DE','NG','NO','PT','RO','RS','SK','SI','US','CH','SE','UA','GB','VN','HU','IT'];
+function ccIsSupported(iso) { return SMS_SUPPORTED_ISO.indexOf(iso) !== -1; }
 
 function ccFlagEmoji(iso) {
     return iso.toUpperCase().replace(/./g, function(c) {
@@ -2670,7 +2711,58 @@ function ccCountryName(c) {
     return currentLang === 'en' ? (c.en || c.name) : c.name;
 }
 
+// Dymek ⚠ (jeden element w <body>); krótsze opóźnienie niż przy przyciskach pól, bo lista krajów jest przeglądana szybko
+var ccTipEl = null, ccTipTimer = null;
+var CC_TIP_DELAY = 500;
+
+function ccHideTip() {
+    clearTimeout(ccTipTimer);
+    ccTipTimer = null;
+    if (ccTipEl) ccTipEl.classList.remove('show');
+}
+
+function ccShowTip(icon) {
+    if (!ccTipEl) {
+        ccTipEl = document.createElement('div');
+        ccTipEl.className = 'cc-tip';
+        document.body.appendChild(ccTipEl);
+    }
+    ccTipEl.textContent = icon.getAttribute('data-cc-tip') || '';
+    ccTipEl.classList.remove('above');
+    var r = icon.getBoundingClientRect();
+    var w = ccTipEl.offsetWidth, h = ccTipEl.offsetHeight;
+    // domyślnie pod ikoną, prawa krawędź dymka 6 px za ikoną (jak przy przyciskach akcji)
+    var left = Math.max(8, r.right + 6 - w);
+    var top = r.bottom + 10;
+    if (top + h > window.innerHeight - 8) {
+        top = r.top - 10 - h;
+        ccTipEl.classList.add('above');
+    }
+    ccTipEl.style.left = left + 'px';
+    ccTipEl.style.top = top + 'px';
+    ccTipEl.classList.add('show');
+}
+
+function ccBindTip(listEl) {
+    if (listEl._ccTipBound) return;
+    listEl._ccTipBound = true;
+    listEl.addEventListener('mouseover', function(e) {
+        var icon = e.target.closest ? e.target.closest('.cc-warn-ico') : null;
+        if (!icon) return;
+        ccHideTip();
+        ccTipTimer = setTimeout(function() { ccShowTip(icon); }, CC_TIP_DELAY);
+    });
+    listEl.addEventListener('mouseout', function(e) {
+        var icon = e.target.closest ? e.target.closest('.cc-warn-ico') : null;
+        if (icon) ccHideTip();
+    });
+    listEl.addEventListener('scroll', ccHideTip);
+    listEl.addEventListener('click', ccHideTip);
+}
+
 function ccRenderList(listEl, filterText, selectedIso, onPick) {
+    ccBindTip(listEl);
+    ccHideTip();
     var q = (filterText || '').trim().toLowerCase();
     var sorted = PHONE_COUNTRIES.slice().sort(function(a, b) {
         return ccCountryName(a).localeCompare(ccCountryName(b), currentLang === 'en' ? 'en' : 'pl');
@@ -2687,10 +2779,12 @@ function ccRenderList(listEl, filterText, selectedIso, onPick) {
     }
     items.forEach(function(c) {
         var row = document.createElement('div');
-        row.className = 'cc-item' + (c.cc === selectedIso ? ' selected' : '');
+        var unsup = !ccIsSupported(c.cc);
+        row.className = 'cc-item' + (c.cc === selectedIso ? ' selected' : '') + (unsup ? ' unsupported' : '');
         row.innerHTML =
             '<span class="cc-flag">' + ccFlagEmoji(c.cc) + '</span>' +
             '<span class="cc-name">' + esc(ccCountryName(c)) + '</span>' +
+            (unsup ? '<span class="cc-warn-ico" data-cc-tip="' + esc(t('ccUnsupportedTitle')) + '" aria-label="' + esc(t('ccUnsupportedTitle')) + '">⚠</span>' : '') +
             '<span class="cc-code">' + c.dial + '</span>';
         row.addEventListener('click', function() { onPick(c); });
         listEl.appendChild(row);
@@ -2709,6 +2803,7 @@ function getSharedCcDropdown() {
     sharedCcDropdown.className = 'cc-dropdown cc-dropdown-portal';
     sharedCcDropdown.innerHTML =
         '<div class="cc-search-wrap"><input type="text" class="cc-search" placeholder="' + t('ccSearchPlaceholder') + '" autocomplete="off"></div>' +
+        '<div class="cc-legend"><span class="cc-warn-ico" aria-hidden="true">⚠</span><span class="cc-legend-txt">' + esc(t('ccLegend')) + '</span></div>' +
         '<div class="cc-list"></div>';
     sharedCcDropdown.addEventListener('click', function(e) { e.stopPropagation(); });
     document.body.appendChild(sharedCcDropdown);
@@ -2723,6 +2818,7 @@ function positionSharedCcDropdown(pill) {
 }
 
 function closeSharedCcDropdown() {
+    ccHideTip();
     if (!sharedCcDropdown) return;
     sharedCcDropdown.classList.remove('show');
     if (ccOpenPill) {
@@ -2745,6 +2841,19 @@ window.addEventListener('resize', function() {
     }
 });
 
+// Ostrzeżenie pod polem telefonu, gdy wybrany kraj jest poza listą SMSPlanet
+function ccUpdateNote(card, iso) {
+    var note = card.querySelector('.cc-unsupported-note');
+    if (!note) return;
+    if (ccIsSupported(iso)) {
+        note.classList.remove('show');
+        note.textContent = '';
+    } else {
+        note.textContent = t('ccUnsupportedNote');
+        note.classList.add('show');
+    }
+}
+
 function initPhonePicker(card) {
     var pill      = card.querySelector('.cc-pill');
     var flagEl    = card.querySelector('.cc-pill-flag');
@@ -2757,6 +2866,7 @@ function initPhonePicker(card) {
         flagEl.textContent = ccFlagEmoji(country.cc);
         codeEl.textContent = country.dial;
         hiddenCc.value = country.dial;
+        ccUpdateNote(card, country.cc);
         closeSharedCcDropdown();
     }
 
@@ -2856,6 +2966,7 @@ function addUser() {
                     '<input type="hidden" class="u-phone-cc" value="+48">' +
                     '<input type="text" class="u-phone" placeholder="' + t('phonePlaceholder') + '" inputmode="tel" style="width:auto; flex:1;">' +
                 '</div>' +
+                '<div class="cc-unsupported-note"></div>' +
             '</div>' +
             '<div class="user-field">' +
                 '<div class="user-field-label">' + t('visibleInPanelLabel') + '</div>' +
@@ -3389,6 +3500,10 @@ function relabelExistingCards() {
     // Wyszukiwarka w liście krajów, jeśli akurat otwarta
     var ccSearch = document.querySelector('.cc-dropdown-portal .cc-search');
     if (ccSearch) ccSearch.placeholder = t('ccSearchPlaceholder');
+    document.querySelectorAll('.cc-dropdown-portal .cc-list .cc-warn-ico').forEach(function(ic) { ic.setAttribute('data-cc-tip', t('ccUnsupportedTitle')); ic.setAttribute('aria-label', t('ccUnsupportedTitle')); });
+    var ccLegend = document.querySelector('.cc-dropdown-portal .cc-legend-txt');
+    if (ccLegend) ccLegend.textContent = t('ccLegend');
+    document.querySelectorAll('.cc-unsupported-note.show').forEach(function(n) { n.textContent = t('ccUnsupportedNote'); });
 }
 
 function resetAll() {

@@ -421,6 +421,15 @@ function sendSmsCode(string $phone, string $code) {
              . '(API: ' . ($data['errorMsg'] ?? 'brak opisu') . ')';
     }
 
+    // 106 = pusta lista odbiorców: numer odrzucony (kraj poza listą SMSPlanet, zablokowane
+    // wysyłki zagraniczne albo czarna lista).
+    if ($errCode === 106) {
+        return 'SMSPlanet 106: numer odrzucony. Możliwe przyczyny: kraj numeru jest poza listą SMSPlanet, '
+             . 'wysyłki zagraniczne są zablokowane w panelu SMSPlanet (panel.smsplanet.pl/s/send/foreign) '
+             . 'albo kraj lub numer jest na czarnej liście. '
+             . '(API: ' . ($data['errorMsg'] ?? 'brak opisu') . ')';
+    }
+
     return $data['errorMsg'] ?? ('API error: ' . $response);
 }
 
