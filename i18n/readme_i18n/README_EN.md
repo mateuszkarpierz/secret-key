@@ -83,7 +83,7 @@ Secret Key solves this problem by creating a secure emergency plan with two guar
 | 🔐 | Unauthorized access **during** the owner's lifetime | Every access attempt requires a password + an SMS code |
 | 💀 | Loved ones without access to your password database **after death** | Designated people reconstruct the master password using Shamir's algorithm and download the database file |
 
-The system is **fully self-hosted** — passwords, shares and files never leave your server. No central database and no cloud; beyond your own server it only uses SMS delivery and Google Fonts.
+The system is **fully self-hosted** — passwords, shares and files never leave your server. No central database and no cloud; beyond your own server it only uses SMS delivery (SMSPlanet). Fonts are hosted locally (since v3.2.0), so the browser does not connect to Google.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ The system is **fully self-hosted** — passwords, shares and files never leave 
 Backend       PHP 8+, flat files (JSON + PHP config), zero SQL
 Authorization bcrypt cost=10, 2FA SMS via SMSPlanet API
 Cryptography  Shamir Secret Sharing (secrets.js)
-Frontend      Plain HTML + JS, zero JS dependencies (offline); fonts from Google Fonts
+Frontend      Plain HTML + JS, zero JS dependencies (offline); fonts hosted locally
 ```
 
 ---
@@ -250,6 +250,11 @@ Browser      →  accepts the Shamir shares, reconstructs the secret locally in 
 - `panic.php` — handles the one-time "Panic Button" link from the email
 - `tl-status.php` — live polling of the lock state (no need to refresh the panel)
 
+**Fonts** (`/app/fonts/`, since v3.2.0)
+- `fonts.css`: `@font-face` declarations (Bungee, Space Mono, Syne, Barlow Condensed, Montserrat; woff2 files in `files/`)
+- `FONTS-LICENSES.txt`: font licenses (SIL OFL 1.1)
+- `.htaccess`: long cache for woff2 files and the `font/woff2` MIME type
+
 **Data layer** (`/private/` — outside `public_html`)
 - `secret-key.php` — a single config file: people (`$people`), downloadable files (`$downloads`), instructions (`$instructions`), email notification (`$email_notify`), SMS domain
 - `lang.php` — interface texts (a single language, no switcher — see [Installation](#installation))
@@ -330,7 +335,7 @@ Open `dashboard.html` locally in your browser. It has three tabs:
 > If you don't use server-side verification, remove the whole `define('SECRET_HASH', …)` line from the config. In v3.1.0 an empty value (`define('SECRET_HASH', '');`) made the panel reject every password, even the correct one. As of v3.1.1 an empty value is treated as if the constant were not set, but the config is cleaner without the line. The dashboard generator omits it when the “Real master password” field is empty.
 
 > [!TIP]
-> All three tools work **offline** — form data does not leave the browser (the pages only fetch fonts from Google Fonts). The configuration form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
+> All three tools work **offline** — form data does not leave the browser (the fonts sit locally in `dashboard/fonts/`). The configuration form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
 
 ---
 
@@ -339,14 +344,16 @@ Open `dashboard.html` locally in your browser. It has three tabs:
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← contents of the /app/ folder
-│   └── decrypt/       ← contents of the /decrypt/ folder
+│   └── app/           ← contents of the /app/ folder (including the decrypt/ and fonts/ subfolders)
 └── private/           ← OUTSIDE public_html
     ├── secret-key.php  ← the generated configuration file
     ├── lang.php        ← interface texts (a single language, see Step 1)
     ├── rate-limit.php  ← a system file from the repository (rate limiting)
     └── moja-baza-hasel.kdbx  ← your files (served via download.php)
 ```
+
+> [!NOTE]
+> Since v3.2.0 the fonts are hosted locally. Upload the **whole `fonts/` folder** (with the `files/` subfolder) next to `login.php`. Without it the panel still works, but shows fallback system fonts.
 
 > [!WARNING]
 > `lang.php` must be uploaded to the server **together with** `secret-key.php`. `auth.php` loads it via `require_once` — a missing file crashes the whole system (a fatal error on every page), not just the translations.
@@ -416,6 +423,11 @@ secret-key/
 │   │   ├── panic.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
+│   ├── 📁 fonts/                  # Locally hosted fonts (since v3.2.0)
+│   │   ├── 📁 files/              # .woff2 files
+│   │   ├── .htaccess
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -430,6 +442,10 @@ secret-key/
 │   ├── card-front.js
 │   ├── dashboard.html
 │   ├── favicon.ico
+│   ├── 📁 fonts/                  # Fonts for the offline dashboard (since v3.2.0)
+│   │   ├── 📁 files/              # .woff2 files
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── generate-card.html
 │   ├── generate-hash.html
 │   └── generate-shamir.html

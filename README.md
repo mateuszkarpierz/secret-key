@@ -343,8 +343,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← zawartość folderu /app/ (razem z folderem fonts/)
-│   └── decrypt/       ← zawartość folderu /decrypt/
+│   └── app/           ← zawartość folderu /app/ (razem z podfolderami decrypt/ i fonts/)
 └── private/           ← POZA public_html
     ├── secret-key.php  ← wygenerowany plik konfiguracyjny
     ├── lang.php        ← teksty interfejsu (jeden język, patrz Krok 1)

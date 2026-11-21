@@ -83,7 +83,7 @@ Secret Key は、2つの保証を備えた安全な緊急計画を作成する�
 | 🔐 | 所有者の**生存中**の不正アクセス | アクセスの試みごとにパスワード + SMSコードが必要 |
 | 💀 | **死後**、家族があなたのパスワードデータベースにアクセスできない | 指定された人々がShamirのアルゴリズムでマスターパスワードを再構築し、データベースのファイルをダウンロード |
 
-このシステムは**完全にセルフホスト**されており、パスワード、断片、ファイルは決してあなたのサーバーから離れません。中央データベースもクラウドもなく、自分のサーバー以外ではSMS送信とGoogle Fontsのみを利用します。
+このシステムは**完全にセルフホスト**されており、パスワード、断片、ファイルは決してあなたのサーバーから離れません。中央データベースもクラウドもなく、自分のサーバー以外ではSMS送信（SMSPlanet）のみを利用します。フォントはローカルでホストされる（v3.2.0以降）ため、ブラウザはGoogleに接続しません。
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ Secret Key は、2つの保証を備えた安全な緊急計画を作成する�
 バックエンド     PHP 8+、フラットファイル（JSON + PHP設定）、SQLゼロ
 認証             bcrypt cost=10、SMSPlanet APIによるSMS二要素認証
 暗号技術         Shamir Secret Sharing（secrets.js）
-フロントエンド   純粋なHTML + JS、JS依存ゼロ（オフライン動作）、フォントはGoogle Fonts
+フロントエンド   純粋なHTML + JS、JS依存ゼロ（オフライン動作）、フォントはローカルホスト
 ```
 
 ---
@@ -250,6 +250,11 @@ PHPシステム  →  コードを検証、セッションを作成、必要に�
 - `panic.php` — メール内のワンタイム「Panic Button」リンクを処理
 - `tl-status.php` — ロック状態のライブポーリング（パネルの再読み込み不要）
 
+**フォント**（`/app/fonts/`、v3.2.0以降）
+- `fonts.css`：`@font-face` 宣言（Bungee、Space Mono、Syne、Barlow Condensed、Montserrat。woff2 ファイルは `files/` 内）
+- `FONTS-LICENSES.txt`：フォントのライセンス（SIL OFL 1.1）
+- `.htaccess`：woff2 ファイルの長期キャッシュと `font/woff2` MIME タイプ
+
 **データ層**（`/private/` — `public_html`の外側）
 - `secret-key.php` — 単一の設定ファイル：人物（`$people`）、ダウンロード可能なファイル（`$downloads`）、手順（`$instructions`）、メール通知（`$email_notify`）、SMS用ドメイン
 - `lang.php` — インターフェーステキスト（単一言語のみ、切り替えなし — [インストール](#インストール)を参照）
@@ -330,7 +335,7 @@ PHPシステム  →  コードを検証、セッションを作成、必要に�
 > サーバー側の検証を使わない場合は、設定から `define('SECRET_HASH', …)` の行ごと削除してください。v3.1.0 では空の値（`define('SECRET_HASH', '');`）だと、パネルが正しいパスワードを含むすべてのパスワードを拒否しました。v3.1.1 以降は空の値は未定義として扱われますが、行を削除した方が設定はすっきりします。ダッシュボードのジェネレーターは「実際のマスターパスワード」欄が空のとき、この行を出力しません。
 
 > [!TIP]
-> 3つのツールすべてが**オフライン**で動作し、フォームのデータはブラウザから離れません（ページはGoogle Fontsからフォントを読み込むだけです）。設定フォームは実行ごとに `secret-key.php` をゼロから生成します — 既存のファイルの読み込みや編集は行いません。
+> 3つのツールすべてが**オフライン**で動作し、フォームのデータはブラウザから離れません（フォントは `dashboard/fonts/` にローカル保存されています）。設定フォームは実行ごとに `secret-key.php` をゼロから生成します — 既存のファイルの読み込みや編集は行いません。
 
 ---
 
@@ -339,14 +344,16 @@ PHPシステム  →  コードを検証、セッションを作成、必要に�
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← /app/ フォルダの内容
-│   └── decrypt/       ← /decrypt/ フォルダの内容
+│   └── app/           ← /app/ フォルダの内容（decrypt/ と fonts/ サブフォルダを含む）
 └── private/           ← public_htmlの外側
     ├── secret-key.php  ← 生成された設定ファイル
     ├── lang.php        ← インターフェーステキスト（1言語、ステップ1を参照）
     ├── rate-limit.php  ← リポジトリのシステムファイル（レート制限）
     └── moja-baza-hasel.kdbx  ← あなたのファイル（download.php経由で提供）
 ```
+
+> [!NOTE]
+> v3.2.0以降、フォントはローカルでホストされます。`fonts/` フォルダ**全体**（`files/` サブフォルダを含む）を `login.php` の隣にアップロードしてください。ない場合でもパネルは動作しますが、代替のシステムフォントが表示されます。
 
 > [!WARNING]
 > `lang.php` は `secret-key.php` **と一緒に**サーバーにアップロードする必要があります。`auth.php` は `require_once` を通じてこれを読み込みます — ファイルが欠けていると、翻訳だけでなくシステム全体がクラッシュします（すべてのページで致命的エラー）。
@@ -416,6 +423,11 @@ secret-key/
 │   │   ├── panic.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
+│   ├── 📁 fonts/                  # ローカルでホストされるフォント（v3.2.0以降）
+│   │   ├── 📁 files/              # .woff2 ファイル
+│   │   ├── .htaccess
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -430,6 +442,10 @@ secret-key/
 │   ├── card-front.js
 │   ├── dashboard.html
 │   ├── favicon.ico
+│   ├── 📁 fonts/                  # オフライン dashboard 用フォント（v3.2.0以降）
+│   │   ├── 📁 files/              # .woff2 ファイル
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── generate-card.html
 │   ├── generate-hash.html
 │   └── generate-shamir.html

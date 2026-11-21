@@ -83,7 +83,7 @@ Secret Key löst dieses Problem, indem es einen sicheren Notfallplan mit zwei Ga
 | 🔐 | Unbefugter Zugriff **zu Lebzeiten** des Besitzers | Jeder Zugriffsversuch erfordert ein Passwort + einen SMS-Code |
 | 💀 | Angehörige ohne Zugriff auf Ihre Passwortdatenbank **nach dem Tod** | Beauftragte Personen rekonstruieren das Master-Passwort mit dem Shamir-Algorithmus und laden die Datenbankdatei herunter |
 
-Das System ist **vollständig selbst gehostet** — Passwörter, Anteile und Dateien verlassen niemals Ihren Server. Keine zentrale Datenbank, keine Cloud; außerhalb Ihres Servers nutzt das System nur den SMS-Versand und Google Fonts.
+Das System ist **vollständig selbst gehostet** — Passwörter, Anteile und Dateien verlassen niemals Ihren Server. Keine zentrale Datenbank, keine Cloud; außerhalb Ihres Servers nutzt das System nur den SMS-Versand (SMSPlanet). Die Schriftarten werden lokal gehostet (seit v3.2.0), der Browser verbindet sich also nicht mit Google.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ Das System ist **vollständig selbst gehostet** — Passwörter, Anteile und Dat
 Backend       PHP 8+, flache Dateien (JSON + PHP-Konfig), kein SQL
 Autorisierung bcrypt cost=10, 2FA per SMS über die SMSPlanet-API
 Kryptografie  Shamir Secret Sharing (secrets.js)
-Frontend      Reines HTML + JS, keine JS-Abhängigkeiten (offline); Schriftarten von Google Fonts
+Frontend      Reines HTML + JS, keine JS-Abhängigkeiten (offline); lokal gehostete Schriftarten
 ```
 
 ---
@@ -250,6 +250,11 @@ Browser      →  nimmt die Shamir-Anteile entgegen, rekonstruiert das Geheimnis
 - `panic.php` — verarbeitet den einmaligen "Panic Button"-Link aus der E-Mail
 - `tl-status.php` — Live-Abfrage des Sperrzustands (kein Neuladen des Panels nötig)
 
+**Schriftarten** (`/app/fonts/`, seit v3.2.0)
+- `fonts.css`: `@font-face`-Deklarationen (Bungee, Space Mono, Syne, Barlow Condensed, Montserrat; woff2-Dateien in `files/`)
+- `FONTS-LICENSES.txt`: Schriftlizenzen (SIL OFL 1.1)
+- `.htaccess`: langer Cache für woff2-Dateien und MIME-Typ `font/woff2`
+
 **Datenebene** (`/private/` — außerhalb von `public_html`)
 - `secret-key.php` — eine einzige Konfigurationsdatei: Personen (`$people`), herunterladbare Dateien (`$downloads`), Anleitung (`$instructions`), E-Mail-Benachrichtigung (`$email_notify`), SMS-Domain
 - `lang.php` — Oberflächentexte (eine einzige Sprache, kein Umschalter — siehe [Installation](#installation))
@@ -330,7 +335,7 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 > Wenn Sie die serverseitige Prüfung nicht nutzen, entfernen Sie die gesamte Zeile `define('SECRET_HASH', …)` aus der Konfiguration. In v3.1.0 führte ein leerer Wert (`define('SECRET_HASH', '');`) dazu, dass das Panel jedes Passwort ablehnte, auch das richtige. Ab v3.1.1 wird ein leerer Wert wie eine nicht gesetzte Konstante behandelt, die Konfiguration ist ohne die Zeile aber sauberer. Der Dashboard-Generator lässt sie weg, wenn das Feld „Echtes Master-Passwort“ leer ist.
 
 > [!TIP]
-> Alle drei Werkzeuge arbeiten **offline** — Formulardaten verlassen den Browser nicht (die Seiten laden lediglich Schriftarten von Google Fonts). Das Konfigurationsformular generiert `secret-key.php` bei jedem Durchlauf von Grund auf neu — es lädt oder bearbeitet keine bestehende Datei.
+> Alle drei Werkzeuge arbeiten **offline** — Formulardaten verlassen den Browser nicht (die Schriftarten liegen lokal in `dashboard/fonts/`). Das Konfigurationsformular generiert `secret-key.php` bei jedem Durchlauf von Grund auf neu — es lädt oder bearbeitet keine bestehende Datei.
 
 ---
 
@@ -339,14 +344,16 @@ Das System kombiniert **neun unabhängige Schutzebenen** — die Kompromittierun
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← Inhalt des Ordners /app/
-│   └── decrypt/       ← Inhalt des Ordners /decrypt/
+│   └── app/           ← Inhalt des Ordners /app/ (samt Unterordnern decrypt/ und fonts/)
 └── private/           ← AUSSERHALB von public_html
     ├── secret-key.php  ← die generierte Konfigurationsdatei
     ├── lang.php        ← Oberflächentexte (eine Sprache, siehe Schritt 1)
     ├── rate-limit.php  ← eine Systemdatei aus dem Repository (Rate Limiting)
     └── moja-baza-hasel.kdbx  ← Ihre Dateien (ausgeliefert über download.php)
 ```
+
+> [!NOTE]
+> Seit v3.2.0 werden die Schriftarten lokal gehostet. Laden Sie den **gesamten Ordner `fonts/`** (mit dem Unterordner `files/`) neben `login.php` auf den Server hoch. Ohne ihn funktioniert das Panel weiterhin, zeigt aber Ersatz-Systemschriften.
 
 > [!WARNING]
 > `lang.php` muss **zusammen mit** `secret-key.php` auf den Server hochgeladen werden. `auth.php` lädt sie über `require_once` — eine fehlende Datei bringt das gesamte System zum Absturz (ein fataler Fehler auf jeder Seite), nicht nur die Übersetzungen.
@@ -416,6 +423,11 @@ secret-key/
 │   │   ├── panic.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
+│   ├── 📁 fonts/                  # Lokal gehostete Schriftarten (seit v3.2.0)
+│   │   ├── 📁 files/              # .woff2-Dateien
+│   │   ├── .htaccess
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -430,6 +442,10 @@ secret-key/
 │   ├── card-front.js
 │   ├── dashboard.html
 │   ├── favicon.ico
+│   ├── 📁 fonts/                  # Schriftarten für das Offline-Dashboard (seit v3.2.0)
+│   │   ├── 📁 files/              # .woff2-Dateien
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── generate-card.html
 │   ├── generate-hash.html
 │   └── generate-shamir.html

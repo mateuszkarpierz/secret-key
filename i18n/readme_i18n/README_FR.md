@@ -83,7 +83,7 @@ Secret Key résout ce problème en créant un plan d'urgence sécurisé avec deu
 | 🔐 | Accès non autorisé **du vivant** du propriétaire | Chaque tentative d'accès nécessite un mot de passe + un code SMS |
 | 💀 | Proches sans accès à votre base de mots de passe **après le décès** | Les personnes désignées reconstituent le mot de passe maître avec l'algorithme de Shamir et téléchargent le fichier de la base |
 
-Le système est **entièrement autohébergé** — les mots de passe, les fragments et les fichiers ne quittent jamais votre serveur. Aucune base de données centrale ni cloud ; en dehors de votre serveur, il n'utilise que l'envoi des SMS et Google Fonts.
+Le système est **entièrement autohébergé** — les mots de passe, les fragments et les fichiers ne quittent jamais votre serveur. Aucune base de données centrale ni cloud ; en dehors de votre serveur, il n'utilise que l'envoi des SMS (SMSPlanet). Les polices sont hébergées localement (depuis la v3.2.0), le navigateur ne se connecte donc pas à Google.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ Le système est **entièrement autohébergé** — les mots de passe, les fragme
 Backend         PHP 8+, fichiers plats (JSON + config PHP), zéro SQL
 Autorisation    bcrypt cost=10, 2FA par SMS via l'API SMSPlanet
 Cryptographie   Shamir Secret Sharing (secrets.js)
-Frontend        HTML + JS pur, zéro dépendance JS (hors ligne) ; polices Google Fonts
+Frontend        HTML + JS pur, zéro dépendance JS (hors ligne) ; polices hébergées localement
 ```
 
 ---
@@ -250,6 +250,11 @@ Navigateur   →  reçoit les fragments Shamir, reconstitue le secret localement
 - `panic.php` — traite le lien à usage unique « Panic Button » de l'e-mail
 - `tl-status.php` — interrogation en direct de l'état du blocage (pas besoin de recharger le panneau)
 
+**Polices** (`/app/fonts/`, depuis la v3.2.0)
+- `fonts.css` : déclarations `@font-face` (Bungee, Space Mono, Syne, Barlow Condensed, Montserrat ; fichiers woff2 dans `files/`)
+- `FONTS-LICENSES.txt` : licences des polices (SIL OFL 1.1)
+- `.htaccess` : cache long pour les fichiers woff2 et type MIME `font/woff2`
+
 **Couche de données** (`/private/` — en dehors de `public_html`)
 - `secret-key.php` — un fichier de configuration unique : personnes (`$people`), fichiers téléchargeables (`$downloads`), instructions (`$instructions`), notification e-mail (`$email_notify`), domaine SMS
 - `lang.php` — textes d'interface (une seule langue, pas de sélecteur — voir [Installation](#installation))
@@ -330,7 +335,7 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois ongl
 > Si vous n'utilisez pas la vérification côté serveur, supprimez toute la ligne `define('SECRET_HASH', …)` de la configuration. En v3.1.0, une valeur vide (`define('SECRET_HASH', '');`) faisait rejeter tous les mots de passe par le panneau, même le bon. Depuis la v3.1.1, une valeur vide est traitée comme si la constante n'était pas définie, mais la configuration est plus propre sans cette ligne. Le générateur du dashboard l'omet lorsque le champ « Vrai mot de passe principal » est vide.
 
 > [!TIP]
-> Les trois outils fonctionnent **hors ligne** — les données des formulaires ne quittent pas le navigateur (les pages ne téléchargent que des polices depuis Google Fonts). Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
+> Les trois outils fonctionnent **hors ligne** — les données des formulaires ne quittent pas le navigateur (les polices sont stockées localement dans `dashboard/fonts/`). Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
 
 ---
 
@@ -339,14 +344,16 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois ongl
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← contenu du dossier /app/
-│   └── decrypt/       ← contenu du dossier /decrypt/
+│   └── app/           ← contenu du dossier /app/ (avec les sous-dossiers decrypt/ et fonts/)
 └── private/           ← EN DEHORS de public_html
     ├── secret-key.php  ← le fichier de configuration généré
     ├── lang.php        ← textes d'interface (une langue, voir l'étape 1)
     ├── rate-limit.php  ← un fichier système du dépôt (rate limiting)
     └── moja-baza-hasel.kdbx  ← vos fichiers (servis via download.php)
 ```
+
+> [!NOTE]
+> Depuis la v3.2.0, les polices sont hébergées localement. Téléversez **tout le dossier `fonts/`** (avec le sous-dossier `files/`) à côté de `login.php`. Sans lui, le panneau fonctionne toujours, mais affiche des polices système de secours.
 
 > [!WARNING]
 > `lang.php` doit être téléversé sur le serveur **en même temps que** `secret-key.php`. `auth.php` le charge via `require_once` — un fichier manquant fait planter tout le système (erreur fatale sur chaque page), pas seulement les traductions.
@@ -416,6 +423,11 @@ secret-key/
 │   │   ├── panic.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
+│   ├── 📁 fonts/                  # Polices hébergées localement (depuis la v3.2.0)
+│   │   ├── 📁 files/              # Fichiers .woff2
+│   │   ├── .htaccess
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -430,6 +442,10 @@ secret-key/
 │   ├── card-front.js
 │   ├── dashboard.html
 │   ├── favicon.ico
+│   ├── 📁 fonts/                  # Polices du dashboard hors ligne (depuis la v3.2.0)
+│   │   ├── 📁 files/              # Fichiers .woff2
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── generate-card.html
 │   ├── generate-hash.html
 │   └── generate-shamir.html

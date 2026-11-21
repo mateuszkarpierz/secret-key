@@ -83,7 +83,7 @@ Secret Key 用两项保证解决了这个问题，创建了一套安全的应急
 | 🔐 | 所有者**在世期间**的未授权访问 | 每次访问尝试都需要密码 + 短信验证码 |
 | 💀 | **去世后**亲人无法访问你的密码库 | 指定的人员用 Shamir 算法拼合出主密码并下载密码库文件 |
 
-该系统**完全自托管**——密码、份额和文件永远不会离开你自己的服务器。没有中央数据库和云服务,在你自己的服务器之外只使用短信发送和 Google Fonts。
+该系统**完全自托管**——密码、份额和文件永远不会离开你自己的服务器。没有中央数据库和云服务,在你自己的服务器之外只使用短信发送(SMSPlanet)。字体在本地托管(自 v3.2.0 起),因此浏览器不会连接 Google。
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ Secret Key 用两项保证解决了这个问题，创建了一套安全的应急
 后端      PHP 8+，扁平文件（JSON + PHP 配置），零 SQL
 授权      bcrypt cost=10，通过 SMSPlanet API 实现短信双因素认证
 密码学    Shamir 秘密共享（secrets.js）
-前端      纯 HTML + JS，零 JS 依赖（可离线运行）；字体来自 Google Fonts
+前端      纯 HTML + JS，零 JS 依赖（可离线运行）；字体在本地托管
 ```
 
 ---
@@ -250,6 +250,11 @@ PHP 系统     →  验证验证码，创建会话，可选择记住设备
 - `panic.php` —— 处理邮件中的一次性「Panic Button」链接
 - `tl-status.php` —— 实时轮询锁定状态（无需刷新面板）
 
+**字体**(`/app/fonts/`,自 v3.2.0 起)
+- `fonts.css`：`@font-face` 声明(Bungee、Space Mono、Syne、Barlow Condensed、Montserrat；woff2 文件位于 `files/`)
+- `FONTS-LICENSES.txt`：字体许可证(SIL OFL 1.1)
+- `.htaccess`：woff2 文件的长缓存和 `font/woff2` MIME 类型
+
 **数据层**（`/private/` —— 位于 `public_html` 之外）
 - `secret-key.php` —— 单一配置文件：人员（`$people`）、可下载文件（`$downloads`）、操作说明（`$instructions`）、邮件通知（`$email_notify`）、短信域名
 - `lang.php` —— 界面文本（仅支持单一语言，无语言切换器——参见[安装](#安装)）
@@ -330,7 +335,7 @@ PHP 系统     →  验证验证码，创建会话，可选择记住设备
 > 如果您不使用服务器端验证，请从配置中删除整行 `define('SECRET_HASH', …)`。在 v3.1.0 中，空值（`define('SECRET_HASH', '');`）会导致面板拒绝所有密码，即使密码正确。自 v3.1.1 起，空值被视为未定义该常量，但删除这一行会让配置更整洁。当“真实主密码”字段为空时，dashboard 生成器会自动省略该行。
 
 > [!TIP]
-> 这三个工具都**离线运行**——表单数据不会离开浏览器(页面只会从 Google Fonts 加载字体)。配置表单每次运行时都会从零生成新的 `secret-key.php`——它不会加载或编辑已有文件。
+> 这三个工具都**离线运行**——表单数据不会离开浏览器(字体存放在本地的 `dashboard/fonts/` 中)。配置表单每次运行时都会从零生成新的 `secret-key.php`——它不会加载或编辑已有文件。
 
 ---
 
@@ -339,14 +344,16 @@ PHP 系统     →  验证验证码，创建会话，可选择记住设备
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← /app/ 文件夹的内容
-│   └── decrypt/       ← /decrypt/ 文件夹的内容
+│   └── app/           ← /app/ 文件夹的内容(包含 decrypt/ 和 fonts/ 子文件夹)
 └── private/           ← 位于 public_html 之外
     ├── secret-key.php  ← 生成的配置文件
     ├── lang.php        ← 界面文本（单一语言，参见第 1 步）
     ├── rate-limit.php  ← 来自仓库的系统文件（速率限制）
     └── moja-baza-hasel.kdbx  ← 你的文件（通过 download.php 提供）
 ```
+
+> [!NOTE]
+> 自 v3.2.0 起字体在本地托管。请将**整个 `fonts/` 文件夹**(包含 `files/` 子文件夹)上传到服务器,放在 `login.php` 旁边。没有它面板仍可运行,但会显示备用系统字体。
 
 > [!WARNING]
 > `lang.php` 必须与 `secret-key.php` **一起**上传到服务器。`auth.php` 通过 `require_once` 加载它——如果文件缺失，整个系统都会崩溃（每一页都会出现致命错误），而不仅仅是翻译文本失效。
@@ -416,6 +423,11 @@ secret-key/
 │   │   ├── panic.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
+│   ├── 📁 fonts/                  # 本地托管的字体(自 v3.2.0 起)
+│   │   ├── 📁 files/              # .woff2 文件
+│   │   ├── .htaccess
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -430,6 +442,10 @@ secret-key/
 │   ├── card-front.js
 │   ├── dashboard.html
 │   ├── favicon.ico
+│   ├── 📁 fonts/                  # 离线 dashboard 的字体(自 v3.2.0 起)
+│   │   ├── 📁 files/              # .woff2 文件
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── generate-card.html
 │   ├── generate-hash.html
 │   └── generate-shamir.html

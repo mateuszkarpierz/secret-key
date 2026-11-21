@@ -83,7 +83,7 @@ O Secret Key resolve esse problema criando um plano de emergência seguro com du
 | 🔐 | Acesso não autorizado **durante a vida** do proprietário | Toda tentativa de acesso exige uma senha + um código SMS |
 | 💀 | Entes queridos sem acesso ao seu banco de senhas **após a morte** | Pessoas designadas reconstroem a senha mestra usando o algoritmo de Shamir e baixam o arquivo do banco |
 
-O sistema é **totalmente auto-hospedado** — as senhas, os fragmentos e os arquivos nunca saem do seu servidor. Nenhum banco de dados central nem nuvem; fora do seu servidor, usa apenas o envio de SMS e o Google Fonts.
+O sistema é **totalmente auto-hospedado** — as senhas, os fragmentos e os arquivos nunca saem do seu servidor. Nenhum banco de dados central nem nuvem; fora do seu servidor, usa apenas o envio de SMS (SMSPlanet). As fontes são hospedadas localmente (desde a v3.2.0), então o navegador não se conecta ao Google.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ O sistema é **totalmente auto-hospedado** — as senhas, os fragmentos e os arq
 Backend         PHP 8+, arquivos planos (JSON + config PHP), zero SQL
 Autorização     bcrypt cost=10, 2FA por SMS via API da SMSPlanet
 Criptografia    Shamir Secret Sharing (secrets.js)
-Frontend        HTML + JS puro, zero dependências JS (offline); fontes do Google Fonts
+Frontend        HTML + JS puro, zero dependências JS (offline); fontes hospedadas localmente
 ```
 
 ---
@@ -250,6 +250,11 @@ Navegador     →  recebe os fragmentos Shamir, reconstrói o segredo localmente
 - `panic.php` — trata o link de uso único „Panic Button" do e-mail
 - `tl-status.php` — consulta ao vivo do estado do bloqueio (sem precisar recarregar o painel)
 
+**Fontes** (`/app/fonts/`, desde a v3.2.0)
+- `fonts.css`: declarações `@font-face` (Bungee, Space Mono, Syne, Barlow Condensed, Montserrat; arquivos woff2 em `files/`)
+- `FONTS-LICENSES.txt`: licenças das fontes (SIL OFL 1.1)
+- `.htaccess`: cache longo para os arquivos woff2 e tipo MIME `font/woff2`
+
 **Camada de dados** (`/private/` — fora de `public_html`)
 - `secret-key.php` — um único arquivo de configuração: pessoas (`$people`), arquivos para download (`$downloads`), instruções (`$instructions`), notificação por e-mail (`$email_notify`), domínio SMS
 - `lang.php` — textos de interface (um único idioma, sem seletor — veja [Instalação](#instalação))
@@ -330,7 +335,7 @@ Abra o `dashboard.html` localmente no seu navegador. Ele tem três abas:
 > Se você não usa a verificação no servidor, remova a linha inteira `define('SECRET_HASH', …)` da configuração. Na v3.1.0, um valor vazio (`define('SECRET_HASH', '');`) fazia o painel rejeitar qualquer senha, até a correta. A partir da v3.1.1, um valor vazio é tratado como se a constante não estivesse definida, mas a configuração fica mais limpa sem a linha. O gerador do dashboard a omite quando o campo “Senha mestra real” está vazio.
 
 > [!TIP]
-> As três ferramentas funcionam **offline** — os dados dos formulários não saem do navegador (as páginas apenas baixam fontes do Google Fonts). O formulário de configuração gera `secret-key.php` do zero a cada execução — ele não carrega nem edita um arquivo existente.
+> As três ferramentas funcionam **offline** — os dados dos formulários não saem do navegador (as fontes ficam localmente em `dashboard/fonts/`). O formulário de configuração gera `secret-key.php` do zero a cada execução — ele não carrega nem edita um arquivo existente.
 
 ---
 
@@ -339,14 +344,16 @@ Abra o `dashboard.html` localmente no seu navegador. Ele tem três abas:
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← conteúdo da pasta /app/
-│   └── decrypt/       ← conteúdo da pasta /decrypt/
+│   └── app/           ← conteúdo da pasta /app/ (com as subpastas decrypt/ e fonts/)
 └── private/           ← FORA de public_html
     ├── secret-key.php  ← o arquivo de configuração gerado
     ├── lang.php        ← textos de interface (um idioma, veja a etapa 1)
     ├── rate-limit.php  ← um arquivo de sistema do repositório (rate limiting)
     └── moja-baza-hasel.kdbx  ← seus arquivos (servidos via download.php)
 ```
+
+> [!NOTE]
+> Desde a v3.2.0 as fontes são hospedadas localmente. Envie **toda a pasta `fonts/`** (com a subpasta `files/`) para o servidor, ao lado de `login.php`. Sem ela o painel continua funcionando, mas mostra fontes de sistema de reserva.
 
 > [!WARNING]
 > `lang.php` precisa ser enviado ao servidor **junto com** `secret-key.php`. O `auth.php` o carrega via `require_once` — a ausência do arquivo derruba todo o sistema (erro fatal em cada página), não apenas as traduções.
@@ -416,6 +423,11 @@ secret-key/
 │   │   ├── panic.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
+│   ├── 📁 fonts/                  # Fontes hospedadas localmente (desde a v3.2.0)
+│   │   ├── 📁 files/              # Arquivos .woff2
+│   │   ├── .htaccess
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -430,6 +442,10 @@ secret-key/
 │   ├── card-front.js
 │   ├── dashboard.html
 │   ├── favicon.ico
+│   ├── 📁 fonts/                  # Fontes do dashboard offline (desde a v3.2.0)
+│   │   ├── 📁 files/              # Arquivos .woff2
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── generate-card.html
 │   ├── generate-hash.html
 │   └── generate-shamir.html
