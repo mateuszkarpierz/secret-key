@@ -41,7 +41,7 @@
 **What happens to your accounts after you die?**
 
 Secret Key cryptographically splits the master password to your password database among trusted people.  
-No one knows it on their own — only together, at an agreed moment, can they reconstruct it.
+No one knows it on their own. Only together, at an agreed moment, can they reconstruct it.
 
 <br>
 
@@ -72,7 +72,7 @@ No one knows it on their own — only together, at an agreed moment, can they re
 
 ## Idea
 
-Each of us has dozens of passwords — for email, photo cloud storage, 2FA codes, crypto. **What happens to them after we die?** Banks and inheritance have their own legal route, but email, cloud accounts or crypto held on your own key often stay locked forever.
+Each of us has dozens of passwords: for email, photo cloud storage, 2FA codes, crypto. **What happens to them after we die?** Banks and inheritance have their own legal route, but email, cloud accounts or crypto held on your own key often stay locked forever.
 
 Secret Key doesn't store or decrypt anything itself: it splits the master password of your password database (e.g. KeePass, Bitwarden) among trusted people. The database file stays on your own server, and your loved ones can download it only after reaching the quorum, confirming by SMS and waiting out the 48-hour lock. You decide what goes into the database. Secret Key is not a legal tool and does not replace a will or probate; it complements them where the law cannot help.
 
@@ -83,7 +83,7 @@ Secret Key solves this problem by creating a secure emergency plan with two guar
 | 🔐 | Unauthorized access **during** the owner's lifetime | Every access attempt requires a password + an SMS code |
 | 💀 | Loved ones without access to your password database **after death** | Designated people reconstruct the master password using Shamir's algorithm and download the database file |
 
-The system is **fully self-hosted** — passwords, shares and files never leave your server. No central database and no cloud; beyond your own server it only uses SMS delivery (SMSPlanet). Fonts are hosted locally (since v3.2.0), so the browser does not connect to Google.
+The system is **fully self-hosted**: passwords, shares and files never leave your server. No central database and no cloud; beyond your own server it only uses SMS delivery (SMSPlanet). Fonts are hosted locally (since v3.2.0), so the browser does not connect to Google.
 
 <a name="stack"></a>
 
@@ -112,14 +112,14 @@ In a crisis situation, the designated people carry out four steps:
 │  03  SHARES          Each person enters their fragment or            │
 │      ─────────       scans the QR code from the card                 │
 │                                                                      │
-│  04  ACCESS          Password reconstructed locally in the browser — │
+│  04  ACCESS          Password reconstructed locally in the browser,  │
 │      ────────        with SECRET_HASH, verified on your server       │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Without the phone assigned to an account — logging in is impossible**, even knowing the data from the card.  
-**Without the required number of shares — reconstructing the password is mathematically impossible**, even with access to the server.
+**Without the phone assigned to an account, logging in is impossible**, even knowing the data from the card.  
+**Without the required number of shares, reconstructing the password is mathematically impossible**, even with access to the server.
 
 ---
 
@@ -132,7 +132,7 @@ In a crisis situation, the designated people carry out four steps:
 </p>
 
 > [!TIP]
-> 🔊 This video is available in multiple languages — click the ⚙️ icon in the YouTube player → **Subtitles/Audio (Audio track)**, to pick the dubbing language or turn on captions.
+> 🔊 This video is available in multiple languages: click the ⚙️ icon in the YouTube player → **Subtitles/Audio (Audio track)**, to pick the dubbing language or turn on captions.
 
 ---
 
@@ -142,12 +142,12 @@ Each designated person receives a personalized carrier with four elements:
 
 | Element | Description |
 |---|---|
-| 🔑 **Login and password** | Unique access credentials — each person has their own account with an assigned phone number |
-| 🔢 **Shamir share** | A key fragment in hex format — one of five, useless without the rest |
-| ⊞ **QR code** | The same share encoded as a QR code — scanning eliminates manual-transcription errors |
-| 🌐 **System address** | The URL of your own Secret Key instance — leads straight to the login panel |
+| 🔑 **Login and password** | Unique access credentials: each person has their own account with an assigned phone number |
+| 🔢 **Shamir share** | A key fragment in hex format, one of five, useless without the rest |
+| ⊞ **QR code** | The same share encoded as a QR code: scanning eliminates manual-transcription errors |
+| 🌐 **System address** | The URL of your own Secret Key instance: leads straight to the login panel |
 
-**The carrier format is up to you** — a printed sheet, a PDF, a plastic card. What matters is that it contains the four elements above.
+**The carrier format is up to you**: a printed sheet, a PDF, a plastic card. What matters is that it contains the four elements above.
 
 ---
 
@@ -156,7 +156,7 @@ Each designated person receives a personalized carrier with four elements:
 Secret Key uses the [`secrets.js`](https://github.com/grempe/secrets.js) library (fork of [amper5and/secrets.js](https://github.com/amper5and/secrets.js), vendored via [iancoleman.io/shamir](https://iancoleman.io/shamir/)) to split and reconstruct the secret.
 
 > [!NOTE]
-> The library used is **identical to the one used by [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — the share format is fully compatible, which allows independent verification outside the system.
+> The library used is **identical to the one used by [iancoleman.io/shamir](https://iancoleman.io/shamir/)**: the share format is fully compatible, which allows independent verification outside the system.
 
 ### Splitting and reconstructing the secret
 
@@ -175,7 +175,7 @@ Master password: "MyKeePassPassword2024!"
     │                                       │
     └────┬──────────────────────────────────┘
          │
-         ▼  Reconstruction — any 3 of 5 are enough
+         ▼  Reconstruction: any 3 of 5 are enough
          │
     S1 + S2 + S3  →  "MyKeePassPassword2024!"  ✓
     S2 + S4 + S5  →  "MyKeePassPassword2024!"  ✓
@@ -184,7 +184,7 @@ Master password: "MyKeePassPassword2024!"
 
 ### Cryptographic properties
 
-The secret is encoded as the free term of a polynomial over the field GF(2⁸). Each share is a point on that polynomial — knowing the required number of points, it can be uniquely reconstructed via Lagrange interpolation:
+The secret is encoded as the free term of a polynomial over the field GF(2⁸). Each share is a point on that polynomial: knowing the required number of points, it can be uniquely reconstructed via Lagrange interpolation:
 
 ```
 f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
@@ -200,8 +200,8 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Library | secrets.js (grempe fork, via iancoleman.io/shamir) |
 | Share format | `8` + 2-hex x-coord + data |
 | minPad | 1024 bits |
-| Encoding | UTF-8 (str2hex) |
-| Reconstruction | JavaScript (browser); the password is not stored — with `SECRET_HASH`, verified on the server over HTTPS |
+| Encoding | UTF-16, 2 bytes per character (str2hex) |
+| Reconstruction | JavaScript (browser); the password is not stored, with `SECRET_HASH`, verified on the server over HTTPS |
 
 ### Choosing the split parameters
 
@@ -234,46 +234,46 @@ Browser      →  accepts the Shamir shares, reconstructs the secret locally in 
 ### System layers
 
 **Authorization layer** (`/app/`)
-- `login.php` — the login form
-- `auth.php` — session logic, bcrypt, 2FA, brute-force, CSRF, plus the helpers `t()` (UI texts), `md_lite()` (markdown-lite), `empty_state_box()`
-- `verify.php` — SMS code verification
-- `resend.php` — SMS resend
-- `logout.php` — logout
+- `login.php`: the login form
+- `auth.php`: session logic, bcrypt, 2FA, brute-force, CSRF, plus the helpers `t()` (UI texts), `md_lite()` (markdown-lite), `empty_state_box()`
+- `verify.php`: SMS code verification
+- `resend.php`: SMS resend
+- `logout.php`: logout
 
-**Access layer** (`/decrypt/`)
-- `index.php` — the decryption panel with Shamir reconstruction in JS; verifies the result with two independent methods (mathematical consistency across share subsets + text-format analysis) instead of trusting the mere absence of an exception
-- `download.php` — gated file downloads (requires a session, a whitelist built from the config, server-side logging) + hard timelock validation independent of the panel
-- `log.php` — event logging
-- `devtools-log.php` — logging DevTools-inspection incidents (with per-IP rate limiting)
-- `timelock.php` — timelock logic after trustee collusion (see [Security](#security))
-- `arm-timelock.php` — arms the 48h lock after a confirmed password reconstruction, sends the alert email
-- `panic.php` — handles the one-time "Panic Button" link from the email
-- `tl-status.php` — live polling of the lock state (no need to refresh the panel)
+**Access layer** (`/app/decrypt/`)
+- `index.php`: the decryption panel with Shamir reconstruction in JS; verifies the result with two independent methods (mathematical consistency across share subsets + text-format analysis) instead of trusting the mere absence of an exception
+- `download.php`: gated file downloads (requires a session, a whitelist built from the config, server-side logging) + hard timelock validation independent of the panel
+- `log.php`: event logging
+- `devtools-log.php`: logging DevTools-inspection incidents (with per-IP rate limiting)
+- `timelock.php`: timelock logic after trustee collusion (see [Security](#security))
+- `arm-timelock.php`: arms the 48h lock after a confirmed password reconstruction, sends the alert email
+- `panic.php`: handles the one-time "Panic Button" link from the email
+- `tl-status.php`: live polling of the lock state (no need to refresh the panel)
 
 **Fonts** (`/app/fonts/`, since v3.2.0)
 - `fonts.css`: `@font-face` declarations (Bungee, Space Mono, Syne, Barlow Condensed, Montserrat; woff2 files in `files/`)
 - `FONTS-LICENSES.txt`: font licenses (SIL OFL 1.1)
 - `.htaccess`: long cache for woff2 files and the `font/woff2` MIME type
 
-**Data layer** (`/private/` — outside `public_html`)
-- `secret-key.php` — a single config file: people (`$people`), downloadable files (`$downloads`), instructions (`$instructions`), email notification (`$email_notify`), SMS domain
-- `lang.php` — interface texts (a single language, no switcher — see [Installation](#installation))
-- `rate-limit.php` — persistent rate limiting (counters independent of the session)
-- `rate_limits.json` — login-attempt counters per IP/account *(created automatically)*
-- `trusted_devices.json` — trusted-device tokens *(created automatically)*
-- `timelock.json` — 48h lock state after trustee collusion *(created automatically, see [Security](#security))*
-- `timelock.lock` — empty helper file for write locking *(created automatically)*
-- `secret-key.log` — event logs
-- `moja-baza-hasel.kdbx` *(and other downloadable files)* — served only through `download.php`, never directly over HTTP
+**Data layer** (`/private/`, outside `public_html`)
+- `secret-key.php`: a single config file: people (`$people`), downloadable files (`$downloads`), instructions (`$instructions`), email notification (`$email_notify`), SMS domain
+- `lang.php`: interface texts (a single language, no switcher, see [Installation](#installation))
+- `rate-limit.php`: persistent rate limiting (counters independent of the session)
+- `rate_limits.json`: login-attempt counters per IP/account *(created automatically)*
+- `trusted_devices.json`: trusted-device tokens *(created automatically)*
+- `timelock.json`: 48h lock state after trustee collusion *(created automatically, see [Security](#security))*
+- `timelock.lock`: empty helper file for write locking *(created automatically)*
+- `secret-key.log`: event logs
+- `moja-baza-hasel.kdbx` *(and other downloadable files)*: served only through `download.php`, never directly over HTTP
 
 > [!WARNING]
-> All sensitive configuration files are stored **outside the public directory** of the server — a misconfigured web server does not risk exposing them.
+> All sensitive configuration files are stored **outside the public directory** of the server: a misconfigured web server does not risk exposing them.
 
 ---
 
 ## Security
 
-The system combines **nine independent layers of protection** — compromising one does not grant access to the system.
+The system combines **nine independent layers of protection**: compromising one does not grant access to the system.
 
 | Layer | Mechanism | Details |
 |---|---|---|
@@ -287,9 +287,9 @@ The system combines **nine independent layers of protection** — compromising o
 | 📥 **Gated downloads** | `download.php` + whitelist | Downloadable files live outside `public_html`; an active session is required, no direct URL, always logged server-side |
 
 > [!TIP]
-| 🚨 **Trustee-collusion protection** | 48h timelock + Panic Button + server-side verification | The first successful password reconstruction (optionally verified server-side via `SECRET_HASH`) blocks file downloads for 48h and sends an alert email with a one-time link to immediately and permanently block access — see below |
+| 🚨 **Trustee-collusion protection** | 48h timelock + Panic Button + server-side verification | The first successful password reconstruction (optionally verified server-side via `SECRET_HASH`) blocks file downloads for 48h and sends an alert email with a one-time link to immediately and permanently block access (see below) |
 
-> **Protection against trustee collusion during your lifetime.** Shamir's algorithm mathematically allows designated trustees to reconstruct the master password itself if they collude to do so — this is an unavoidable property of any threshold secret-sharing scheme, not just this one. The system responds to this on three levels: (1) in the browser it **checks consistency** of the combined shares (mathematical consistency across share subsets + result-format analysis) — this filters out typos and random noise, but on its own it **does not confirm** the combined secret is the real password (a logged-in person could paste fully consistent, but made-up, shares with a completely different "password"); (2) if you set the optional, but strongly recommended, `SECRET_HASH` in the config (a bcrypt hash of the real password, computed automatically by the dashboard), the server **genuinely verifies** the combined secret via `password_verify()` before arming anything; (3) only after that verification does it **block file downloads for 48 hours**, sending you an email with a one-time "Panic Button" link — one click permanently cuts off access before anyone can download anything. Knowing the password alone is worthless without the physical database file. For maximum protection, it's additionally recommended to use a hardware key (e.g. YubiKey/FIDO2) as a second factor for the password database itself.
+> **Protection against trustee collusion during your lifetime.** Shamir's algorithm mathematically allows designated trustees to reconstruct the master password itself if they collude to do so. This is an unavoidable property of any threshold secret-sharing scheme, not just this one. The system responds to this on three levels: (1) in the browser it **checks consistency** of the combined shares (mathematical consistency across share subsets + result-format analysis), this filters out typos and random noise, but on its own it **does not confirm** the combined secret is the real password (a logged-in person could paste fully consistent, but made-up, shares with a completely different "password"); (2) if you set the optional, but strongly recommended, `SECRET_HASH` in the config (a bcrypt hash of the real password, computed automatically by the dashboard), the server **genuinely verifies** the combined secret via `password_verify()` before arming anything; (3) only after that verification does it **block file downloads for 48 hours**, sending you an email with a one-time "Panic Button" link: one click permanently cuts off access before anyone can download anything. Knowing the password alone is worthless without the physical database file. For maximum protection, it's additionally recommended to use a hardware key (e.g. YubiKey/FIDO2) as a second factor for the password database itself.
 
 ---
 
@@ -298,48 +298,49 @@ The system combines **nine independent layers of protection** — compromising o
 ### Requirements
 
 - PHP 8.0+
-- A web server (Apache / Nginx)
-- An account with [SMSPlanet](https://smsplanet.pl) (for sending 2FA codes)
+- A web server (Apache / Nginx) that supports `.htaccess` or an equivalent to protect `/private/`
+- HTTPS (TLS 1.2+): mandatory, because login data and SMS codes are transmitted
+- An account with [SMSPlanet](https://smsplanet.pl) (for sending 2FA codes) with SMS credit, an API token and an approved sender name (until it is approved, you can set `SMS_SENDER` to `TEST`)
 - Access to a directory outside `public_html`
 
 ---
 
-### Step 1 — Configuration (offline)
+### Step 1: Configuration (offline)
 
 Open `dashboard.html` locally in your browser. It has three tabs:
 
-**Configuration** — generates the `secret-key.php` file:
-1. The SMSPlanet API token, the SMS sender name, and the domain for autofilling the code (Android/iOS) — just the domain, without `@` and without `https://`
-2. The threshold (K) of required codes for the recovery panel — must match the threshold set in the Encryption tab — and, optionally but recommended, the real master password (the same one used in the Encryption tab), from which the dashboard computes a hash for server-side verification (see [Collusion risk protection](#security))
+**Configuration**: generates the `secret-key.php` file:
+1. The SMSPlanet API token, the SMS sender name, and the domain for autofilling the code (Android/iOS): just the domain, without `@` and without `https://`
+2. The threshold (K) of required codes for the recovery panel (must match the threshold set in the Encryption tab) and, optionally but recommended, the real master password (the same one used in the Encryption tab), from which the dashboard computes a hash for server-side verification (see [Collusion risk protection](#security))
 3. For each designated person: login, password, first name, last name, phone number, and whether they should be visible on the holder list in the panel
-4. Downloadable files (password database, 2FA database, program installer) — key, button label, filename
+4. Downloadable files (password database, 2FA database, program installer): key, button label, filename
 5. The instruction steps for the panel (formatting: `**bold**` / `*italic*`)
-6. Optional: an email notification for every login (recipient address, sender, `panel_url` — the panel's domain address with subdomain, e.g. `https://my-domain.com`; since v3.1.4 it matters for security, so enter exactly your own domain)
+6. Optional: an email notification for every login (recipient address, sender, `panel_url`, the panel's domain address with subdomain, e.g. `https://my-domain.com`; since v3.1.4 it matters for security, so enter exactly your own domain)
 7. Click "Generate configuration" and download the generated `secret-key.php` file
 
-**Encryption** — splits the master password into Shamir shares:
+**Encryption**: splits the master password into Shamir shares:
 1. Enter the master password to the password database
 2. Set the total number of shares and the required minimum
 3. Click "Generate shares"
 4. Download the `secret-key-shares.txt` file
 
-**Card Generator** — creates personalized Secret Key cards ready to print (ISO ID-1 format, 85.6×54mm):
+**Card Generator**: creates personalized Secret Key cards ready to print (ISO ID-1 format, 85.6×54mm):
 1. Global settings: the instance URL and the owner's full name
-2. Split parameters (total shares and required minimum) — consistent with the Configuration and Encryption tabs
+2. Split parameters (total shares and required minimum), consistent with the Configuration and Encryption tabs
 3. An editable message on the back of the card, with tokens to auto-insert the share count, the threshold, and the instance URL
-4. For each person: login, password, and Shamir share (hex) — data from the two previous tabs
+4. For each person: login, password, and Shamir share (hex): data from the two previous tabs
 5. Optional: 2mm bleed and cut lines for print-shop printing
-6. Click "Generate cards" — preview of the front and back of each card, ready to download as a PDF
+6. Click "Generate cards": preview of the front and back of each card, ready to download as a PDF
 
 > [!WARNING]
 > If you don't use server-side verification, remove the whole `define('SECRET_HASH', …)` line from the config. In v3.1.0 an empty value (`define('SECRET_HASH', '');`) made the panel reject every password, even the correct one. As of v3.1.1 an empty value is treated as if the constant were not set, but the config is cleaner without the line. The dashboard generator omits it when the “Real master password” field is empty.
 
 > [!TIP]
-> All three tools work **offline** — form data does not leave the browser (the fonts sit locally in `dashboard/fonts/`). The configuration form generates `secret-key.php` from scratch on every run — it doesn't load or edit an existing file.
+> All three tools work **offline**: form data does not leave the browser (the fonts sit locally in `dashboard/fonts/`). The configuration form generates `secret-key.php` from scratch on every run, it doesn't load or edit an existing file.
 
 ---
 
-### Step 2 — Uploading to the server
+### Step 2: Uploading to the server
 
 ```bash
 /home/user/
@@ -356,13 +357,13 @@ Open `dashboard.html` locally in your browser. It has three tabs:
 > Since v3.2.0 the fonts are hosted locally. Upload the **whole `fonts/` folder** (with the `files/` subfolder) next to `login.php`. Without it the panel still works, but shows fallback system fonts.
 
 > [!WARNING]
-> `lang.php` must be uploaded to the server **together with** `secret-key.php`. `auth.php` loads it via `require_once` — a missing file crashes the whole system (a fatal error on every page), not just the translations.
+> `lang.php` must be uploaded to the server **together with** `secret-key.php`. `auth.php` loads it via `require_once`: a missing file crashes the whole system (a fatal error on every page), not just the translations.
 
 ---
 
-### Step 3 — Path to the configuration
+### Step 3: Path to the configuration
 
-In `auth.php` (the `app/` folder) the path to the `/private/` folder is set in **one place** — the `PRIVATE_DIR` constant at the top of the file. All other paths use that constant, so you change just this one line:
+In `auth.php` (the `app/` folder) the path to the `/private/` folder is set in **one place**, the `PRIVATE_DIR` constant at the top of the file. All other paths use that constant, so you change just this one line:
 
 ```php
 // app/auth.php
@@ -379,22 +380,22 @@ By default it contains the fragment `/../../../private`. The path is counted fro
 
 ---
 
-### Step 4 — Domain in the SMS content (WebOTP)
+### Step 4: Domain in the SMS content (WebOTP)
 
-The content of the sent SMS code ends with the line `@domain #code` — this is the format required by the [WebOTP API](https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API), thanks to which the browser on the phone fills in the code field on its own, without manually retyping it from the SMS.
+The content of the sent SMS code ends with the line `@domain #code`: this is the format required by the [WebOTP API](https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API), thanks to which the browser on the phone fills in the code field on its own, without manually retyping it from the SMS.
 
-You set the domain in **Step 1**, in the dashboard form (the "SMS autofill domain" field) — you enter just the domain, without `@` and without `https://` (the dashboard adds the `@` automatically). It goes into the config as:
+You set the domain in **Step 1**, in the dashboard form (the "SMS autofill domain" field): you enter just the domain, without `@` and without `https://` (the dashboard adds the `@` automatically). It goes into the config as:
 
 ```php
 define('SMS_AUTOFILL_DOMAIN', '@your-domain.com');
 ```
 
 > [!WARNING]
-> The domain must **exactly** match the one you host the system under — otherwise WebOTP will ignore the SMS and autofill won't work. The code will still arrive and work when entered manually, just without that convenience.
+> The domain must **exactly** match the one you host the system under, otherwise WebOTP will ignore the SMS and autofill won't work. The code will still arrive and work when entered manually, just without that convenience.
 
 ---
 
-### Step 5 — Distributing the cards
+### Step 5: Distributing the cards
 
 For each designated person, prepare a carrier with:
 - a login and password (from the Configuration tab)
@@ -409,8 +410,8 @@ For each designated person, prepare a carrier with:
 ```
 secret-key/
 │
-├── 📁 app/                        # Public — login system
-│   ├── 📁 decrypt/                # Protected — user panel
+├── 📁 app/                        # Public: login system
+│   ├── 📁 decrypt/                # Protected: user panel
 │   │   ├── .htaccess
 │   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
@@ -452,7 +453,7 @@ secret-key/
 │
 ├── 📁 img/                        # Graphic assets
 │
-└── 📁 private/                    # Outside public_html — configuration files
+└── 📁 private/                    # Outside public_html: configuration files
     ├── .htaccess
     ├── demo-baza-hasel.txt         # Example downloadable file (replace with your own)
     ├── lang.php                    # Interface texts (a single language)
@@ -467,21 +468,21 @@ secret-key/
 <details>
 <summary><strong>What happens if I lose my Secret Key card?</strong></summary>
 
-The card by itself is useless without access to the phone assigned to that account — logging in requires SMS verification. The risk is limited, but the owner should be informed and consider generating a new configuration with a new set of shares.
+The card by itself is useless without access to the phone assigned to that account: logging in requires SMS verification. The risk is limited, but the owner should be informed and consider generating a new configuration with a new set of shares.
 
 </details>
 
 <details>
 <summary><strong>Can I read the password on my own with just one card?</strong></summary>
 
-No. It's mathematically impossible. A single share reveals no information about the secret — this is a property of the algorithm called information-theoretic security. Only gathering the required number of shares allows the master password to be reconstructed.
+No. It's mathematically impossible. A single share reveals no information about the secret. This is a property of the algorithm called information-theoretic security. Only gathering the required number of shares allows the master password to be reconstructed.
 
 </details>
 
 <details>
 <summary><strong>What if one of the designated people dies or becomes unavailable?</strong></summary>
 
-The system is designed with redundancy — it's enough to gather the minimum required number of shares (e.g. 3 of 5). One or two people being unavailable doesn't block the emergency procedure, as long as the rest can get together.
+The system is designed with redundancy: it's enough to gather the minimum required number of shares (e.g. 3 of 5). One or two people being unavailable doesn't block the emergency procedure, as long as the rest can get together.
 
 </details>
 
@@ -495,28 +496,28 @@ Reconstruction happens in the browser. If you set `SECRET_HASH` in the config (r
 <details>
 <summary><strong>What if the trustees collude and recover the password during my lifetime, without my knowledge?</strong></summary>
 
-The password alone isn't enough for them. The database files live outside the server's public directory, and access to them is controlled by `download.php`. The moment the password is first successfully reconstructed in the panel — optionally, but strongly recommended, also verified server-side via `SECRET_HASH`, so that mere consistency of the combined shares (without knowing the real password) isn't enough to force the lock — the system automatically blocks file downloads for 48 hours and sends you an alert email with a one-time "Panic Button" link — one click permanently cuts off access, giving you time to change the master password in peace. If you additionally protect the password database with a hardware key (e.g. YubiKey), knowing the password alone isn't enough to open it even after the files are unlocked.
+The password alone isn't enough for them. The database files live outside the server's public directory, and access to them is controlled by `download.php`. The moment the password is first successfully reconstructed in the panel (optionally, but strongly recommended, also verified server-side via `SECRET_HASH`, so that mere consistency of the combined shares (without knowing the real password) isn't enough to force the lock), the system automatically blocks file downloads for 48 hours and sends you an alert email with a one-time "Panic Button" link: one click permanently cuts off access, giving you time to change the master password in peace. If you additionally protect the password database with a hardware key (e.g. YubiKey), knowing the password alone isn't enough to open it even after the files are unlocked.
 
 </details>
 
 <details>
 <summary><strong>Can I use the system with a password manager other than KeePassXC?</strong></summary>
 
-Yes. Secret Key stores and reconstructs **any master password** — regardless of the manager used. Compatible with any program that supports a master password: KeePassXC, Bitwarden, 1Password, and others.
+Yes. Secret Key stores and reconstructs **any master password**, regardless of the manager used. Compatible with any program that supports a master password: KeePassXC, Bitwarden, 1Password, and others.
 
 </details>
 
 <details>
-<summary><strong>How do I choose the threshold — how many shares are required?</strong></summary>
+<summary><strong>How do I choose the threshold: how many shares are required?</strong></summary>
 
-The higher the threshold, the greater the security — but also the harder it is to gather everyone in a crisis situation. The recommended compromise for standard use is **3 of 5** — it tolerates two people being unavailable while keeping a good level of protection.
+The higher the threshold, the greater the security, but also the harder it is to gather everyone in a crisis situation. The recommended compromise for standard use is **3 of 5**: it tolerates two people being unavailable while keeping a good level of protection.
 
 </details>
 
 <details>
 <summary><strong>How long are the login credentials from a card valid?</strong></summary>
 
-Indefinitely — as long as the owner doesn't generate a new configuration and replace the `secret-key.php` file on the server. After that operation, the old cards stop working, and new ones need to be distributed to all the designated people.
+Indefinitely, as long as the owner doesn't generate a new configuration and replace the `secret-key.php` file on the server. After that operation, the old cards stop working, and new ones need to be distributed to all the designated people.
 
 </details>
 
@@ -545,7 +546,7 @@ For many people a USB stick with a note is enough and simpler. Secret Key is for
 
 <div align="center">
 
-If this project has been useful to you, leave a ⭐ — it helps others who might need it find it.
+If this project has been useful to you, leave a ⭐. It helps others who might need it find it.
 
 </div>
 

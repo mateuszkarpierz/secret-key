@@ -41,7 +41,7 @@
 **Qu'arrive-t-il à vos comptes après votre décès ?**
 
 Secret Key répartit cryptographiquement le mot de passe principal de votre base de mots de passe entre des personnes de confiance.  
-Personne ne le connaît seul — ce n'est qu'ensemble, à un moment convenu, qu'elles peuvent le reconstituer.
+Personne ne le connaît seul. Ce n'est qu'ensemble, à un moment convenu, qu'elles peuvent le reconstituer.
 
 <br>
 
@@ -72,7 +72,7 @@ Personne ne le connaît seul — ce n'est qu'ensemble, à un moment convenu, qu'
 
 ## Idée
 
-Chacun de nous possède des dizaines de mots de passe — pour la messagerie, le cloud de photos, les codes 2FA, les cryptomonnaies. **Qu'advient-il d'eux après notre décès ?** Les banques et la succession ont leur propre voie légale, mais la messagerie, le cloud ou les cryptos détenues avec une clé personnelle restent souvent verrouillés pour toujours.
+Chacun de nous possède des dizaines de mots de passe : pour la messagerie, le cloud de photos, les codes 2FA, les cryptomonnaies. **Qu'advient-il d'eux après notre décès ?** Les banques et la succession ont leur propre voie légale, mais la messagerie, le cloud ou les cryptos détenues avec une clé personnelle restent souvent verrouillés pour toujours.
 
 Secret Key ne stocke ni ne déchiffre rien lui-même : il répartit le mot de passe maître de votre base de mots de passe (p. ex. KeePass, Bitwarden) entre des personnes de confiance. Le fichier de la base reste sur votre propre serveur, et vos proches ne peuvent le télécharger qu'après avoir atteint le quorum, confirmé par SMS et attendu le verrou de 48 heures. Ce que contient la base, c'est vous qui le décidez. Secret Key n'est pas un outil juridique et ne remplace ni le testament ni la procédure successorale ; il les complète là où le droit ne peut pas aider.
 
@@ -83,7 +83,7 @@ Secret Key résout ce problème en créant un plan d'urgence sécurisé avec deu
 | 🔐 | Accès non autorisé **du vivant** du propriétaire | Chaque tentative d'accès nécessite un mot de passe + un code SMS |
 | 💀 | Proches sans accès à votre base de mots de passe **après le décès** | Les personnes désignées reconstituent le mot de passe maître avec l'algorithme de Shamir et téléchargent le fichier de la base |
 
-Le système est **entièrement autohébergé** — les mots de passe, les fragments et les fichiers ne quittent jamais votre serveur. Aucune base de données centrale ni cloud ; en dehors de votre serveur, il n'utilise que l'envoi des SMS (SMSPlanet). Les polices sont hébergées localement (depuis la v3.2.0), le navigateur ne se connecte donc pas à Google.
+Le système est **entièrement autohébergé** : les mots de passe, les fragments et les fichiers ne quittent jamais votre serveur. Aucune base de données centrale ni cloud ; en dehors de votre serveur, il n'utilise que l'envoi des SMS (SMSPlanet). Les polices sont hébergées localement (depuis la v3.2.0), le navigateur ne se connecte donc pas à Google.
 
 <a name="stack"></a>
 
@@ -112,14 +112,14 @@ En situation de crise, les personnes désignées effectuent quatre étapes :
 │  03  FRAGMENTS       Chaque personne saisit son fragment ou          │
 │      ─────────       scanne le code QR de la carte                   │
 │                                                                      │
-│  04  ACCÈS           Mot de passe reconstitué dans le navigateur —   │
+│  04  ACCÈS           Mot de passe reconstitué dans le navigateur,    │
 │      ────────        avec SECRET_HASH, vérifié sur votre serveur     │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Sans le téléphone associé au compte — la connexion est impossible**, même en connaissant les données de la carte.  
-**Sans le nombre requis de fragments — la reconstitution du mot de passe est mathématiquement impossible**, même avec un accès au serveur.
+**Sans le téléphone associé au compte, la connexion est impossible**, même en connaissant les données de la carte.  
+**Sans le nombre requis de fragments, la reconstitution du mot de passe est mathématiquement impossible**, même avec un accès au serveur.
 
 ---
 
@@ -132,7 +132,7 @@ En situation de crise, les personnes désignées effectuent quatre étapes :
 </p>
 
 > [!TIP]
-> 🔊 La vidéo est disponible en plusieurs langues — cliquez sur ⚙️ dans le lecteur YouTube → **Sous-titres/Audio (piste audio)**, pour choisir la langue du doublage ou activer les sous-titres.
+> 🔊 La vidéo est disponible en plusieurs langues : cliquez sur ⚙️ dans le lecteur YouTube → **Sous-titres/Audio (piste audio)**, pour choisir la langue du doublage ou activer les sous-titres.
 
 ---
 
@@ -142,12 +142,12 @@ Chaque personne désignée reçoit un support personnalisé avec quatre élémen
 
 | Élément | Description |
 |---|---|
-| 🔑 **Identifiant et mot de passe** | Identifiants d'accès uniques — chaque personne a son propre compte avec un numéro de téléphone assigné |
-| 🔢 **Fragment Shamir** | Un fragment de clé au format hexadécimal — un sur cinq, inutile sans les autres |
-| ⊞ **Code QR** | Le même fragment encodé en QR — le scan élimine les erreurs de recopie manuelle |
-| 🌐 **Adresse du système** | L'URL de votre propre instance Secret Key — mène directement au panneau de connexion |
+| 🔑 **Identifiant et mot de passe** | Identifiants d'accès uniques : chaque personne a son propre compte avec un numéro de téléphone assigné |
+| 🔢 **Fragment Shamir** | Un fragment de clé au format hexadécimal, un sur cinq, inutile sans les autres |
+| ⊞ **Code QR** | Le même fragment encodé en QR : le scan élimine les erreurs de recopie manuelle |
+| 🌐 **Adresse du système** | L'URL de votre propre instance Secret Key : mène directement au panneau de connexion |
 
-**Le format du support est libre** — une feuille imprimée, un PDF, une carte plastique. L'important est qu'il contienne les quatre éléments ci-dessus.
+**Le format du support est libre** : une feuille imprimée, un PDF, une carte plastique. L'important est qu'il contienne les quatre éléments ci-dessus.
 
 ---
 
@@ -156,7 +156,7 @@ Chaque personne désignée reçoit un support personnalisé avec quatre élémen
 Secret Key utilise la bibliothèque [`secrets.js`](https://github.com/grempe/secrets.js) (fork de [amper5and/secrets.js](https://github.com/amper5and/secrets.js), intégrée via [iancoleman.io/shamir](https://iancoleman.io/shamir/)) pour diviser et reconstituer le secret.
 
 > [!NOTE]
-> La bibliothèque utilisée est **identique à celle employée par [iancoleman.io/shamir](https://iancoleman.io/shamir/)** — le format des fragments est entièrement compatible, ce qui permet une vérification indépendante en dehors du système.
+> La bibliothèque utilisée est **identique à celle employée par [iancoleman.io/shamir](https://iancoleman.io/shamir/)** : le format des fragments est entièrement compatible, ce qui permet une vérification indépendante en dehors du système.
 
 ### Division et reconstitution du secret
 
@@ -175,7 +175,7 @@ Mot de passe principal : "MyKeePassPassword2024!"
     │                                       │
     └────┬──────────────────────────────────┘
          │
-         ▼  Reconstitution — 3 quelconques sur 5 suffisent
+         ▼  Reconstitution : 3 quelconques sur 5 suffisent
          │
     S1 + S2 + S3  →  "MyKeePassPassword2024!"  ✓
     S2 + S4 + S5  →  "MyKeePassPassword2024!"  ✓
@@ -184,7 +184,7 @@ Mot de passe principal : "MyKeePassPassword2024!"
 
 ### Propriétés cryptographiques
 
-Le secret est encodé comme le terme constant d'un polynôme sur le corps GF(2⁸). Chaque fragment est un point de ce polynôme — en connaissant le nombre requis de points, il peut être reconstitué de manière unique par interpolation de Lagrange :
+Le secret est encodé comme le terme constant d'un polynôme sur le corps GF(2⁸). Chaque fragment est un point de ce polynôme : en connaissant le nombre requis de points, il peut être reconstitué de manière unique par interpolation de Lagrange :
 
 ```
 f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
@@ -200,8 +200,8 @@ f(x) = a₀ + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹  (mod p)
 | Bibliothèque | secrets.js (fork grempe, via iancoleman.io/shamir) |
 | Format des fragments | `8` + coordonnée x sur 2 hex + données |
 | minPad | 1024 bits |
-| Encodage | UTF-8 (str2hex) |
-| Reconstitution | JavaScript (navigateur) ; le mot de passe n'est pas stocké — avec `SECRET_HASH`, vérifié sur le serveur via HTTPS |
+| Encodage | UTF-16, 2 octets par caractère (str2hex) |
+| Reconstitution | JavaScript (navigateur) ; le mot de passe n'est pas stocké, avec `SECRET_HASH`, vérifié sur le serveur via HTTPS |
 
 ### Choix des paramètres de division
 
@@ -234,46 +234,46 @@ Navigateur   →  reçoit les fragments Shamir, reconstitue le secret localement
 ### Couches du système
 
 **Couche d'autorisation** (`/app/`)
-- `login.php` — le formulaire de connexion
-- `auth.php` — logique de session, bcrypt, 2FA, protection brute-force, CSRF, ainsi que les fonctions utilitaires `t()` (textes d'interface), `md_lite()` (markdown-lite), `empty_state_box()`
-- `verify.php` — vérification du code SMS
-- `resend.php` — renvoi du SMS
-- `logout.php` — déconnexion
+- `login.php` : le formulaire de connexion
+- `auth.php` : logique de session, bcrypt, 2FA, protection brute-force, CSRF, ainsi que les fonctions utilitaires `t()` (textes d'interface), `md_lite()` (markdown-lite), `empty_state_box()`
+- `verify.php` : vérification du code SMS
+- `resend.php` : renvoi du SMS
+- `logout.php` : déconnexion
 
-**Couche d'accès** (`/decrypt/`)
-- `index.php` — le panneau de déchiffrement avec reconstitution Shamir en JS ; vérifie le résultat avec deux méthodes indépendantes (cohérence mathématique entre sous-ensembles de parts + analyse du format du texte) plutôt que de se fier à la simple absence d'exception
-- `download.php` — téléchargements de fichiers contrôlés (session requise, liste blanche construite à partir de la configuration, journalisation côté serveur) + validation stricte du timelock indépendante du panneau
-- `log.php` — journalisation des événements
-- `devtools-log.php` — journalisation des tentatives d'inspection DevTools (avec limitation de débit par IP)
-- `timelock.php` — logique du timelock après collusion des tiers de confiance (voir [Sécurité](#sécurité))
-- `arm-timelock.php` — active le blocage de 48h après une reconstitution de mot de passe confirmée, envoie l'e-mail d'alerte
-- `panic.php` — traite le lien à usage unique « Panic Button » de l'e-mail
-- `tl-status.php` — interrogation en direct de l'état du blocage (pas besoin de recharger le panneau)
+**Couche d'accès** (`/app/decrypt/`)
+- `index.php` : le panneau de déchiffrement avec reconstitution Shamir en JS ; vérifie le résultat avec deux méthodes indépendantes (cohérence mathématique entre sous-ensembles de parts + analyse du format du texte) plutôt que de se fier à la simple absence d'exception
+- `download.php` : téléchargements de fichiers contrôlés (session requise, liste blanche construite à partir de la configuration, journalisation côté serveur) + validation stricte du timelock indépendante du panneau
+- `log.php` : journalisation des événements
+- `devtools-log.php` : journalisation des tentatives d'inspection DevTools (avec limitation de débit par IP)
+- `timelock.php` : logique du timelock après collusion des tiers de confiance (voir [Sécurité](#sécurité))
+- `arm-timelock.php` : active le blocage de 48h après une reconstitution de mot de passe confirmée, envoie l'e-mail d'alerte
+- `panic.php` : traite le lien à usage unique « Panic Button » de l'e-mail
+- `tl-status.php` : interrogation en direct de l'état du blocage (pas besoin de recharger le panneau)
 
 **Polices** (`/app/fonts/`, depuis la v3.2.0)
 - `fonts.css` : déclarations `@font-face` (Bungee, Space Mono, Syne, Barlow Condensed, Montserrat ; fichiers woff2 dans `files/`)
 - `FONTS-LICENSES.txt` : licences des polices (SIL OFL 1.1)
 - `.htaccess` : cache long pour les fichiers woff2 et type MIME `font/woff2`
 
-**Couche de données** (`/private/` — en dehors de `public_html`)
-- `secret-key.php` — un fichier de configuration unique : personnes (`$people`), fichiers téléchargeables (`$downloads`), instructions (`$instructions`), notification e-mail (`$email_notify`), domaine SMS
-- `lang.php` — textes d'interface (une seule langue, pas de sélecteur — voir [Installation](#installation))
-- `rate-limit.php` — limitation de débit persistante (compteurs indépendants de la session)
-- `rate_limits.json` — compteurs de tentatives de connexion par IP/compte *(créé automatiquement)*
-- `trusted_devices.json` — jetons des appareils de confiance *(créé automatiquement)*
-- `timelock.json` — état du blocage de 48h après collusion des tiers de confiance *(créé automatiquement, voir [Sécurité](#sécurité))*
-- `timelock.lock` — fichier auxiliaire vide pour le verrouillage en écriture *(créé automatiquement)*
-- `secret-key.log` — journaux d'événements
-- `moja-baza-hasel.kdbx` *(et autres fichiers téléchargeables)* — servis uniquement via `download.php`, jamais directement via HTTP
+**Couche de données** (`/private/`, en dehors de `public_html`)
+- `secret-key.php` : un fichier de configuration unique : personnes (`$people`), fichiers téléchargeables (`$downloads`), instructions (`$instructions`), notification e-mail (`$email_notify`), domaine SMS
+- `lang.php` : textes d'interface (une seule langue, pas de sélecteur, voir [Installation](#installation))
+- `rate-limit.php` : limitation de débit persistante (compteurs indépendants de la session)
+- `rate_limits.json` : compteurs de tentatives de connexion par IP/compte *(créé automatiquement)*
+- `trusted_devices.json` : jetons des appareils de confiance *(créé automatiquement)*
+- `timelock.json` : état du blocage de 48h après collusion des tiers de confiance *(créé automatiquement, voir [Sécurité](#sécurité))*
+- `timelock.lock` : fichier auxiliaire vide pour le verrouillage en écriture *(créé automatiquement)*
+- `secret-key.log` : journaux d'événements
+- `moja-baza-hasel.kdbx` *(et autres fichiers téléchargeables)* : servis uniquement via `download.php`, jamais directement via HTTP
 
 > [!WARNING]
-> Tous les fichiers de configuration sensibles sont stockés **en dehors du répertoire public** du serveur — une configuration incorrecte du serveur web ne risque pas de les exposer.
+> Tous les fichiers de configuration sensibles sont stockés **en dehors du répertoire public** du serveur : une configuration incorrecte du serveur web ne risque pas de les exposer.
 
 ---
 
 ## Sécurité
 
-Le système combine **neuf couches de protection indépendantes** — la compromission de l'une ne donne pas accès au système.
+Le système combine **neuf couches de protection indépendantes** : la compromission de l'une ne donne pas accès au système.
 
 | Couche | Mécanisme | Détails |
 |---|---|---|
@@ -287,9 +287,9 @@ Le système combine **neuf couches de protection indépendantes** — la comprom
 | 📥 **Téléchargements contrôlés** | `download.php` + liste blanche | Les fichiers téléchargeables se trouvent en dehors de `public_html` ; une session active est requise, aucune URL directe, toujours journalisé côté serveur |
 
 > [!TIP]
-| 🚨 **Protection contre la collusion des tiers de confiance** | Timelock 48h + Panic Button + vérification côté serveur | La première reconstitution réussie du mot de passe (optionnellement vérifiée côté serveur via `SECRET_HASH`) bloque les téléchargements de fichiers pendant 48h et envoie un e-mail d'alerte avec un lien à usage unique pour bloquer l'accès immédiatement et définitivement — voir ci-dessous |
+| 🚨 **Protection contre la collusion des tiers de confiance** | Timelock 48h + Panic Button + vérification côté serveur | La première reconstitution réussie du mot de passe (optionnellement vérifiée côté serveur via `SECRET_HASH`) bloque les téléchargements de fichiers pendant 48h et envoie un e-mail d'alerte avec un lien à usage unique pour bloquer l'accès immédiatement et définitivement (voir ci-dessous) |
 
-> **Protection contre la collusion des tiers de confiance de votre vivant.** L'algorithme de Shamir permet mathématiquement aux personnes désignées de reconstituer le mot de passe principal si elles s'entendent pour le faire — c'est une propriété inévitable de tout schéma de partage de secret à seuil, pas seulement de celui-ci. Le système réagit à cela sur trois niveaux : (1) dans le navigateur, il **vérifie la cohérence** des parts combinées (cohérence mathématique entre sous-ensembles + analyse du format du résultat) — cela filtre les fautes de frappe et le bruit aléatoire, mais ne **confirme pas** à lui seul que le secret combiné est le vrai mot de passe (une personne connectée pourrait coller des parts totalement cohérentes, mais inventées, avec un « mot de passe » complètement différent) ; (2) si vous définissez le `SECRET_HASH` optionnel, mais fortement recommandé, dans la configuration (un hash bcrypt du vrai mot de passe, calculé automatiquement par le tableau de bord), le serveur **vérifie réellement** le secret combiné via `password_verify()` avant d'armer quoi que ce soit ; (3) ce n'est qu'après cette vérification qu'il **bloque les téléchargements de fichiers pendant 48 heures**, en vous envoyant un e-mail avec un lien à usage unique « Panic Button » — un clic coupe définitivement l'accès avant que quiconque puisse télécharger quoi que ce soit. Connaître seul le mot de passe ne sert à rien sans le fichier physique de la base de données. Pour une protection maximale, il est en outre recommandé d'utiliser une clé de sécurité physique (par ex. YubiKey/FIDO2) comme second facteur de la base de mots de passe elle-même.
+> **Protection contre la collusion des tiers de confiance de votre vivant.** L'algorithme de Shamir permet mathématiquement aux personnes désignées de reconstituer le mot de passe principal si elles s'entendent pour le faire. C'est une propriété inévitable de tout schéma de partage de secret à seuil, pas seulement de celui-ci. Le système réagit à cela sur trois niveaux : (1) dans le navigateur, il **vérifie la cohérence** des parts combinées (cohérence mathématique entre sous-ensembles + analyse du format du résultat), cela filtre les fautes de frappe et le bruit aléatoire, mais ne **confirme pas** à lui seul que le secret combiné est le vrai mot de passe (une personne connectée pourrait coller des parts totalement cohérentes, mais inventées, avec un « mot de passe » complètement différent) ; (2) si vous définissez le `SECRET_HASH` optionnel, mais fortement recommandé, dans la configuration (un hash bcrypt du vrai mot de passe, calculé automatiquement par le tableau de bord), le serveur **vérifie réellement** le secret combiné via `password_verify()` avant d'armer quoi que ce soit ; (3) ce n'est qu'après cette vérification qu'il **bloque les téléchargements de fichiers pendant 48 heures**, en vous envoyant un e-mail avec un lien à usage unique « Panic Button » : un clic coupe définitivement l'accès avant que quiconque puisse télécharger quoi que ce soit. Connaître seul le mot de passe ne sert à rien sans le fichier physique de la base de données. Pour une protection maximale, il est en outre recommandé d'utiliser une clé de sécurité physique (par ex. YubiKey/FIDO2) comme second facteur de la base de mots de passe elle-même.
 
 ---
 
@@ -298,48 +298,49 @@ Le système combine **neuf couches de protection indépendantes** — la comprom
 ### Prérequis
 
 - PHP 8.0+
-- Un serveur web (Apache / Nginx)
-- Un compte [SMSPlanet](https://smsplanet.pl) (pour l'envoi des codes 2FA)
+- Un serveur web (Apache / Nginx) prenant en charge `.htaccess` ou un équivalent pour protéger `/private/`
+- HTTPS (TLS 1.2+) : obligatoire, car des identifiants et des codes SMS sont transmis
+- Un compte [SMSPlanet](https://smsplanet.pl) (pour l'envoi des codes 2FA) avec crédit SMS, jeton d'API et nom d'expéditeur approuvé (en attendant l'approbation, il est possible de définir `SMS_SENDER` sur `TEST`)
 - Un accès à un répertoire en dehors de `public_html`
 
 ---
 
-### Étape 1 — Configuration (hors ligne)
+### Étape 1 : Configuration (hors ligne)
 
 Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois onglets :
 
-**Configuration** — génère le fichier `secret-key.php` :
-1. Le jeton API SMSPlanet, le nom de l'expéditeur SMS et le domaine pour le remplissage automatique du code (Android/iOS) — le domaine seul, sans `@` ni `https://`
-2. Le seuil (K) de codes requis dans le panneau de récupération — doit correspondre au seuil défini dans l'onglet Chiffrement — et, optionnellement mais recommandé, le vrai mot de passe principal (le même que dans l'onglet Chiffrement), à partir duquel le tableau de bord calcule un hash pour la vérification côté serveur (voir [Protection contre la collusion](#sécurité))
+**Configuration** : génère le fichier `secret-key.php` :
+1. Le jeton API SMSPlanet, le nom de l'expéditeur SMS et le domaine pour le remplissage automatique du code (Android/iOS) : le domaine seul, sans `@` ni `https://`
+2. Le seuil (K) de codes requis dans le panneau de récupération (doit correspondre au seuil défini dans l'onglet Chiffrement) et, optionnellement mais recommandé, le vrai mot de passe principal (le même que dans l'onglet Chiffrement), à partir duquel le tableau de bord calcule un hash pour la vérification côté serveur (voir [Protection contre la collusion](#sécurité))
 3. Pour chaque personne désignée : identifiant, mot de passe, prénom, nom, numéro de téléphone et si elle doit être visible sur la liste des détenteurs dans le panneau
-4. Fichiers téléchargeables (base de mots de passe, base 2FA, installateur du programme) — clé, libellé du bouton, nom de fichier
+4. Fichiers téléchargeables (base de mots de passe, base 2FA, installateur du programme) : clé, libellé du bouton, nom de fichier
 5. Les étapes d'instructions pour le panneau (mise en forme : `**gras**` / `*italique*`)
-6. Optionnel : une notification e-mail à chaque connexion (adresse du destinataire, expéditeur, `panel_url` — l'adresse du domaine du panneau avec sous-domaine, p. ex. `https://mon-domaine.fr` ; depuis la v3.1.4 elle compte pour la sécurité, saisissez donc exactement votre domaine)
+6. Optionnel : une notification e-mail à chaque connexion (adresse du destinataire, expéditeur, `panel_url`, l'adresse du domaine du panneau avec sous-domaine, p. ex. `https://mon-domaine.fr` ; depuis la v3.1.4 elle compte pour la sécurité, saisissez donc exactement votre domaine)
 7. Cliquez sur « Générer la configuration » et téléchargez le fichier `secret-key.php` généré
 
-**Chiffrement** — divise le mot de passe principal en fragments Shamir :
+**Chiffrement** : divise le mot de passe principal en fragments Shamir :
 1. Saisissez le mot de passe principal de la base de mots de passe
 2. Définissez le nombre total de fragments et le minimum requis
 3. Cliquez sur « Générer les fragments »
 4. Téléchargez le fichier `secret-key-shares.txt`
 
-**Générateur de cartes** — crée des cartes Secret Key personnalisées, prêtes à imprimer (format ISO ID-1, 85,6×54mm) :
+**Générateur de cartes** : crée des cartes Secret Key personnalisées, prêtes à imprimer (format ISO ID-1, 85,6×54mm) :
 1. Paramètres globaux : l'URL de l'instance et le nom complet du propriétaire
-2. Paramètres de partage (nombre total de fragments et minimum requis) — cohérents avec les onglets Configuration et Chiffrement
+2. Paramètres de partage (nombre total de fragments et minimum requis), cohérents avec les onglets Configuration et Chiffrement
 3. Un message modifiable au dos de la carte, avec des jetons pour insérer automatiquement le nombre de fragments, le seuil et l'URL de l'instance
-4. Pour chaque personne : identifiant, mot de passe et fragment Shamir (hex) — données des deux onglets précédents
+4. Pour chaque personne : identifiant, mot de passe et fragment Shamir (hex) : données des deux onglets précédents
 5. Optionnel : fond perdu de 2 mm et traits de coupe pour une impression en imprimerie
-6. Cliquez sur « Générer les cartes » — aperçu du recto et du verso de chaque carte, prête à télécharger au format PDF
+6. Cliquez sur « Générer les cartes » : aperçu du recto et du verso de chaque carte, prête à télécharger au format PDF
 
 > [!WARNING]
 > Si vous n'utilisez pas la vérification côté serveur, supprimez toute la ligne `define('SECRET_HASH', …)` de la configuration. En v3.1.0, une valeur vide (`define('SECRET_HASH', '');`) faisait rejeter tous les mots de passe par le panneau, même le bon. Depuis la v3.1.1, une valeur vide est traitée comme si la constante n'était pas définie, mais la configuration est plus propre sans cette ligne. Le générateur du dashboard l'omet lorsque le champ « Vrai mot de passe principal » est vide.
 
 > [!TIP]
-> Les trois outils fonctionnent **hors ligne** — les données des formulaires ne quittent pas le navigateur (les polices sont stockées localement dans `dashboard/fonts/`). Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution — il ne charge ni ne modifie un fichier existant.
+> Les trois outils fonctionnent **hors ligne** : les données des formulaires ne quittent pas le navigateur (les polices sont stockées localement dans `dashboard/fonts/`). Le formulaire de configuration génère `secret-key.php` à partir de zéro à chaque exécution, il ne charge ni ne modifie un fichier existant.
 
 ---
 
-### Étape 2 — Téléversement sur le serveur
+### Étape 2 : Téléversement sur le serveur
 
 ```bash
 /home/user/
@@ -356,11 +357,11 @@ Ouvrez `dashboard.html` localement dans votre navigateur. Il comporte trois ongl
 > Depuis la v3.2.0, les polices sont hébergées localement. Téléversez **tout le dossier `fonts/`** (avec le sous-dossier `files/`) à côté de `login.php`. Sans lui, le panneau fonctionne toujours, mais affiche des polices système de secours.
 
 > [!WARNING]
-> `lang.php` doit être téléversé sur le serveur **en même temps que** `secret-key.php`. `auth.php` le charge via `require_once` — un fichier manquant fait planter tout le système (erreur fatale sur chaque page), pas seulement les traductions.
+> `lang.php` doit être téléversé sur le serveur **en même temps que** `secret-key.php`. `auth.php` le charge via `require_once` : un fichier manquant fait planter tout le système (erreur fatale sur chaque page), pas seulement les traductions.
 
 ---
 
-### Étape 3 — Chemin vers la configuration
+### Étape 3 : Chemin vers la configuration
 
 Dans `auth.php` (dossier `app/`), le chemin vers le dossier `/private/` est défini à **un seul endroit** : la constante `PRIVATE_DIR` au début du fichier. Tous les autres chemins utilisent cette constante, vous ne modifiez donc que cette ligne :
 
@@ -379,22 +380,22 @@ Par défaut, on y trouve le fragment `/../../../private`. Le chemin est calculé
 
 ---
 
-### Étape 4 — Domaine dans le contenu du SMS (WebOTP)
+### Étape 4 : Domaine dans le contenu du SMS (WebOTP)
 
-Le contenu du code SMS envoyé se termine par la ligne `@domaine #code` — c'est le format requis par la [WebOTP API](https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API), grâce à laquelle le navigateur du téléphone remplit lui-même le champ du code, sans recopie manuelle depuis le SMS.
+Le contenu du code SMS envoyé se termine par la ligne `@domaine #code` : c'est le format requis par la [WebOTP API](https://developer.mozilla.org/en-US/docs/Web/API/WebOTP_API), grâce à laquelle le navigateur du téléphone remplit lui-même le champ du code, sans recopie manuelle depuis le SMS.
 
-Vous définissez le domaine à l'**étape 1**, dans le formulaire du dashboard (champ « Domaine pour l'autofill SMS ») — vous saisissez uniquement le domaine, sans `@` ni `https://` (le dashboard ajoute le `@` automatiquement). Il est intégré à la configuration ainsi :
+Vous définissez le domaine à l'**étape 1**, dans le formulaire du dashboard (champ « Domaine pour l'autofill SMS ») : vous saisissez uniquement le domaine, sans `@` ni `https://` (le dashboard ajoute le `@` automatiquement). Il est intégré à la configuration ainsi :
 
 ```php
 define('SMS_AUTOFILL_DOMAIN', '@votre-domaine.fr');
 ```
 
 > [!WARNING]
-> Le domaine doit **correspondre exactement** à celui sous lequel vous hébergez le système — sinon WebOTP ignorera le SMS et l'autofill ne fonctionnera pas. Le code arrivera et fonctionnera quand même en saisie manuelle, simplement sans ce confort.
+> Le domaine doit **correspondre exactement** à celui sous lequel vous hébergez le système, sinon WebOTP ignorera le SMS et l'autofill ne fonctionnera pas. Le code arrivera et fonctionnera quand même en saisie manuelle, simplement sans ce confort.
 
 ---
 
-### Étape 5 — Distribution des cartes
+### Étape 5 : Distribution des cartes
 
 Pour chaque personne désignée, préparez un support avec :
 - un identifiant et un mot de passe (depuis l'onglet Configuration)
@@ -409,8 +410,8 @@ Pour chaque personne désignée, préparez un support avec :
 ```
 secret-key/
 │
-├── 📁 app/                        # Public — système de connexion
-│   ├── 📁 decrypt/                # Protégé — panneau utilisateur
+├── 📁 app/                        # Public : système de connexion
+│   ├── 📁 decrypt/                # Protégé : panneau utilisateur
 │   │   ├── .htaccess
 │   │   ├── arm-timelock.php
 │   │   ├── card-secret-key.webp
@@ -452,7 +453,7 @@ secret-key/
 │
 ├── 📁 img/                        # Ressources graphiques
 │
-└── 📁 private/                    # En dehors de public_html — fichiers de configuration
+└── 📁 private/                    # En dehors de public_html : fichiers de configuration
     ├── .htaccess
     ├── demo-baza-hasel.txt         # Exemple de fichier téléchargeable (à remplacer par le vôtre)
     ├── lang.php                    # Textes d'interface (une langue)
@@ -467,21 +468,21 @@ secret-key/
 <details>
 <summary><strong>Que se passe-t-il si je perds ma carte Secret Key ?</strong></summary>
 
-La carte seule est inutile sans accès au téléphone associé à ce compte — la connexion nécessite une vérification par SMS. Le risque est limité, mais le propriétaire devrait être informé et envisager de générer une nouvelle configuration avec un nouveau jeu de fragments.
+La carte seule est inutile sans accès au téléphone associé à ce compte : la connexion nécessite une vérification par SMS. Le risque est limité, mais le propriétaire devrait être informé et envisager de générer une nouvelle configuration avec un nouveau jeu de fragments.
 
 </details>
 
 <details>
 <summary><strong>Puis-je lire le mot de passe seul avec une seule carte ?</strong></summary>
 
-Non. C'est mathématiquement impossible. Un seul fragment ne révèle aucune information sur le secret — c'est une propriété de l'algorithme appelée information-theoretic security. Seul le rassemblement du nombre requis de fragments permet de reconstituer le mot de passe principal.
+Non. C'est mathématiquement impossible. Un seul fragment ne révèle aucune information sur le secret. C'est une propriété de l'algorithme appelée information-theoretic security. Seul le rassemblement du nombre requis de fragments permet de reconstituer le mot de passe principal.
 
 </details>
 
 <details>
 <summary><strong>Que se passe-t-il si l'une des personnes désignées décède ou devient indisponible ?</strong></summary>
 
-Le système est conçu avec de la redondance — il suffit de réunir le nombre minimum requis de fragments (par ex. 3 sur 5). L'indisponibilité d'une ou deux personnes ne bloque pas la procédure d'urgence, tant que les autres peuvent se rassembler.
+Le système est conçu avec de la redondance : il suffit de réunir le nombre minimum requis de fragments (par ex. 3 sur 5). L'indisponibilité d'une ou deux personnes ne bloque pas la procédure d'urgence, tant que les autres peuvent se rassembler.
 
 </details>
 
@@ -495,28 +496,28 @@ La reconstitution se fait dans le navigateur. Si vous avez défini `SECRET_HASH`
 <details>
 <summary><strong>Que se passe-t-il si les tiers de confiance s'entendent pour récupérer le mot de passe de mon vivant, à mon insu ?</strong></summary>
 
-Le mot de passe seul ne leur suffit pas. Les fichiers de la base de données se trouvent en dehors du répertoire public du serveur, et l'accès y est contrôlé par `download.php`. Dès la première reconstitution réussie du mot de passe dans le panneau — optionnellement, mais fortement recommandé, également vérifiée côté serveur via `SECRET_HASH`, afin que la simple cohérence des parts combinées (sans connaître le vrai mot de passe) ne suffise pas à forcer le blocage — le système bloque automatiquement les téléchargements de fichiers pendant 48 heures et vous envoie un e-mail d'alerte avec un lien à usage unique « Panic Button » — un clic coupe définitivement l'accès, vous laissant le temps de changer le mot de passe principal en toute tranquillité. Si vous protégez en plus la base de mots de passe par une clé de sécurité physique (par ex. YubiKey), la seule connaissance du mot de passe ne suffira pas à l'ouvrir, même une fois les fichiers débloqués.
+Le mot de passe seul ne leur suffit pas. Les fichiers de la base de données se trouvent en dehors du répertoire public du serveur, et l'accès y est contrôlé par `download.php`. Dès la première reconstitution réussie du mot de passe dans le panneau (optionnellement, mais fortement recommandé, également vérifiée côté serveur via `SECRET_HASH`, afin que la simple cohérence des parts combinées (sans connaître le vrai mot de passe) ne suffise pas à forcer le blocage), le système bloque automatiquement les téléchargements de fichiers pendant 48 heures et vous envoie un e-mail d'alerte avec un lien à usage unique « Panic Button » : un clic coupe définitivement l'accès, vous laissant le temps de changer le mot de passe principal en toute tranquillité. Si vous protégez en plus la base de mots de passe par une clé de sécurité physique (par ex. YubiKey), la seule connaissance du mot de passe ne suffira pas à l'ouvrir, même une fois les fichiers débloqués.
 
 </details>
 
 <details>
 <summary><strong>Puis-je utiliser le système avec un gestionnaire de mots de passe autre que KeePassXC ?</strong></summary>
 
-Oui. Secret Key stocke et reconstitue **n'importe quel mot de passe principal** — quel que soit le gestionnaire utilisé. Compatible avec tout programme prenant en charge un mot de passe principal : KeePassXC, Bitwarden, 1Password et d'autres.
+Oui. Secret Key stocke et reconstitue **n'importe quel mot de passe principal**, quel que soit le gestionnaire utilisé. Compatible avec tout programme prenant en charge un mot de passe principal : KeePassXC, Bitwarden, 1Password et d'autres.
 
 </details>
 
 <details>
-<summary><strong>Comment choisir le seuil — combien de fragments sont requis ?</strong></summary>
+<summary><strong>Comment choisir le seuil : combien de fragments sont requis ?</strong></summary>
 
-Plus le seuil est élevé, plus la sécurité est grande — mais aussi plus il est difficile de rassembler tout le monde en situation de crise. Le compromis recommandé pour un usage standard est **3 sur 5** — il tolère l'indisponibilité de deux personnes tout en conservant un bon niveau de protection.
+Plus le seuil est élevé, plus la sécurité est grande, mais aussi plus il est difficile de rassembler tout le monde en situation de crise. Le compromis recommandé pour un usage standard est **3 sur 5** : il tolère l'indisponibilité de deux personnes tout en conservant un bon niveau de protection.
 
 </details>
 
 <details>
 <summary><strong>Combien de temps les identifiants de connexion d'une carte restent-ils valables ?</strong></summary>
 
-Indéfiniment — tant que le propriétaire ne génère pas une nouvelle configuration et ne remplace pas le fichier `secret-key.php` sur le serveur. Après cette opération, les anciennes cartes cessent de fonctionner et il faut en distribuer de nouvelles à toutes les personnes désignées.
+Indéfiniment, tant que le propriétaire ne génère pas une nouvelle configuration et ne remplace pas le fichier `secret-key.php` sur le serveur. Après cette opération, les anciennes cartes cessent de fonctionner et il faut en distribuer de nouvelles à toutes les personnes désignées.
 
 </details>
 
@@ -545,7 +546,7 @@ Pour beaucoup, une clé USB avec un papier suffit et c'est plus simple. Secret K
 
 <div align="center">
 
-Si ce projet vous a été utile, laissez une ⭐ — cela aide d'autres personnes qui pourraient en avoir besoin à le trouver.
+Si ce projet vous a été utile, laissez une ⭐. Cela aide d'autres personnes qui pourraient en avoir besoin à le trouver.
 
 </div>
 
