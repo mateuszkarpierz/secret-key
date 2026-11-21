@@ -83,7 +83,7 @@ Secret Key rozwiązuje ten problem, tworząc bezpieczny plan awaryjny z dwoma gw
 | 🔐 | Nieautoryzowany dostęp **za życia** właściciela | Każda próba dostępu wymaga hasła + kodu SMS |
 | 💀 | Bliscy bez dostępu do Twojej bazy haseł **po śmierci** | Wyznaczone osoby odtwarzają hasło główne algorytmem Shamira i pobierają plik bazy |
 
-System jest **w pełni self-hosted** — hasła, udziały i pliki nie opuszczają Twojego serwera. Żadnej centralnej bazy danych ani chmury; poza własnym serwerem korzysta tylko z wysyłki SMS i z czcionek Google Fonts.
+System jest **w pełni self-hosted** — hasła, udziały i pliki nie opuszczają Twojego serwera. Żadnej centralnej bazy danych ani chmury; poza własnym serwerem korzysta tylko z wysyłki SMS (SMSPlanet). Czcionki są hostowane lokalnie (od v3.2.0), więc przeglądarka nie łączy się z Google.
 
 <a name="stack"></a>
 
@@ -91,7 +91,7 @@ System jest **w pełni self-hosted** — hasła, udziały i pliki nie opuszczaj�
 Backend       PHP 8+, pliki flat (JSON + PHP config), zero SQL
 Autoryzacja   bcrypt cost=10, 2FA SMS via SMSPlanet API
 Kryptografia  Shamir Secret Sharing (secrets.js)
-Frontend      Czysty HTML + JS, zero zależności JS (offline); czcionki z Google Fonts
+Frontend      Czysty HTML + JS, zero zależności JS (offline); czcionki hostowane lokalnie
 ```
 
 ---
@@ -250,6 +250,11 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 - `panic.php` — obsługa jednorazowego linku „Panic Button" z maila
 - `tl-status.php` — odpytywanie stanu blokady na żywo (bez potrzeby odświeżania panelu)
 
+**Czcionki** (`/app/fonts/`, od v3.2.0)
+- `fonts.css`: deklaracje `@font-face` (Bungee, Space Mono, Syne, Barlow Condensed, Montserrat; pliki woff2 w `files/`)
+- `FONTS-LICENSES.txt`: licencje czcionek (SIL OFL 1.1)
+- `.htaccess`: długi cache dla plików woff2 i typ MIME `font/woff2`
+
 **Warstwa danych** (`/private/` — poza `public_html`)
 - `secret-key.php` — jeden plik configu: osoby (`$people`), pliki do pobrania (`$downloads`), instrukcja (`$instructions`), powiadomienie email (`$email_notify`), domena SMS
 - `lang.php` — teksty interfejsu (jeden język, bez przełącznika — patrz [Instalacja](#instalacja))
@@ -329,7 +334,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 > Jeśli nie korzystasz z weryfikacji po stronie serwera, usuń całą linię `define('SECRET_HASH', …)` z configu. W v3.1.0 pusta wartość (`define('SECRET_HASH', '');`) powodowała, że panel odrzucał każde hasło, nawet poprawne. Od v3.1.1 pusta wartość jest traktowana jak brak stałej, ale czytelniej jest usunąć linię. Generator w dashboardzie pomija ją, gdy pole „Prawdziwe hasło główne” jest puste.
 
 > [!TIP]
-> Wszystkie trzy narzędzia działają **offline** — dane z formularzy nie opuszczają przeglądarki (strony pobierają tylko czcionki z Google Fonts). Formularz konfiguracji generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
+> Wszystkie trzy narzędzia działają **offline** — dane z formularzy nie opuszczają przeglądarki (czcionki leżą lokalnie w `dashboard/fonts/`). Formularz konfiguracji generuje `secret-key.php` od zera przy każdym uruchomieniu — nie wczytuje ani nie edytuje istniejącego pliku.
 
 ---
 
@@ -338,7 +343,7 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
 ```bash
 /home/user/
 ├── public_html/
-│   ├── app/           ← zawartość folderu /app/
+│   ├── app/           ← zawartość folderu /app/ (razem z folderem fonts/)
 │   └── decrypt/       ← zawartość folderu /decrypt/
 └── private/           ← POZA public_html
     ├── secret-key.php  ← wygenerowany plik konfiguracyjny
@@ -346,6 +351,9 @@ Otwórz `dashboard.html` lokalnie w przeglądarce. Zawiera trzy zakładki:
     ├── rate-limit.php  ← plik systemowy z repozytorium (rate-limiting)
     └── moja-baza-hasel.kdbx  ← Twoje pliki (serwowane przez download.php)
 ```
+
+> [!NOTE]
+> Od v3.2.0 czcionki są hostowane lokalnie. Wgraj na serwer **cały folder `fonts/`** (razem z podfolderem `files/`) obok `login.php`. Bez niego panel nadal działa, ale pokazuje zapasowe czcionki systemowe.
 
 > [!WARNING]
 > `lang.php` musi trafić na serwer **razem** z `secret-key.php`. `auth.php` ładuje go przez `require_once` — brak pliku wysypuje cały system (fatal error na każdej stronie), nie tylko tłumaczenia.
@@ -415,6 +423,11 @@ secret-key/
 │   │   ├── panic.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
+│   ├── 📁 fonts/                  # Czcionki hostowane lokalnie (od v3.2.0)
+│   │   ├── 📁 files/              # Pliki .woff2
+│   │   ├── .htaccess
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── .htaccess
 │   ├── auth.php
 │   ├── favicon.ico
@@ -429,6 +442,10 @@ secret-key/
 │   ├── card-front.js
 │   ├── dashboard.html
 │   ├── favicon.ico
+│   ├── 📁 fonts/                  # Czcionki dla dashboardu offline (od v3.2.0)
+│   │   ├── 📁 files/              # Pliki .woff2
+│   │   ├── FONTS-LICENSES.txt
+│   │   └── fonts.css
 │   ├── generate-card.html
 │   ├── generate-hash.html
 │   └── generate-shamir.html
