@@ -125,8 +125,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title><?= htmlspecialchars(t('panel_header_title')) ?></title>
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../fonts/fonts.css">
     <style>
         :root {
             --bg: #0a0c10;
@@ -1239,7 +1238,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.1.8</div>
+        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.2.0</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
