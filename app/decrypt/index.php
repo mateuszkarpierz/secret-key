@@ -30,12 +30,16 @@ if (empty($_SESSION['login_time'])) {
 // ─── Lista posiadaczy do panelu — budowana z $people, filtrowana przez show_in_panel ───
 // (konta bez show_in_panel, np. administracyjne, logują się normalnie, ale nie trafiają na listę)
 $visiblePeople = array_values(array_filter($people, fn($p) => $p['show_in_panel'] ?? true));
+// Komunikat błędu odsłonięcia: gdy własny lang.php jest starszy i nie ma tego klucza (aktualizacja
+// samych plików aplikacji), t() zwróciłoby nazwę klucza, więc podstawiamy tekst domyślny.
+$personRevealError = t('panel_person_reveal_error');
+if ($personRevealError === 'panel_person_reveal_error') {
+    $personRevealError = 'Nie udało się pobrać danych. Spróbuj ponownie.';
+}
+// Do strony trafiają tylko numery wierszy. Imię i telefon pobiera reveal.php dopiero po kliknięciu
+// „odszyfruj” (od v3.2.1), więc nie ma ich w źródle strony.
 $personsForJs  = array_map(function ($p, $i) {
-    return [
-        'label' => ($i + 1) . '.',
-        'name'  => trim($p['first_name'] . ' ' . $p['last_name']),
-        'tel'   => formatPhoneDisplay($p['phone']),
-    ];
+    return ['label' => ($i + 1) . '.'];
 }, $visiblePeople, array_keys($visiblePeople));
 
 // ─── Pliki do pobrania — z $downloads. Wpis z kluczem 'name' oznacza program
@@ -1238,7 +1242,7 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
     </main>
 
     <footer class="footer">
-        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.2.0</div>
+        <div class="footer-version"><?= htmlspecialchars(t('footer_system_version')) ?> v3.2.1</div>
         <div class="session-info">
             <span class="si-item">
                 <span class="si-label"><?= htmlspecialchars(t('session_info_ip')) ?></span>
@@ -1560,9 +1564,10 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         secretRejected:     '<?= addslashes(t('panel_secret_rejected')) ?>',
         secretRateLimited:  '<?= addslashes(t('panel_secret_rate_limited')) ?>',
         secretNetworkError: '<?= addslashes(t('panel_secret_network_error')) ?>',
-        decryptFailed:      '<?= addslashes(t('panel_decrypt_failed')) ?>'
+        decryptFailed:      '<?= addslashes(t('panel_decrypt_failed')) ?>',
+        personRevealError:  '<?= addslashes($personRevealError) ?>'
     };
-    // ─── Dane posiadaczy — z $people w secret-key.php (filtrowane przez show_in_panel) ───
+    // ─── Lista posiadaczy: tu są tylko numery wierszy. Dane osoby pobiera reveal.php po kliknięciu (filtr show_in_panel po stronie serwera) ───
     var persons = <?= json_encode($personsForJs, JSON_UNESCAPED_UNICODE) ?>;
 
     // ─── Build person list with decrypt animation ───
@@ -1626,40 +1631,57 @@ $session_login_dt = date('d.m.Y H:i:s', $session_login_ts);
         row.appendChild(topLine);
         list.appendChild(row);
 
-        btn.addEventListener('click', (function(rowEl, infoEl, btnEl, personData) {
+        btn.addEventListener('click', (function(rowEl, infoEl, btnEl, rowIndex) {
             return function() {
                 btnEl.disabled = true;
                 btnEl.textContent = '···';
-                infoEl.classList.remove('person-locked');
 
-                // Build revealed structure: dwie kolumny (imię | telefon),
-                // container query w CSS przełamuje je na wąskich ekranach
-                var revealedWrap = document.createElement('div');
-                revealedWrap.className = 'person-revealed';
-                revealedWrap.innerHTML =
-                    '<div class="field-b2">' +
-                        '<span class="field-label">' + I18N_JS.personNameLabel + '</span>' +
-                        '<span class="person-name"></span>' +
-                    '</div>' +
-                    '<div class="field-b2 tel-col">' +
-                        '<span class="field-label">' + I18N_JS.personPhoneLabel + '</span>' +
-                        '<span class="person-tel"></span>' +
-                    '</div>';
-                rowEl.appendChild(revealedWrap);
+                // Dane osoby (imię, telefon) przychodzą z serwera dopiero teraz
+                fetch('reveal.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ i: rowIndex, csrf_token: CSRF_TOKEN })
+                }).then(function(res) {
+                    return res.json().then(function(j) { j.status = res.status; return j; });
+                }).then(function(personData) {
+                    if (!personData || !personData.ok) { throw new Error('reveal'); }
 
-                var nameEl = revealedWrap.querySelector('.person-name');
-                var telEl  = revealedWrap.querySelector('.person-tel');
+                    infoEl.classList.remove('person-locked');
 
-                // Animate name first, then tel
-                scrambleAnimate(nameEl, personData.name, 500, function() {
-                    scrambleAnimate(telEl, personData.tel, 400, null);
+                    // Build revealed structure: dwie kolumny (imię | telefon),
+                    // container query w CSS przełamuje je na wąskich ekranach
+                    var revealedWrap = document.createElement('div');
+                    revealedWrap.className = 'person-revealed';
+                    revealedWrap.innerHTML =
+                        '<div class="field-b2">' +
+                            '<span class="field-label">' + I18N_JS.personNameLabel + '</span>' +
+                            '<span class="person-name"></span>' +
+                        '</div>' +
+                        '<div class="field-b2 tel-col">' +
+                            '<span class="field-label">' + I18N_JS.personPhoneLabel + '</span>' +
+                            '<span class="person-tel"></span>' +
+                        '</div>';
+                    rowEl.appendChild(revealedWrap);
+
+                    var nameEl = revealedWrap.querySelector('.person-name');
+                    var telEl  = revealedWrap.querySelector('.person-tel');
+
+                    // Animate name first, then tel
+                    scrambleAnimate(nameEl, personData.name, 500, function() {
+                        scrambleAnimate(telEl, personData.tel, 400, null);
+                    });
+
+                    // Update original info to hide it cleanly
+                    infoEl.style.display = 'none';
+                    setTimeout(function() { btnEl.textContent = '✓'; }, 950);
+                }).catch(function() {
+                    // Błąd sieci, sesji lub limitu: przycisk wraca, wiersz zostaje zablokowany
+                    btnEl.disabled = false;
+                    btnEl.textContent = I18N_JS.personRevealBtn;
+                    infoEl.textContent = I18N_JS.personRevealError;
                 });
-
-                // Update original info to hide it cleanly
-                infoEl.style.display = 'none';
-                setTimeout(function() { btnEl.textContent = '✓'; }, 950);
             };
-        })(row, info, btn, p));
+        })(row, info, btn, persons.indexOf(p)));
     });
 
     // ─── Modal ───

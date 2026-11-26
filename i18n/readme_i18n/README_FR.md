@@ -248,6 +248,7 @@ Navigateur   →  reçoit les fragments Shamir, reconstitue le secret localement
 - `timelock.php` : logique du timelock après collusion des tiers de confiance (voir [Sécurité](#sécurité))
 - `arm-timelock.php` : active le blocage de 48h après une reconstitution de mot de passe confirmée, envoie l'e-mail d'alerte
 - `panic.php` : traite le lien à usage unique « Panic Button » de l'e-mail
+- `reveal.php`: renvoie les données d'un titulaire seulement après le clic sur « déchiffrer » (depuis v3.2.1 ; session, jeton CSRF, limite de requêtes, entrée de journal)
 - `tl-status.php` : interrogation en direct de l'état du blocage (pas besoin de recharger le panneau)
 
 **Polices** (`/app/fonts/`, depuis la v3.2.0)
@@ -422,6 +423,7 @@ secret-key/
 │   │   ├── key.svg
 │   │   ├── log.php
 │   │   ├── panic.php
+│   │   ├── reveal.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
 │   ├── 📁 fonts/                  # Polices hébergées localement (depuis la v3.2.0)

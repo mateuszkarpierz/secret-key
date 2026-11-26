@@ -248,6 +248,7 @@ Browser      →  nimmt die Shamir-Anteile entgegen, rekonstruiert das Geheimnis
 - `timelock.php`: Timelock-Logik nach Vertrauenspersonen-Absprache (siehe [Sicherheit](#sicherheit))
 - `arm-timelock.php`: aktiviert die 48h-Sperre nach bestätigter Passwort-Rekonstruktion, versendet die Alarm-E-Mail
 - `panic.php`: verarbeitet den einmaligen "Panic Button"-Link aus der E-Mail
+- `reveal.php`: liefert die Daten einer Person aus der Halterliste erst nach dem Klick auf „entschlüsseln“ (seit v3.2.1; Sitzung, CSRF-Token, Anfragelimit, Logeintrag)
 - `tl-status.php`: Live-Abfrage des Sperrzustands (kein Neuladen des Panels nötig)
 
 **Schriftarten** (`/app/fonts/`, seit v3.2.0)
@@ -422,6 +423,7 @@ secret-key/
 │   │   ├── key.svg
 │   │   ├── log.php
 │   │   ├── panic.php
+│   │   ├── reveal.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
 │   ├── 📁 fonts/                  # Lokal gehostete Schriftarten (seit v3.2.0)

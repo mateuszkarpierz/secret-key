@@ -248,6 +248,7 @@ Browser      →  accepts the Shamir shares, reconstructs the secret locally in 
 - `timelock.php`: timelock logic after trustee collusion (see [Security](#security))
 - `arm-timelock.php`: arms the 48h lock after a confirmed password reconstruction, sends the alert email
 - `panic.php`: handles the one-time "Panic Button" link from the email
+- `reveal.php`: returns the details of one holder only after "decrypt" is clicked (since v3.2.1; session, CSRF token, request limit, log entry)
 - `tl-status.php`: live polling of the lock state (no need to refresh the panel)
 
 **Fonts** (`/app/fonts/`, since v3.2.0)
@@ -422,6 +423,7 @@ secret-key/
 │   │   ├── key.svg
 │   │   ├── log.php
 │   │   ├── panic.php
+│   │   ├── reveal.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
 │   ├── 📁 fonts/                  # Locally hosted fonts (since v3.2.0)

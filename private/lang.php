@@ -111,18 +111,20 @@ $lang = [
     'panel_welcome_fallback_name' => 'Gość',
     'panel_logout_btn'            => 'Wyloguj',
 
-    // ── DECRYPT/INDEX.PHP — instrukcja i lista posiadaczy ──
+    // ── DECRYPT/INDEX.PHP — karta 1: instrukcja dostępu ──
     'panel_instructions_title'    => 'Instrukcja dostępu do bazy haseł',
+    'panel_empty_instructions'    => 'Brak skonfigurowanych kroków instrukcji — uzupełnij $instructions w private/secret-key.php.',
+
+    // ── DECRYPT/INDEX.PHP — karta 2: lista posiadaczy (przycisk „odszyfruj”) ──
     'panel_persons_title'         => 'Lista posiadaczy Secret key',
+    'person_locked'               => 'zaszyfrowane',
     'panel_person_reveal_btn'     => 'odszyfruj',
+    'panel_person_reveal_error'   => 'Nie udało się pobrać danych. Spróbuj ponownie.',
     'panel_person_name_label'     => 'Imię i nazwisko',
     'panel_person_phone_label'    => 'Telefon',
-    'panel_empty_instructions'    => 'Brak skonfigurowanych kroków instrukcji — uzupełnij $instructions w private/secret-key.php.',
     'panel_empty_persons'         => 'Brak widocznych posiadaczy — sprawdź show_in_panel w $people (private/secret-key.php).',
-    'panel_empty_downloads'       => 'Sekcja niekompletna — wymagany jest tytuł ($download_heading) oraz przynajmniej jeden wpis w $downloads (private/secret-key.php).',
-    'panel_downloads_no_title'    => '(brak tytułu sekcji)',
 
-    // ── DECRYPT/INDEX.PHP — panel odszyfrowywania ──
+    // ── DECRYPT/INDEX.PHP — karta 3: odszyfrowywanie (Secret key → hasło) ──
     'panel_decrypt_title'         => 'Odszyfrowywanie',
     'panel_decrypt_label'         => 'Wprowadź Secret key',
     'panel_decrypt_hint_link'     => 'Co to jest Secret key?',
@@ -139,18 +141,27 @@ $lang = [
     'panel_secret_verifying'      => 'Weryfikuję hasło…',
     'panel_secret_network_error'  => 'Nie udało się połączyć z serwerem, aby zweryfikować hasło. Sprawdź połączenie i spróbuj ponownie.',
     'panel_decrypt_failed'        => 'Nie można odszyfrować hasła. Sprawdź, czy klucze są wpisane poprawnie (jeden klucz w linii, bez spacji).',
-    'panel_download_heading_default' => 'Pliki do pobrania',
-    'panel_download_intro_default'   => 'Pobierz pliki potrzebne do odzyskania dostępu.',
 
-    // ── DECRYPT/INDEX.PHP — modal "Co to jest Secret key?" ──
+    // ── DECRYPT/INDEX.PHP — modal „Co to jest Secret key?” (link w karcie 3) ──
     'modal_secret_key_title'      => 'Co to jest Secret key?',
     'modal_secret_key_note'       => 'Secret key to specjalny ciąg znaków kryptograficznych, który znajduje się na odwrocie karty w miejscu zaznaczonym czerwoną obramówką. Jest on również umieszczony w kodzie QR.',
 
-    // ── DECRYPT/INDEX.PHP — lista posiadaczy i stopka ──
-    'person_locked'               => 'zaszyfrowane',
+    // ── DECRYPT/INDEX.PHP — karta 4: pliki do pobrania ──
+    'panel_download_heading_default' => 'Pliki do pobrania',
+    'panel_download_intro_default'   => 'Pobierz pliki potrzebne do odzyskania dostępu.',
+    'panel_downloads_no_title'    => '(brak tytułu sekcji)',
+    'panel_empty_downloads'       => 'Sekcja niekompletna — wymagany jest tytuł ($download_heading) oraz przynajmniej jeden wpis w $downloads (private/secret-key.php).',
+
+    // ── DECRYPT/INDEX.PHP — stany blokady sekcji pobierania (Stan A/B/C) ──
+    'tl_state_a_tooltip'          => 'Wprowadź w panelu poprawne kody Secret Key, aby odblokować plik',
+    'tl_state_b_label'            => 'Do odblokowania plików pozostało',
+    'tl_state_b_note'             => 'Wysłano alert e-mail do właściciela systemu',
+    'tl_state_c_message'          => '❌ Dostęp do plików został permanentnie zablokowany przez właściciela systemu.',
+
+    // ── DECRYPT/INDEX.PHP — stopka: wersja systemu ──
     'footer_system_version'       => 'WERSJA SYSTEMU:',
 
-    // ── DECRYPT/INDEX.PHP — pasek informacji o sesji (stopka) ──
+    // ── DECRYPT/INDEX.PHP — stopka: pasek informacji o sesji ──
     'session_info_ip'             => 'IP',
     'session_info_browser'        => 'PRZEGLĄDARKA',
     'session_info_system'         => 'SYSTEM',
@@ -186,12 +197,6 @@ $lang = [
     'tl_panic_success_body'       => 'Pobieranie plików zostało trwale zablokowane. Aby przywrócić normalne działanie systemu, zmień hasło główne bazy, wygeneruj nowe części kodu Secret Key i wydaj nowe karty.',
     'tl_panic_invalid_title'      => 'Link nieprawidłowy lub nieaktualny',
     'tl_panic_invalid_body'       => 'Ten link do zablokowania dostępu jest nieprawidłowy, wygasł, lub dostęp został już wcześniej zablokowany.',
-
-    // ── DECRYPT/INDEX.PHP — stany blokady sekcji pobierania (Stan A/B/C) ──
-    'tl_state_a_tooltip'          => 'Wprowadź w panelu poprawne kody Secret Key, aby odblokować plik',
-    'tl_state_b_label'            => 'Do odblokowania plików pozostało',
-    'tl_state_b_note'             => 'Wysłano alert e-mail do właściciela systemu',
-    'tl_state_c_message'          => '❌ Dostęp do plików został permanentnie zablokowany przez właściciela systemu.',
 
     // ── DOWNLOAD.PHP — strona błędu przy próbie ominięcia panelu ──
     'tl_download_blocked_title'          => 'Pliki tymczasowo zablokowane',

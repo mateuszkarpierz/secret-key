@@ -248,6 +248,7 @@ PHP 系统     →  验证验证码，创建会话，可选择记住设备
 - `timelock.php`：委托人串通后的 timelock 逻辑（见[安全性](#安全性)）
 - `arm-timelock.php`：在确认密码重建成功后启动 48 小时锁定，发送警报邮件
 - `panic.php`：处理邮件中的一次性「Panic Button」链接
+- `reveal.php`: 仅在点击“解密”后返回一位持有人的数据（自 v3.2.1 起；会话、CSRF 令牌、请求限制、日志记录）
 - `tl-status.php`：实时轮询锁定状态（无需刷新面板）
 
 **字体**(`/app/fonts/`,自 v3.2.0 起)
@@ -422,6 +423,7 @@ secret-key/
 │   │   ├── key.svg
 │   │   ├── log.php
 │   │   ├── panic.php
+│   │   ├── reveal.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
 │   ├── 📁 fonts/                  # 本地托管的字体(自 v3.2.0 起)

@@ -248,6 +248,7 @@ Navegador     →  recebe os fragmentos Shamir, reconstrói o segredo localmente
 - `timelock.php`: lógica do timelock após conluio de fiduciários (veja [Segurança](#segurança))
 - `arm-timelock.php`: ativa o bloqueio de 48h após uma reconstrução de senha confirmada, envia o e-mail de alerta
 - `panic.php`: trata o link de uso único „Panic Button" do e-mail
+- `reveal.php`: retorna os dados de um titular somente após clicar em "descriptografar" (desde v3.2.1; sessão, token CSRF, limite de requisições, registro no log)
 - `tl-status.php`: consulta ao vivo do estado do bloqueio (sem precisar recarregar o painel)
 
 **Fontes** (`/app/fonts/`, desde a v3.2.0)
@@ -422,6 +423,7 @@ secret-key/
 │   │   ├── key.svg
 │   │   ├── log.php
 │   │   ├── panic.php
+│   │   ├── reveal.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
 │   ├── 📁 fonts/                  # Fontes hospedadas localmente (desde a v3.2.0)

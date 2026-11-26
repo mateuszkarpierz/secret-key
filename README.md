@@ -248,6 +248,7 @@ Przeglądarka →  przyjmuje udziały Shamira, odtwarza sekret lokalnie w JS
 - `timelock.php`: logika blokady czasowej po zmowie powierników (patrz [Bezpieczeństwo](#bezpieczeństwo))
 - `arm-timelock.php`: uzbraja 48h blokadę po potwierdzonej rekonstrukcji hasła, wysyła alert e-mail
 - `panic.php`: obsługa jednorazowego linku „Panic Button" z maila
+- `reveal.php`: zwraca dane jednej osoby z listy posiadaczy dopiero po kliknięciu „odszyfruj” (od v3.2.1; sesja, token CSRF, limit żądań, wpis w logu)
 - `tl-status.php`: odpytywanie stanu blokady na żywo (bez potrzeby odświeżania panelu)
 
 **Czcionki** (`/app/fonts/`, od v3.2.0)
@@ -421,6 +422,7 @@ secret-key/
 │   │   ├── key.svg
 │   │   ├── log.php
 │   │   ├── panic.php
+│   │   ├── reveal.php
 │   │   ├── timelock.php
 │   │   └── tl-status.php
 │   ├── 📁 fonts/                  # Czcionki hostowane lokalnie (od v3.2.0)
